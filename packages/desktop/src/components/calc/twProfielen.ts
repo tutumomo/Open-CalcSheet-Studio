@@ -1,9 +1,9 @@
 /**
- * 台灣常用結構型鋼規格表 — 依據 CNS 7110 / CNS 2473 / CNS 2947 / steel99。
+ * 台灣常用結構型鋼規格表 — 斷面尺度依據 CNS 1490（熱軋型鋼之形狀、尺度、質量及其許可差），
+ * 材質依據 CNS 2473 / CNS 2947 / CNS 13812，設計依 steel99。
  *
- * 包含台灣建築與土木結構最常用的熱軋 H 型鋼（寬翼緣、中翼緣、窄翼緣）、
- * 方形鋼管（Box）、槽鋼（Channel）及等邊角鋼（Equal Angle），
- * 以及常用結構鋼材等級（SS400、SM400、SM490、SN400B、SN490B）。
+ * 目前只收錄熱軋 H 型鋼（寬翼緣、中翼緣、窄翼緣）與常用結構鋼材等級
+ * （SS400、SM400、SM490、SN400B、SN490B）；方形鋼管、槽鋼、角鋼尚未收錄（見 docs/tw/工作計畫.md 階段 3）。
  */
 
 export interface TwStaalKwaliteit {
@@ -113,7 +113,7 @@ export const TW_PROFIELEN: readonly TwProfielGrootheid[] = TW_H_TABEL.map((r) =>
   gewicht: r[18],
 }));
 
-export const TW_PROFIEL_KOP = "'台灣常用H型鋼斷面表（CNS 7110）:";
+export const TW_PROFIEL_KOP = "'台灣常用H型鋼斷面表（CNS 1490）:";
 
 /**
  * 產生計算語言中的 H 型鋼矩陣字串：
