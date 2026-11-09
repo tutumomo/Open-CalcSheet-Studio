@@ -53,6 +53,13 @@ gelijk("g = 25 kN/m^3\nx = g to pcf", "x", "159.1 pcf");
 gelijk("p = 50 psf\nx = p to kN/m^2", "x", "2.394 kN / m^2", "een getal met een nieuwe eenheid wordt herkend: 50 psf → 2.394 kN/m²");
 gelijk("ksi = 2\ny = 3*ksi", "y", "6", "een variabele met de naam van een nieuwe eenheid blijft een variabele");
 
+console.log("\nTaiwan MKS eenheden");
+gelijk("s = 210 kgf/cm^2\nx = s to N/mm^2", "x", "20.59 N / mm^2");
+gelijk("f = 9.80665 kN\nx = f to tf", "x", "1 tf");
+gelijk("q = 9.80665 kN/m\nx = q to tf/m", "x", "1 tf / m");
+gelijk("p = 9.80665 kN/m^2\nx = p to tf/m^2", "x", "1 tf / m^2");
+gelijk("M = 9.80665 kN*m\nx = M to tf*m", "x", "1 tf m");
+
 console.log("\nOpmaak");
 const psi = exprToLatex("50 psi");
 meld(psi.includes("\\text{psi}") && !psi.includes("\\psi"), "50 psi staat als eenheid, niet als ψ", psi);
@@ -99,6 +106,8 @@ const INDELING = {
   "N / mm^2": "spanning", MPa: "spanning", psi: "spanning",
   "kN / m^3": "volumegewicht", kg: "massa", degC: null,
   K: null, "K^-1": null, "1 / s": null,
+  "kgf/cm^2": "spanning", "tf/m^2": "vlakbelasting", "kgf/m^2": "vlakbelasting",
+  tf: "kracht", kgf: "kracht", "tf m": "moment", "tf / m": "lijnlast", "tf / m^3": "volumegewicht",
 };
 for (const [eenheid, verwacht] of Object.entries(INDELING)) {
   const g = grootheidVan(eenheid);
@@ -124,6 +133,20 @@ toont("z = 0 mm", "z", "0 in");
 toont("n = -4.5 m", "n", "-14.76 ft");
 const L45 = node("L = 4.5 m", "L", US);
 meld(L45?.result === "4.5 m" && L45?.waarde === 4.5, "de rekenwaarde zelf blijft 4.5 m", JSON.stringify({ result: L45?.result, waarde: L45?.waarde }));
+
+console.log("\nWeergave in Taiwan MKS");
+const TW = { stelsel: STELSELS["tw-mks"] };
+const inTwStelsel = (bron, naam) => node(bron, naam, TW)?.inStelsel;
+const toontTw = (bron, naam, verwacht, wat) => {
+  const w = inTwStelsel(bron, naam);
+  meld(w?.result === verwacht, wat ?? `${bron.split("\n").pop()} → ${verwacht}`, JSON.stringify(w));
+};
+meld(inTwStelsel("L = 4.5 m", "L") === undefined, "een lengte in m blijft staan in tw-mks");
+toontTw("b = 450 mm", "b", "45 cm");
+toontTw("M = 9.80665 kN*m", "M", "1 tf m");
+toontTw("F = 9.80665 kN", "F", "1 tf");
+toontTw("f = 20.593965 N/mm^2", "f", "210 kgf / cm^2");
+toontTw("g = 23.53596 kN/m^3", "g", "2.4 tf / m^3");
 
 console.log("\nNotatie");
 const f2 = inStelsel("x = 1234.567 mm:F2", "x");

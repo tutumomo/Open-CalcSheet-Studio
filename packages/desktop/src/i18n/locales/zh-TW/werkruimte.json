@@ -196,6 +196,7 @@
           "si-mm": "SI（mm）",
           "si-m": "SI（m）",
           "us": "美制單位",
+          "tw-mks": "台灣 MKS",
           "eigen": "自訂"
         }
       },

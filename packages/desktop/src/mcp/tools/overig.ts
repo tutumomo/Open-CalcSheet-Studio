@@ -86,8 +86,8 @@ const EENHEDEN_SCHEMA = objectSchema({
   returnAngleUnits: { type: "boolean" },
   stelsel: {
     type: "string",
-    enum: ["blad", "si-mm", "si-m", "us", "eigen"],
-    description: "Unit system for new projects: 'blad' (as written in the sheet), 'si-mm', 'si-m', 'us' (US customary) or 'eigen' (per quantity). The open project's own system is the project data field 'eenheden'.",
+    enum: ["blad", "si-mm", "si-m", "us", "tw-mks", "eigen"],
+    description: "Unit system for new projects: 'blad' (as written in the sheet), 'si-mm', 'si-m', 'us' (US customary), 'tw-mks' (Taiwan MKS) or 'eigen' (per quantity). The open project's own system is the project data field 'eenheden'.",
   },
 });
 

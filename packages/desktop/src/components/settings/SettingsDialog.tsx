@@ -76,7 +76,7 @@ export interface UnitsSettings {
    * zelf hoort bij het project; dit is alleen de standaard. defaultLength, defaultForce en
    * defaultStress blijven voor de API, maar het stelsel vervangt ze.
    */
-  stelsel?: "blad" | "si-mm" | "si-m" | "us";
+  stelsel?: "blad" | "si-mm" | "si-m" | "us" | "tw-mks";
 }
 
 export const UNITS_DEFAULTS: UnitsSettings = {
@@ -566,6 +566,7 @@ function UnitsTabContent({
             { value: "si-mm", label: "SI (mm)" },
             { value: "si-m", label: "SI (m)" },
             { value: "us", label: "US customary" },
+            { value: "tw-mks", label: "Taiwan MKS" },
           ]}
           onChange={(v) => patch({ stelsel: v as UnitsSettings["stelsel"] })}
           style={{ width: 200 }}

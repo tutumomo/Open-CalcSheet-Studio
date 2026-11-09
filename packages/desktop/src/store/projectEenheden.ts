@@ -11,9 +11,9 @@ import type { ProjectGegevens } from "./projectGegevens";
  *   eenheden_lijst   de eigen eenheden van het project, als JSON [{ naam, uitdrukking }]
  */
 
-export type StelselKeuze = "blad" | "si-mm" | "si-m" | "us" | "eigen";
+export type StelselKeuze = "blad" | "si-mm" | "si-m" | "us" | "tw-mks" | "eigen";
 
-export const STELSEL_KEUZES: readonly StelselKeuze[] = ["blad", "si-mm", "si-m", "us", "eigen"];
+export const STELSEL_KEUZES: readonly StelselKeuze[] = ["blad", "si-mm", "si-m", "us", "tw-mks", "eigen"];
 
 /** Een eigen eenheid van het project: `kipf` = `1000 lbf`. */
 export interface EigenEenheid {
@@ -29,12 +29,12 @@ export const GROOTHEID_KEUZES: Record<Grootheid, string[]> = {
   doorsnedeOppervlakte: ["mm^2", "cm^2", "in^2"],
   weerstandsmoment: ["mm^3", "cm^3", "in^3"],
   traagheidsmoment: ["mm^4", "cm^4", "in^4"],
-  kracht: ["N", "kN", "MN", "lbf", "kip"],
-  moment: ["N mm", "kN m", "lbf in", "kip in", "kip ft"],
-  lijnlast: ["kN / m", "N / mm", "plf", "klf"],
-  vlakbelasting: ["kN / m^2", "kPa", "psf", "ksf"],
-  spanning: ["N / mm^2", "MPa", "GPa", "psi", "ksi"],
-  volumegewicht: ["kN / m^3", "pcf"],
+  kracht: ["N", "kN", "MN", "lbf", "kip", "kgf", "tf"],
+  moment: ["N mm", "kN m", "lbf in", "kip in", "kip ft", "kgf m", "tf m"],
+  lijnlast: ["kN / m", "N / mm", "plf", "klf", "kgf / m", "tf / m"],
+  vlakbelasting: ["kN / m^2", "kPa", "psf", "ksf", "kgf / m^2", "tf / m^2"],
+  spanning: ["N / mm^2", "MPa", "GPa", "psi", "ksi", "kgf / cm^2", "tf / m^2"],
+  volumegewicht: ["kN / m^3", "pcf", "tf / m^3"],
   massa: ["kg", "t", "lb"],
 };
 

@@ -74,7 +74,7 @@ export interface McpEenheden {
    * Het eenhedenstelsel voor een nieuw project (Instellingen, tab Units). Het stelsel van een
    * open project is het projectgegeven `eenheden` (project_data_set).
    */
-  stelsel?: "blad" | "si-mm" | "si-m" | "us" | "eigen";
+  stelsel?: "blad" | "si-mm" | "si-m" | "us" | "tw-mks" | "eigen";
 }
 
 export interface McpInstellingen {

@@ -54,6 +54,7 @@ export const PROJECT_VELDEN: VeldDef[] = [
       { label: "SI (mm)", waarde: "si-mm" },
       { label: "SI (m)", waarde: "si-m" },
       { label: "US customary", waarde: "us" },
+      { label: "Taiwan MKS", waarde: "tw-mks" },
       { label: "Custom", waarde: "eigen" },
     ],
     hint: "Every value is shown in the unit of its quantity, also in the bundled modules and on paper. Only the display changes: results and unity checks stay the same.",
