@@ -156,26 +156,19 @@ jobs:
             exit 1
           fi
 
-          # 檢查遠端 tag 是否已存在，防止覆蓋既有標籤（區分 exit code 2: not found、0: exists、其他: error）
-          set +e
-          git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1
-          LS_EXIT=$?
-          set -e
-          case $LS_EXIT in
-            2) echo "OK: tag $TAG does not exist on origin" ;;
-            0) echo "::error::Tag $TAG already exists on remote origin!" ; exit 1 ;;
-            *) echo "::error::Failed to query remote tags from origin (exit code $LS_EXIT)" ; exit 1 ;;
-          esac
+          # 1. 於發佈前原子化建立 tag 綁定 TARGET_SHA（若 tag 已存在則 API 回傳 422 失敗，消除 TOCTOU 競爭窗口）
+          echo "Creating tag $TAG pointing to $TARGET_SHA..."
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs" \
+            -f ref="refs/tags/$TAG" \
+            -f sha="$TARGET_SHA"
 
-          # 檢查 GitHub Release 是否已存在
-          set +e
-          gh api -H "Accept: application/vnd.github+json" "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" >/dev/null 2>&1
-          REL_EXIT=$?
-          set -e
-          if [ $REL_EXIT -eq 0 ]; then
-            echo "::error::Release $TAG already exists on GitHub!"
+          # 2. 驗證新建立之 tag 正確指向 TARGET_SHA
+          RESOLVED_SHA=$(gh api "repos/$GITHUB_REPOSITORY/git/ref/tags/$TAG" --jq .object.sha)
+          if [ "$RESOLVED_SHA" != "$TARGET_SHA" ]; then
+            echo "::error::Atomic tag creation mismatch! Expected $TARGET_SHA, got $RESOLVED_SHA"
             exit 1
           fi
+          echo "OK: Tag $TAG atomically anchored to $TARGET_SHA"
 
           DRAFT_FLAG=""
           if [ "$IS_DRAFT" = "true" ]; then
@@ -188,17 +181,8 @@ jobs:
 - **功能摘要**：預設繁體中文（zh-TW）介面、台灣 MKS 單位制（tf, kgf/cm²）與 15 組本土結構／大地／水保／載重計算模組。
 - **發佈性質**：本產物為社群預覽測試版本（無商業 Authenticode / Apple Developer 數位簽名）。隨附 SHA256SUMS.txt 僅供核對檔案下載傳輸完整性，不提供代碼簽名擔保。正式生產環境請於信任主機自行編譯或等待官方簽名版本。"
 
+          # 3. 建立 Release 並關聯至已錨定之 tag
           gh release create "$TAG" dist-assets/* \
-            --target "$TARGET_SHA" \
             --title "Open CalcSheet Studio 台灣版 $TAG" \
             --notes "$RELEASE_NOTES" \
             $DRAFT_FLAG
-
-          # 發佈後校驗：確認遠端 tag 指向目標 commit
-          git fetch origin "refs/tags/$TAG"
-          CREATED_SHA=$(git rev-parse "refs/tags/$TAG^{commit}")
-          if [ "$CREATED_SHA" != "$TARGET_SHA" ]; then
-            echo "::error::Tag provenance verification failed! Created tag points to $CREATED_SHA, expected $TARGET_SHA"
-            exit 1
-          fi
-          echo "OK: Tag $TAG provenance verified (points to $TARGET_SHA)"
