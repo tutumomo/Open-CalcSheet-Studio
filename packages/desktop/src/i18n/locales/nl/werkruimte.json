@@ -92,6 +92,7 @@
       "rekentaal-demo": "Open CalcSheet Studio demo",
       "tw-rc-beam": "Gewapend betonnen ligger (rc112)",
       "tw-rc-column": "Gewapend betonnen kolom (rc112)",
+      "tw-isolated-footing": "Gewapend betonnen fundering op staal (found112 / rc112)",
       "tw-steel-beam": "Stalen I-ligger (steel99 LRFD)",
       "tw-steel-column": "Stalen kolom met voetplaat (steel99 LRFD)"
     }

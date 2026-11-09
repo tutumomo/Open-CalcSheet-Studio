@@ -92,6 +92,7 @@
       "rekentaal-demo": "Open CalcSheet Studio示範",
       "tw-rc-beam": "鋼筋混凝土矩形梁（rc112）",
       "tw-rc-column": "鋼筋混凝土矩形柱（rc112）",
+      "tw-isolated-footing": "鋼筋混凝土獨立基腳（found112 / rc112）",
       "tw-steel-beam": "鋼結構 H 型鋼梁（steel99 LRFD）",
       "tw-steel-column": "鋼結構 H 型鋼柱與柱腳（steel99 LRFD）"
     }
