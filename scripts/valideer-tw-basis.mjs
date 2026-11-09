@@ -221,7 +221,10 @@ console.log("\n5. 繁體中文結構報告模型（Stage 2a）");
 
   // 章節架構測試
   const bladen = [{ id: "b1", naam: "RC梁檢核" }];
-  const knopen = bouwOpzet(tw, bladen);
+  // 階段 2b 起，新的繁中報告預設台灣架構；歐規 OPZET 的繁中標題要明確指定 eurocode 才測得到
+  toets("zh-TW 新報告預設台灣架構（opzetSoort = tw）", tw.opzetSoort === "tw");
+  toets("zh-TW 預設架構第 1 章為 設計概要", bouwOpzet(tw, bladen)[0]?.titel === "設計概要");
+  const knopen = bouwOpzet({ ...tw, opzetSoort: "eurocode" }, bladen);
   toets("zh-TW 章節 1 標題為 簡介", knopen[0]?.titel === "簡介");
   toets("zh-TW 章節 2 標題為 專案資訊", knopen[1]?.titel === "專案資訊");
   toets("zh-TW 章節 3 標題為 結構系統", knopen[2]?.titel === "結構系統");

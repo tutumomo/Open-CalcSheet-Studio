@@ -35,6 +35,7 @@ import {
   TW_WAND_AFWERKING_T15,
 } from "../packages/desktop/src/rapport/tw/normwaarden.ts";
 import * as twNormwaarden from "../packages/desktop/src/rapport/tw/normwaarden.ts";
+import { TW_PROJECT_VELDEN } from "../packages/desktop/src/components/calc/twGrondslagen.ts";
 import { vindKnoop, HOOFDSTUKKEN_TW } from "../packages/desktop/src/components/rapport/paneel/hulp.ts";
 
 let fouten = 0;
@@ -298,6 +299,24 @@ console.log("\n6. 報告面板整合與章節導覽 (HOOFDSTUKKEN_TW / vindKnoop
 
   const knoopAnalyse = vindKnoop("tw-analysemethode");
   waar("vindKnoop 能正確定位 tw-analysemethode", knoopAnalyse?.id === "tw-analysemethode");
+}
+
+console.log("\n7. 台灣專案參數 (twGrondslagen.ts)");
+{
+  const veld = (naam) => TW_PROJECT_VELDEN.find((v) => v.naam === naam);
+  // seis113 第 2.5 節：S_DS = F_a·S_S^D、S_D1 = F_v·S_1^D，沒有 ASCE 7 的 2/3 係數
+  for (const naam of ["tw_SDS", "tw_SD1"]) {
+    waar(`${naam} 的說明不含 ASCE 7 之 2/3 係數，並引用 seis113 第 2.5 節`,
+      !/2\s*\/\s*3/.test(veld(naam).hint) && veld(naam).hint.includes("seis113 第 2.5 節"));
+  }
+  // wind103full_V10_zones：六級 47.5／42.5／37.5／32.5／27.5／22.5 m/s
+  const v10 = veld("tw_V10").opties.map((o) => o.waarde);
+  waar("V10 選項為已驗證表之六級風速", JSON.stringify(v10) === JSON.stringify(["47.5", "42.5", "37.5", "32.5", "27.5", "22.5"]));
+  // 臺南市中西、東、南、北、安平、安南區屬 37.5 m/s 區；放在較低風速區會低估風力
+  const optie = (w) => veld("tw_V10").opties.find((o) => o.waarde === w).label;
+  waar("臺南市區不列在 32.5 m/s 區", !optie("32.5").includes("臺南"));
+  waar("每個 V10 選項的地名都屬於該風速區（抽查）",
+    optie("37.5").includes("臺南市中西") && optie("32.5").includes("臺中市中") && optie("27.5").includes("烏日"));
 }
 
 console.log(`\n台灣報告架構檢核完成：共 ${getest} 項檢查，${fouten} 項失敗。`);
