@@ -86,10 +86,10 @@
       "rekentaal-samples": "範例"
     },
     "modules": {
-      "ligger": "梁（木材或鋼材，Eurocode）",
-      "balklaag": "木造梁式樓板（Eurocode）",
-      "tweepaalspoer": "雙樁樁帽（鋼筋混凝土，Eurocode）",
-      "doorsnede-spanningen": "斷面應力（Eurocode）",
+      "ligger": "梁（木材或鋼材；Eurocode，非台灣規範）",
+      "balklaag": "木造梁式樓板（Eurocode，非台灣規範）",
+      "tweepaalspoer": "雙樁樁帽（鋼筋混凝土；Eurocode，非台灣規範）",
+      "doorsnede-spanningen": "斷面應力（Eurocode，非台灣規範）",
       "rekentaal-demo": "Open CalcSheet Studio示範",
       "tw-rc-beam": "鋼筋混凝土矩形梁（rc112）",
       "tw-rc-column": "鋼筋混凝土矩形柱（rc112）",

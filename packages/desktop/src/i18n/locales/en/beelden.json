@@ -433,6 +433,7 @@
     "voldoet": "OK",
     "voldoetNiet": "not OK",
     "rekenversieKlein": "calculation version",
+    "eurocodeKlein": "Eurocode, not a Taiwan code",
     "rekenversie": "Calculation version",
     "nietDoorgerekend": "This sheet could not be calculated:",
     "projectnummer": "Project number",

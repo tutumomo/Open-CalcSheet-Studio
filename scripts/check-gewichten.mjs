@@ -450,6 +450,13 @@ kop("Steekproef met de hand, met het blad erbij");
     ["fp-mccann-hollowcore-260", "p", 3.47],
     // Rigips MW11RF, 175 mm op CW 150: 24,0 kg/m².
     ["rigips-mw11rf-175-1x12x5-cw150", "p", 24 * 0.00981],
+    // 台灣建築技術規則建築構造編第 11～15 條載重表
+    ["tw-btr-t11-gewapend-beton", "rho", 2400 * 0.00981],
+    ["tw-btr-t11-staal", "rho", 7850 * 0.00981],
+    ["tw-btr-t14-cement-dekvloer", "p", 20 * 0.00981],
+    ["tw-btr-t15-baksteenwand-240", "p", 440 * 0.00981],
+    ["tw-btr-t12-romaanse-pan", "p", 60 * 0.00981],
+    ["tw-btr-t13-brandwerende-plaat", "p", 20 * 0.00981],
   ];
   for (const [id, veld, hand] of STEEKPROEF) {
     const r = REGELS.find((x) => x.id === id);

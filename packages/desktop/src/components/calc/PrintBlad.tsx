@@ -5,6 +5,7 @@ import { ExemplaarContext } from "../../store/actiefBlad";
 import { designerVoor } from "./designerKeuze";
 import { ucTekst, type Resultaat } from "./bladResultaat";
 import { rekenversie } from "./bladVersie";
+import { isEurocodeBlad } from "./eurocodeModules";
 import { bladSoortVan, LosBladAfdruk } from "./bladSoorten";
 import { isCanvasBlad, legOpVellen, maxBreedte } from "../../store/canvasBlad";
 import { useEenheidMaten } from "./canvasMaten";
@@ -131,7 +132,7 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
   // blad dat toevallig openstaat. `alleenLezen` houdt tegen dat het afdrukken
   // standaardwaarden aanvult of iets anders aan het project verandert.
   const beeld = designerVoor(ex.source);
-  const onderkop = [resultaat.norm, projectregel ? "" : `${t("afdruk.rekenversieKlein")} ${rekenversie(ex.source)}`]
+  const onderkop = [resultaat.norm, isEurocodeBlad(ex) ? t("afdruk.eurocodeKlein") : "", projectregel ? "" : `${t("afdruk.rekenversieKlein")} ${rekenversie(ex.source)}`]
     .filter(Boolean)
     .join(" · ");
   return (

@@ -102,6 +102,21 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
     - **滯洪池**（`tw-detention-basin`）：合理化三階段洪峰流量、三角形歷線蓄洪容積、出流洪峰上限、孔口出流、緊急溢洪堰容量與堤頂出水高檢核。
     - **鋼筋混凝土箱涵**（`tw-box-culvert`，`hwbridge` / `rc112`）：HS20-44 輪重透過填土分佈與涵洞衝擊係數、表 3.3 第 VIII 組載重組合、平面閉合剛架（`raamwerk`）內力、頂底版與側牆抗彎剪力配筋、內角加腋、滿流排水容量、地盤承載力與抗浮。
     - **沉砂池**（`tw-sediment-basin`，`swc_tech` 114）：通用土壤流失公式（USLE）土壤流失量、開挖整地與未開挖分區泥砂生產量、臨時性 1.5 倍設計容量、池體容積、深度範圍（1.5～3.5 m，垂直共構豁免）、矩形溢流堰通水能力與池頂出水高檢核。
+
+### 台灣本土設計模組清單與狀態
+
+| 模組名稱 | 模組識別碼 | 主管設計規範 | 成熟度狀態 | 專屬檢核腳本 |
+|----------|------------|--------------|------------|--------------|
+| **RC 矩形梁** | `tw-rc-beam` | 建築物混凝土結構設計規範（`rc112`）第 6、9、22、24 章 | 已校準（gereed） | `scripts/check-tw-rc-beam.mjs` |
+| **RC 矩形柱** | `tw-rc-column` | 建築物混凝土結構設計規範（`rc112`）第 6、21、22、25 章 | 已校準（gereed） | `scripts/check-tw-rc-column.mjs` |
+| **RC 獨立基腳** | `tw-isolated-footing` | 建築物基礎構造設計規範（`found112`）／混凝土（`rc112`） | 已校準（gereed） | `scripts/check-tw-isolated-footing.mjs` |
+| **熱軋 H 型鋼梁** | `tw-steel-beam` | 鋼結構設計技術規範（`steel99` LRFD）第 4、7 章 | 已校準（gereed） | `scripts/check-tw-steel-beam.mjs` |
+| **熱軋 H 型鋼柱與柱腳** | `tw-steel-column` | 鋼結構設計技術規範（`steel99` LRFD）第 4、6、7、8、10 章 | 已校準（gereed） | `scripts/check-tw-steel-column.mjs` |
+| **RC 懸臂式擋土牆** | `tw-retaining-wall` | 基礎（`found112`）第 7 章／水保（`swc_tech`）／`rc112` | 已校準（gereed） | `scripts/check-tw-retaining-wall.mjs` |
+| **RC 排水溝與明渠** | `tw-drainage-channel` | 水保規範（`swc_tech`）第 16～19、78、82～87 條／`rc112` | 已校準（gereed） | `scripts/check-tw-drainage-channel.mjs` |
+| **滯洪池設計** | `tw-detention-basin` | 水保規範（`swc_tech`）第 16～19、94～97 條 | 已校準（gereed） | `scripts/check-tw-detention-basin.mjs` |
+| **RC 箱涵設計** | `tw-box-culvert` | 公路橋梁設計規範（`hwbridge`）第 3、4 章／`rc112` | 已校準（gereed） | `scripts/check-tw-box-culvert.mjs` |
+| **沉砂池設計** | `tw-sediment-basin` | 水保規範（`swc_tech`）第 35、92、93 條／`sewer_std` | 已校準（gereed） | `scripts/check-tw-sediment-basin.mjs` |
 - **歐洲規範模組**（Eurocode，非台灣規範）：
   - **木托梁樓板**（EN 1995-1-1）、**木/鋼梁**（EN 1993-1-1）與**雙樁樁帽**（EN 1992-1-1），搭配荷蘭國家附錄。透過[線上模組庫](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules)可直接新增模組。參閱[木托梁檢核原理](docs/balklaag-toetsing.md)與[雙樁樁帽檢核原理](docs/tweepaalspoer-toetsing.md)。
   - 雙樁樁帽在圖紙旁提供 3D 結構模型，即時展示樁帽、基樁、柱子與各鋼筋籠。**新增模組**畫面為每個選項提供圖示預覽。
@@ -135,7 +150,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 測試與可靠性
 
-- **81 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **84 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。

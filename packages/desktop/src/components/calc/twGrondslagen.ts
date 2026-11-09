@@ -66,26 +66,18 @@ export const TW_PROJECT_VELDEN: TwProjectGegevenVeld[] = [
   },
 ];
 
-/**
- * 混凝土結構因數化載重組合（rc112 表 5.3.1）片段。
- * 尚未完成：目前只有 (5.3.1a)、(5.3.1b) 去掉 Lr／S／R 項之形式，完整 7 組見 rapport/tw/normwaarden.ts；
- * 接成 #include 前不得用於檢核。
- */
-export const TW_RC_BELASTINGCOMBINATIES = `
-'<h6>設計載重組合（rc112 第 5.3 節）</h6>
-#hide
-U_1 = 1.4*D
-U_2 = 1.2*D + 1.6*L
-#show
-`;
+import { twLoadCombosRc112, twLoadCombosSteelAsd } from "../../templates/tw-load-combos.ts";
 
 /**
- * 鋼結構容許應力法（ASD）載重組合（steel99 第 2.2 節式 2.2-1～2.2-5）片段；尚未完成，只有前兩式：
+ * 混凝土結構因數化載重組合（rc112 表 5.3.1）片段。
+ * 已對齊 templates/tw-load-combos.ts 之 twLoadCombosRc112，亦可於表中以
+ * `#include tw-load-combos-rc112.cpd` 直接引用。
  */
-export const TW_STEEL_ASD_COMBINATIES = `
-'<h6>容許應力設計載重組合（steel99 ASD）</h6>
-#hide
-Ra_1 = D
-Ra_2 = D + L
-#show
-`;
+export const TW_RC_BELASTINGCOMBINATIES = twLoadCombosRc112;
+
+/**
+ * 鋼結構容許應力法（ASD）載重組合（steel99 第 2.2 節式 2.2-1～2.2-5）片段。
+ * 已對齊 templates/tw-load-combos.ts 之 twLoadCombosSteelAsd，亦可於表中以
+ * `#include tw-load-combos-steel-asd.cpd` 直接引用。
+ */
+export const TW_STEEL_ASD_COMBINATIES = twLoadCombosSteelAsd;
