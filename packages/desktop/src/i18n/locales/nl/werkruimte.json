@@ -80,6 +80,7 @@
       "cat-algemeen": "Algemeen",
       "cat-hout": "Hout",
       "cat-beton": "Beton",
+      "cat-tw-rc": "Taiwanese normen — Beton",
       "rekentaal-samples": "Voorbeelden"
     },
     "modules": {
@@ -87,7 +88,8 @@
       "balklaag": "Balklaag (houten vloerbalken)",
       "tweepaalspoer": "Tweepaalspoer (gewapend beton)",
       "doorsnede-spanningen": "Spanningen in een doorsnede",
-      "rekentaal-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo",
+      "tw-rc-beam": "Gewapend betonnen ligger (rc112)"
     }
   },
   "kiezer": {

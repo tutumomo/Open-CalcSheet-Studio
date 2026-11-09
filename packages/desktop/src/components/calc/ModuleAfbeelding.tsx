@@ -29,6 +29,8 @@ const beelden: Record<string, ReactNode> = {
   ligger: <>{r(26, 43, 108, 8)}{steun(34, 51)}{steun(126, 51)}{kracht(54, 15)}{kracht(80, 15)}{kracht(106, 15)}</>,
   tweepaalspoer: <>{r(30, 28, 100, 26)}{r(44, 54, 18, 26)}{r(98, 54, 18, 26)}{r(68, 8, 24, 20)}{kracht(80, -8)}</>,
   balklaag: <>{[0, 1, 2, 3].map((i) => <path key={i} d={`M${24 + i * 23} 62l28-35 9 3-28 35v10l-9-3Z`} fill={vlak} />)}{p("m24 62 81 11 31-37M24 72l81 11 31-37")}</>,
+  // 台灣版
+  "tw-rc-beam": <>{r(24, 28, 112, 48)}{kracht(80, 2)}</>,
 };
 
 export default function ModuleAfbeelding({ templateId, beeldUrl }: { templateId: string; beeldUrl?: string | null }) {

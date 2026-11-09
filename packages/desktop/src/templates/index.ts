@@ -3,6 +3,8 @@ import { balklaag } from "./balklaag";
 import { ligger } from "./ligger";
 import { tweepaalspoer } from "./tweepaalspoer";
 import { doorsnedeSpanningen } from "./doorsnede-spanningen";
+// 台灣版（rc112 混凝土結構設計規範）
+import { twRcBeam } from "./tw-rc-beam";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -10,4 +12,6 @@ export const templates: Record<string, string> = {
   "tweepaalspoer": tweepaalspoer,
   "doorsnede-spanningen": doorsnedeSpanningen,
   "rekentaal-demo": rekentaalDemo,
+  // 台灣版模組
+  "tw-rc-beam": twRcBeam,
 };

@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（rc112 混凝土結構）：新增「鋼筋混凝土矩形梁設計與檢核」計算模組（`tw-rc-beam`），依內政部《建築物混凝土結構設計規範》（112年8月10日版）提供單筋與雙筋梁之完整計算與檢核；涵蓋 β1 應力塊係數、閉合解中性軸求解、εt 鋼筋拉應變與延展性判定、強度折減係數 ϕ、標稱與設計抗彎強度 ϕMn、最小受拉鋼筋量 As,min（9.6.1.2）、混凝土剪力強度 Vc（詳細法 a）、鋼筋剪力強度 Vs、斷面剪力上限 Vs,max（22.5.1.2）、最小剪力筋量 (Av/s)min（9.6.3.3）、雙分支箍筋最大間距 s,max（表 9.7.6.2.2）、裂縫控制受拉鋼筋最大間距 s,crack（24.3.2）、免算撓度梁深下限 h,min（表 9.3.1.1）以及 Bischoff 有效慣性矩 Ie（24.2.3.5）與長期總撓度檢核；模組目錄新增「台灣規範 — 混凝土」分類、專屬縮圖及相容報告標頭之「控制 UC」判定
 - 台灣版（zh-TW）：新增繁體中文介面在地化，涵蓋全部 12 個命名空間共 3,023 個詞條，依台灣工程慣用術語翻譯；預設介面語言改為繁體中文（zh-TW）；介面上的日期與數字格式採台灣慣例（西元年、小數點為點、千分位為逗號）；設定對話方塊「重設為預設值」支援預設繁體中文
 - De antwoorden van Open FEM Studio op `@toets`-blokken gaan mee in het projectbestand, met de datum en de versie waarmee getoetst is. Een geopend blad toont zijn uitkomst zonder opnieuw te toetsen, ook op een computer zonder FEM Studio. Vóór het afdrukken worden blokken zonder antwoord eerst getoetst. Heeft CalcSheet een andere versie van FEM Studio dan waarmee getoetst is, dan meldt het blad dat en biedt het "Opnieuw toetsen" aan; dat gebeurt nooit vanzelf
 - Rekentaal: met `@toets naam = tool … @end` laat een blad een normtoets doen door Open FEM Studio, bijvoorbeeld `check_steel_beam`. Het blok staat als tabel met per toets het artikel, de UC en het oordeel, en daarna rekent het blad verder met `naam.uc_max` en `naam.voldoet`. Eenheden worden omgerekend naar wat FEM Studio vraagt. Een blok zonder antwoord staat op papier als niet getoetst, nooit als voldoet

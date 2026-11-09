@@ -99,6 +99,17 @@ export const moduleCatalogus: TreeNode[] = [
       { kind: "item", id: "sheet-tweepaalspoer", label: "Tweepaalspoer (gewapend beton)", templateId: "tweepaalspoer", status: "controleren" },
     ],
   },
+  // 台灣版（台灣設計規範模組）
+  {
+    kind: "category",
+    id: "cat-tw-rc",
+    label: "Taiwanese normen — Beton",
+    defaultExpanded: true,
+    count: 1,
+    children: [
+      { kind: "item", id: "sheet-tw-rc-beam", label: "Gewapend betonnen ligger (rc112)", templateId: "tw-rc-beam", status: "gereed", gepubliceerd: true },
+    ],
+  },
 ];
 
 export const bibliotheek: TreeNode[] = [

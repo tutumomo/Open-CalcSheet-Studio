@@ -80,6 +80,7 @@
       "cat-algemeen": "General",
       "cat-hout": "Timber",
       "cat-beton": "Concrete",
+      "cat-tw-rc": "Taiwan codes — Concrete",
       "rekentaal-samples": "Examples"
     },
     "modules": {
@@ -87,7 +88,8 @@
       "balklaag": "Timber joist floor",
       "tweepaalspoer": "Two-pile cap (reinforced concrete)",
       "doorsnede-spanningen": "Section stresses",
-      "rekentaal-demo": "Open CalcSheet Studio demo"
+      "rekentaal-demo": "Open CalcSheet Studio demo",
+      "tw-rc-beam": "RC rectangular beam (rc112)"
     }
   },
   "kiezer": {

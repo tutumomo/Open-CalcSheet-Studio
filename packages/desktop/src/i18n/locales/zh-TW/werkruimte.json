@@ -80,6 +80,7 @@
       "cat-algemeen": "一般",
       "cat-hout": "木材",
       "cat-beton": "混凝土",
+      "cat-tw-rc": "台灣規範 — 混凝土",
       "rekentaal-samples": "範例"
     },
     "modules": {
@@ -87,7 +88,8 @@
       "balklaag": "木造梁式樓板（Eurocode）",
       "tweepaalspoer": "雙樁樁帽（鋼筋混凝土，Eurocode）",
       "doorsnede-spanningen": "斷面應力（Eurocode）",
-      "rekentaal-demo": "Open CalcSheet Studio示範"
+      "rekentaal-demo": "Open CalcSheet Studio示範",
+      "tw-rc-beam": "鋼筋混凝土矩形梁（rc112）"
     }
   },
   "kiezer": {
