@@ -13,6 +13,10 @@ on:
         default: true
         type: boolean
 
+concurrency:
+  group: release-tw-${{ inputs.tag }}
+  cancel-in-progress: false
+
 permissions:
   contents: read
 
@@ -120,6 +124,7 @@ jobs:
     name: 建立台灣版 GitHub Release 與校驗檔
     needs: build-bundle
     runs-on: ubuntu-latest
+    environment: release-tw
     permissions:
       contents: write
     steps:
@@ -151,15 +156,24 @@ jobs:
             exit 1
           fi
 
-          # 檢查遠端 tag 是否已存在，防止覆蓋既有標籤
-          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
-            echo "::error::Tag $TAG already exists on remote origin!"
-            exit 1
-          fi
+          # 檢查遠端 tag 是否已存在，防止覆蓋既有標籤（區分 exit code 2: not found、0: exists、其他: error）
+          set +e
+          git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1
+          LS_EXIT=$?
+          set -e
+          case $LS_EXIT in
+            2) echo "OK: tag $TAG does not exist on origin" ;;
+            0) echo "::error::Tag $TAG already exists on remote origin!" ; exit 1 ;;
+            *) echo "::error::Failed to query remote tags from origin (exit code $LS_EXIT)" ; exit 1 ;;
+          esac
 
           # 檢查 GitHub Release 是否已存在
-          if gh release view "$TAG" >/dev/null 2>&1; then
-            echo "::error::Release $TAG already exists!"
+          set +e
+          gh api -H "Accept: application/vnd.github+json" "repos/$GITHUB_REPOSITORY/releases/tags/$TAG" >/dev/null 2>&1
+          REL_EXIT=$?
+          set -e
+          if [ $REL_EXIT -eq 0 ]; then
+            echo "::error::Release $TAG already exists on GitHub!"
             exit 1
           fi
 
@@ -172,10 +186,19 @@ jobs:
 
 - **來源 Commit**：\`$TARGET_SHA\`（由 main 分支經 91 項自動化測試通過後建置）
 - **功能摘要**：預設繁體中文（zh-TW）介面、台灣 MKS 單位制（tf, kgf/cm²）與 15 組本土結構／大地／水保／載重計算模組。
-- **簽名狀態**：本發佈產物為社群預建安裝檔（未具商業 Authenticode / Developer ID 憑證簽名）。執行時若遇 SmartScreen 或 Gatekeeper 提示，可參閱文件指示放行，並依隨附 SHA256SUMS.txt 檔比對安裝檔雜湊值。"
+- **發佈性質**：本產物為社群預覽測試版本（無商業 Authenticode / Apple Developer 數位簽名）。隨附 SHA256SUMS.txt 僅供核對檔案下載傳輸完整性，不提供代碼簽名擔保。正式生產環境請於信任主機自行編譯或等待官方簽名版本。"
 
           gh release create "$TAG" dist-assets/* \
             --target "$TARGET_SHA" \
             --title "Open CalcSheet Studio 台灣版 $TAG" \
             --notes "$RELEASE_NOTES" \
             $DRAFT_FLAG
+
+          # 發佈後校驗：確認遠端 tag 指向目標 commit
+          git fetch origin "refs/tags/$TAG"
+          CREATED_SHA=$(git rev-parse "refs/tags/$TAG^{commit}")
+          if [ "$CREATED_SHA" != "$TARGET_SHA" ]; then
+            echo "::error::Tag provenance verification failed! Created tag points to $CREATED_SHA, expected $TARGET_SHA"
+            exit 1
+          fi
+          echo "OK: Tag $TAG provenance verified (points to $TARGET_SHA)"
