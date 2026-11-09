@@ -518,5 +518,19 @@
     "doorsnede": "Section: floor, slopes, design level, orifice and spillway",
     "talud": "Side slope",
     "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
+  },
+  "twWindLoad": {
+    "titel": "Parametric view — wind pressure (site wind speed)",
+    "kop": "Site basic design wind speed",
+    "kies": "Select",
+    "velden": {
+      "county": "County / city",
+      "district": "District",
+      "aanbevolen": "Recommended V10",
+      "huidig": "Current V10 in sheet"
+    },
+    "neem": "Apply to sheet",
+    "noot": "Recommended values come from ABRI open data ({{aantal}} districts, year 114) and are for reference only; confirm they match V10(C) of code clause 2.4.",
+    "klik": "Pick a district and press Apply; V10 is written back to the sheet."
   }
 }

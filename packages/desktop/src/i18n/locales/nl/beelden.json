@@ -518,5 +518,19 @@
     "doorsnede": "Doorsnede: bodem, taluds, ontwerppeil, opening en overlaat",
     "talud": "Talud",
     "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twWindLoad": {
+    "titel": "Parametrisch beeld — winddruk (windsnelheid ter plaatse)",
+    "kop": "Basiswindsnelheid van de locatie",
+    "kies": "Kies",
+    "velden": {
+      "county": "Provincie/stad",
+      "district": "District",
+      "aanbevolen": "Aanbevolen V10",
+      "huidig": "Huidige V10 in het blad"
+    },
+    "neem": "Overnemen in blad",
+    "noot": "Aanbevolen waarden komen uit de open data van het ABRI ({{aantal}} districten, jaar 114) en zijn indicatief; controleer of ze overeenkomen met V10(C) uit artikel 2.4 van de norm.",
+    "klik": "Kies een district en druk op Overnemen; V10 gaat terug naar het blad."
   }
 }

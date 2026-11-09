@@ -20,7 +20,7 @@ function ref({ V, I, Kzt, a, zg, G, n, h, B }) {
 }
 const base = { V: 40, I: 1, Kzt: 1, a: 0.15, zg: 300, G: 1.3, n: 8, h: 3.5, B: 20 };
 const set = (p) => [
-  ["V_10 = 40.0'm/s", `V_10 = ${p.V}'m/s`], ["I_w = 1.0'-", `I_w = ${p.I}'-`], ["K_zt = 1.0'-", `K_zt = ${p.Kzt}'-`],
+  ["V_10 = ?{40.0}", `V_10 = ?{${p.V}}`], ["I_w = 1.0'-", `I_w = ${p.I}'-`], ["K_zt = 1.0'-", `K_zt = ${p.Kzt}'-`],
   ["alpha_w = 0.15'-", `alpha_w = ${p.a}'-`], ["z_g = 300'm", `z_g = ${p.zg}'m`], ["GCp = 1.3'-", `GCp = ${p.G}'-`],
   ["n_st = 8'-", `n_st = ${p.n}'-`], ["h_st = 3.5'm", `h_st = ${p.h}'m`], ["B_w = 20'm", `B_w = ${p.B}'m`],
 ].reduce((t, [o, n]) => vervang(t, o, n), twWindLoad);
@@ -49,7 +49,7 @@ console.log("\n2. 參數掃描");
 }
 console.log("\n3. 無效輸入一律拒算");
 for (const [名, o, n] of [
-  ["V10 為零", "V_10 = 40.0'm/s", "V_10 = 0'm/s"],
+  ["V10 為零", "V_10 = ?{40.0}", "V_10 = ?{0}"],
   ["α 超出範圍", "alpha_w = 0.15'-", "alpha_w = 0.8'-"],
   ["高度超過 z_g", "n_st = 8'-", "n_st = 100'-"],
   ["G·Cp 非正", "GCp = 1.3'-", "GCp = 0'-"],
@@ -57,6 +57,20 @@ for (const [名, o, n] of [
 ]) {
   const { uit, res } = draai(vervang(twWindLoad, o, n));
   meld(uit.V_w === undefined && res.voldoet !== true && res.nietGetoetst === true, `${名} 拒算`);
+}
+
+console.log("\n4. 工址行政區建議風速表（B 級：ABRI 開放資料，逐列轉錄）");
+{
+  const { TW_SITE_WIND, TW_SITE_WIND_COUNT } = await import("../packages/desktop/src/normen/twSiteWind.ts");
+  const 列 = Object.values(TW_SITE_WIND).flatMap((x) => Object.values(x));
+  meld(列.length === TW_SITE_WIND_COUNT && 列.length === 355, `共 ${列.length} 個行政區（來源 355 列）`);
+  meld(Object.keys(TW_SITE_WIND).length === 18, "18 個縣市群組");
+  meld(列.every((v) => Number.isFinite(v) && v >= 30 && v <= 60), "全部建議風速介於 30～60 m/s");
+  meld(TW_SITE_WIND["台北市"]["北投區"] === 36 && TW_SITE_WIND["基隆市"]["仁愛區"] === 42 && TW_SITE_WIND["新北市"]["板橋區"] === 36, "抽樣列與來源 CSV 一致");
+  // 帶入後的數值確實進入計算：以查表值覆寫 V_10，風壓須隨 V² 變化
+  const q = (v) => leesGetallen(evaluate(parse(twWindLoad), { V_10: String(v) })).q_h;
+  const r = q(42) / q(36);
+  meld(Math.abs(r - (42 / 36) ** 2) < 1e-9, `V_10 覆寫生效：q(42)/q(36) = ${r.toFixed(6)} = (42/36)²`);
 }
 console.log(fouten === 0 ? "\n全部通過。" : `\n${fouten} 項失敗。`);
 process.exit(fouten === 0 ? 0 : 1);
