@@ -81,6 +81,7 @@
       "cat-hout": "Hout",
       "cat-beton": "Beton",
       "cat-tw-rc": "Taiwanese normen — Beton",
+      "cat-tw-steel": "Taiwanese normen — Staal",
       "rekentaal-samples": "Voorbeelden"
     },
     "modules": {
@@ -90,7 +91,8 @@
       "doorsnede-spanningen": "Spanningen in een doorsnede",
       "rekentaal-demo": "Open CalcSheet Studio demo",
       "tw-rc-beam": "Gewapend betonnen ligger (rc112)",
-      "tw-rc-column": "Gewapend betonnen kolom (rc112)"
+      "tw-rc-column": "Gewapend betonnen kolom (rc112)",
+      "tw-steel-beam": "Stalen I-ligger (steel99 LRFD)"
     }
   },
   "kiezer": {

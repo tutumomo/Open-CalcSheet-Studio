@@ -81,6 +81,7 @@
       "cat-hout": "Timber",
       "cat-beton": "Concrete",
       "cat-tw-rc": "Taiwan codes — Concrete",
+      "cat-tw-steel": "Taiwan codes — Steel",
       "rekentaal-samples": "Examples"
     },
     "modules": {
@@ -90,7 +91,8 @@
       "doorsnede-spanningen": "Section stresses",
       "rekentaal-demo": "Open CalcSheet Studio demo",
       "tw-rc-beam": "RC rectangular beam (rc112)",
-      "tw-rc-column": "RC rectangular column (rc112)"
+      "tw-rc-column": "RC rectangular column (rc112)",
+      "tw-steel-beam": "Steel I-beam (steel99 LRFD)"
     }
   },
   "kiezer": {

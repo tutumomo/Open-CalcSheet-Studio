@@ -111,6 +111,16 @@ export const moduleCatalogus: TreeNode[] = [
       { kind: "item", id: "sheet-tw-rc-column", label: "Gewapend betonnen kolom (rc112)", templateId: "tw-rc-column", status: "gereed", gepubliceerd: true },
     ],
   },
+  {
+    kind: "category",
+    id: "cat-tw-steel",
+    label: "Taiwanese normen — Staal",
+    defaultExpanded: true,
+    count: 1,
+    children: [
+      { kind: "item", id: "sheet-tw-steel-beam", label: "Stalen I-ligger (steel99 LRFD)", templateId: "tw-steel-beam", status: "gereed", gepubliceerd: true },
+    ],
+  },
 ];
 
 export const bibliotheek: TreeNode[] = [

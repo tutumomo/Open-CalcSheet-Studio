@@ -32,6 +32,7 @@ const beelden: Record<string, ReactNode> = {
   // 台灣版
   "tw-rc-beam": <>{r(24, 28, 112, 48)}{kracht(80, 2)}</>,
   "tw-rc-column": <>{r(50, 15, 60, 70)}{kracht(80, -5)}{kracht(80, 85, 180)}</>,
+  "tw-steel-beam": <>{r(24, 30, 112, 8)}{r(74, 38, 12, 34)}{r(24, 72, 112, 8)}{kracht(80, 2)}</>,
 };
 
 export default function ModuleAfbeelding({ templateId, beeldUrl }: { templateId: string; beeldUrl?: string | null }) {
