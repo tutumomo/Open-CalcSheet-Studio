@@ -1,0 +1,19 @@
+{
+  "titel": "資料庫",
+  "uitleg": "來自 Eurocode（歐洲規範）與古典力學的範例。點擊即可查看計算過程，並插入至現有計算表或以此建立新計算表。",
+  "invoegen": "插入",
+  "invoegenUitleg": "將此範例插入至目前開啟計算表的游標處；若未開啟計算表則建立新計算表",
+  "nieuwBlad": "新增計算表",
+  "nieuwBladUitleg": "以此範例建立新的計算表",
+  "sluiten": "關閉",
+  "opCursor": "位於 {{naam}} 的游標處",
+  "geenBlad": "尚未開啟計算表：插入將建立新計算表",
+  "alleFormules": "搜尋所有公式…",
+  "alleFormulesUitleg": "開啟公式資料庫以查看所有公式（含這些範例）",
+  "rekenfout": "無法計算此範例：{{fout}}",
+  "ophalen": "正在載入資料庫…",
+  "nietOpgehaald": "無法載入資料庫。請檢查您的網路連線。",
+  "nietBijgewerkt": "未更新：此為 {{datum}} 的版本。",
+  "teNieuw": "此資料庫需要較新版本的應用程式。",
+  "opnieuw": "重試"
+}

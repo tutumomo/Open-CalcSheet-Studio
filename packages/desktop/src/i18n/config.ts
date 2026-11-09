@@ -29,18 +29,32 @@ import nlBeelden from "./locales/nl/beelden.json";
 import nlTekenen from "./locales/nl/tekenen.json";
 import nlLibrary from "./locales/nl/library.json";
 import nlGewichten from "./locales/nl/gewichten.json";
+// 台灣版（zh-TW）
+import twCommon from "./locales/zh-TW/common.json";
+import twRibbon from "./locales/zh-TW/ribbon.json";
+import twBackstage from "./locales/zh-TW/backstage.json";
+import twSettings from "./locales/zh-TW/settings.json";
+import twFeedback from "./locales/zh-TW/feedback.json";
+import twWerkruimte from "./locales/zh-TW/werkruimte.json";
+import twRapport from "./locales/zh-TW/rapport.json";
+import twRekentaal from "./locales/zh-TW/rekentaal.json";
+import twBeelden from "./locales/zh-TW/beelden.json";
+import twTekenen from "./locales/zh-TW/tekenen.json";
+import twLibrary from "./locales/zh-TW/library.json";
+import twGewichten from "./locales/zh-TW/gewichten.json";
 
 export const LANGUAGES = [
   { code: "auto", name: "Auto-detect" },
+  { code: "zh-TW", name: "繁體中文" },
   { code: "en", name: "English" },
   { code: "nl", name: "Nederlands" },
 ];
 
 /**
- * De taal waarin de app start zolang de gebruiker niets kiest: Engels. Met
- * "auto" in de instellingen volgt de app de taal van het systeem.
+ * 台灣版：預設語言直接為繁體中文（zh-TW）。
+ * 若設定中選 "auto"，則自動跟隨系統語言。
  */
-export const STANDAARD_TAAL = "en";
+export const STANDAARD_TAAL = "zh-TW";
 
 // Van de sjabloon: common, ribbon, backstage, settings, feedback. Van deze app:
 // werkruimte (project, panelen, modulekiezer), rapport (het rapportpaneel),
@@ -64,12 +78,18 @@ i18next
         werkruimte: nlWerkruimte, rapport: nlRapport, rekentaal: nlRekentaal, beelden: nlBeelden, tekenen: nlTekenen, library: nlLibrary,
         gewichten: nlGewichten,
       },
+      // 台灣版
+      "zh-TW": {
+        common: twCommon, ribbon: twRibbon, backstage: twBackstage, settings: twSettings, feedback: twFeedback,
+        werkruimte: twWerkruimte, rapport: twRapport, rekentaal: twRekentaal, beelden: twBeelden, tekenen: twTekenen, library: twLibrary,
+        gewichten: twGewichten,
+      },
     },
     ns,
     // Meteen in de standaardtaal beginnen; de bewaarde keuze volgt hieronder.
     lng: STANDAARD_TAAL,
     defaultNS: "common",
-    fallbackLng: "en",
+    fallbackLng: "zh-TW",
     interpolation: { escapeValue: false },
     detection: {
       order: ["navigator"],
@@ -88,9 +108,14 @@ getSetting("language", STANDAARD_TAAL).then((lang) => {
 
 export function changeLanguage(lang: string) {
   if (lang === "auto") {
-    const detected = navigator.language?.split("-")[0] || "en";
+    const raw = typeof navigator !== "undefined" ? (navigator.language || "zh-TW") : "zh-TW";
     const supported = Object.keys(i18next.options.resources || {});
-    const finalLang = supported.includes(detected) ? detected : "en";
+    // 優先精確匹配（例如 zh-TW），次之依語系前綴（例如 zh 匹配 zh-TW）
+    const matched =
+      supported.find((s) => s.toLowerCase() === raw.toLowerCase()) ||
+      (raw.startsWith("zh") ? supported.find((s) => s.startsWith("zh")) : undefined) ||
+      supported.find((s) => s === raw.split("-")[0]);
+    const finalLang = matched || STANDAARD_TAAL;
     return i18next.changeLanguage(finalLang);
   }
   return i18next.changeLanguage(lang);

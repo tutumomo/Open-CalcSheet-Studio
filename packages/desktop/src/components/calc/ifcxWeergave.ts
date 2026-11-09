@@ -50,7 +50,8 @@ const VOLGORDE = [
 const kortNaam = (sleutel: string) => sleutel.split("::").pop() ?? sleutel;
 
 function getalTekst(n: number): string {
-  return n.toLocaleString(i18next.language?.startsWith("nl") ? "nl-NL" : "en-GB", { maximumFractionDigits: 6 });
+  const taal = i18next.language?.startsWith("nl") ? "nl-NL" : i18next.language?.startsWith("zh") ? "zh-TW" : "en-GB";
+  return n.toLocaleString(taal, { maximumFractionDigits: 6 });
 }
 
 /** Een attribuut als rijen voor het paneel; een object met losse getallen geeft een rij per sleutel. */

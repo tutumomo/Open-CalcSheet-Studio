@@ -87,7 +87,10 @@ export function useUitdraai(): Uitdraai {
     alleBladen: exemplaren,
     enkel: bladen.length === 1,
     kopregels: kop.filter((r): r is [string, string] => !!r[1]),
-    datum: new Date().toLocaleDateString(i18next.language?.startsWith("nl") ? "nl-NL" : "en-GB", { day: "numeric", month: "long", year: "numeric" }),
+    datum: new Date().toLocaleDateString(
+      i18next.language?.startsWith("nl") ? "nl-NL" : i18next.language?.startsWith("zh") ? "zh-TW" : "en-GB",
+      { day: "numeric", month: "long", year: "numeric" },
+    ),
     onderdeel: gegevens.onderdeel,
     projectNummer: gegevens.project_nummer,
     constructeur: gegevens.constructeur,

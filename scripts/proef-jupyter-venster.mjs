@@ -422,15 +422,15 @@ try {
   meld(await s.voerUit(`window.__nietHerladen`, a) === 1, "de iframe bleef ook tijdens het afdrukvoorbeeld leven");
 
   kop("In het rapport");
-  await s.voerUit(`[...document.querySelectorAll('.pb-naam')].find((e) => /^(Rapport|Report)$/.test(e.textContent.trim())).closest('button').click()`);
+  await s.voerUit(`[...document.querySelectorAll('.pb-naam')].find((e) => /^(Rapport|Report|報告)$/.test(e.textContent.trim())).closest('button').click()`);
   await wacht(500);
-  await s.voerUit(`[...document.querySelectorAll('.split-tab')].find((b) => /Print preview|Afdrukvoorbeeld/.test(b.textContent)).click()`);
+  await s.voerUit(`[...document.querySelectorAll('.split-tab')].find((b) => /Print preview|Afdrukvoorbeeld|列印預覽/.test(b.textContent)).click()`);
   await s.wachtOp(() => s.voerUit(`[...document.querySelectorAll('.av-pagina-inhoud .nb-beeld img')].some((i) => i.naturalWidth > 100) ? 1 : 0`), { tekst: "het rapport", ms: 40000 });
   meld(true, "de notebooks staan in het rapport, met hun afbeelding");
   await s.voerUit(`document.querySelector('.av-pagina-inhoud .nb-beeld img').scrollIntoView({ block: 'center' })`);
   await wacht(500);
   await foto("3-rapport.png");
-  await s.voerUit(`[...document.querySelectorAll('.split-tab')].find((b) => /^(Rapport|Report)$/.test(b.textContent.trim())).click()`);
+  await s.voerUit(`[...document.querySelectorAll('.split-tab')].find((b) => /^(Rapport|Report|報告)$/.test(b.textContent.trim())).click()`);
 
   kop("Een omgeving die niet meer antwoordt");
   await kiesBlad(s, "Blad C");

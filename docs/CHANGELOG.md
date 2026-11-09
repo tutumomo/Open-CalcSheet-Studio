@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（zh-TW）：新增繁體中文介面在地化，涵蓋全部 12 個命名空間共 3,023 個詞條，依台灣工程慣用術語翻譯；預設介面語言改為繁體中文（zh-TW）；介面上的日期與數字格式採台灣慣例（西元年、小數點為點、千分位為逗號）；設定對話方塊「重設為預設值」支援預設繁體中文
 - De antwoorden van Open FEM Studio op `@toets`-blokken gaan mee in het projectbestand, met de datum en de versie waarmee getoetst is. Een geopend blad toont zijn uitkomst zonder opnieuw te toetsen, ook op een computer zonder FEM Studio. Vóór het afdrukken worden blokken zonder antwoord eerst getoetst. Heeft CalcSheet een andere versie van FEM Studio dan waarmee getoetst is, dan meldt het blad dat en biedt het "Opnieuw toetsen" aan; dat gebeurt nooit vanzelf
 - Rekentaal: met `@toets naam = tool … @end` laat een blad een normtoets doen door Open FEM Studio, bijvoorbeeld `check_steel_beam`. Het blok staat als tabel met per toets het artikel, de UC en het oordeel, en daarna rekent het blad verder met `naam.uc_max` en `naam.voldoet`. Eenheden worden omgerekend naar wat FEM Studio vraagt. Een blok zonder antwoord staat op papier als niet getoetst, nooit als voldoet
 - CalcSheet kan de server van Open FEM Studio meeleveren en headless starten, als begin van de normtoetsing uit één bron. Instellingen › Over toont de versie van FEM Studio, of dat hij niet is meegeleverd; de toetsing in de rekenbladen volgt in een volgende versie

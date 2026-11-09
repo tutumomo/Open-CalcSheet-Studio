@@ -233,7 +233,7 @@ try {
 
   const begin = Date.now();
   await evalueer(`(() => {
-    const knop = [...document.querySelectorAll(".ribbon-btn")].find((b) => /^(Rapport|Report)$/.test(b.textContent.trim()));
+    const knop = [...document.querySelectorAll(".ribbon-btn")].find((b) => /^(Rapport|Report|報告)$/.test(b.textContent.trim()));
     if (!knop) throw new Error("de knop Rapport staat niet in het lint");
     knop.click();
     return true;
