@@ -96,7 +96,8 @@
       "tw-isolated-footing": "Gewapend betonnen fundering op staal (found112 / rc112)",
       "tw-steel-beam": "Stalen I-ligger (steel99 LRFD)",
       "tw-steel-column": "Stalen kolom met voetplaat (steel99 LRFD)",
-      "tw-retaining-wall": "Keermuur van gewapend beton (found112 / swc_tech)"
+      "tw-retaining-wall": "Keermuur van gewapend beton (found112 / swc_tech)",
+      "tw-drainage-channel": "Afwateringsgoot van gewapend beton (swc_tech / rc112)"
     }
   },
   "kiezer": {

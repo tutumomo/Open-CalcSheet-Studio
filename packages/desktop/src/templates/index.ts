@@ -12,6 +12,7 @@ import { twSteelBeam } from "./tw-steel-beam";
 import { twSteelColumn } from "./tw-steel-column";
 // 台灣版（found112 / swc_tech 基礎與土木水保規範）
 import { twRetainingWall } from "./tw-retaining-wall";
+import { twDrainageChannel } from "./tw-drainage-channel";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -26,4 +27,5 @@ export const templates: Record<string, string> = {
   "tw-steel-beam": twSteelBeam,
   "tw-steel-column": twSteelColumn,
   "tw-retaining-wall": twRetainingWall,
+  "tw-drainage-channel": twDrainageChannel,
 };

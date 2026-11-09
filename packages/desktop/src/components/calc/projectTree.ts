@@ -128,9 +128,10 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-civil",
     label: "Taiwanese normen — Civiel",
     defaultExpanded: true,
-    count: 1,
+    count: 2,
     children: [
       { kind: "item", id: "sheet-tw-retaining-wall", label: "Keermuur van gewapend beton (found112 / swc_tech)", templateId: "tw-retaining-wall", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-drainage-channel", label: "Afwateringsgoot van gewapend beton (swc_tech / rc112)", templateId: "tw-drainage-channel", status: "gereed", gepubliceerd: true },
     ],
   },
 ];
