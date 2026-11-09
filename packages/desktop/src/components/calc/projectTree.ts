@@ -116,9 +116,10 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-steel",
     label: "Taiwanese normen — Staal",
     defaultExpanded: true,
-    count: 1,
+    count: 2,
     children: [
       { kind: "item", id: "sheet-tw-steel-beam", label: "Stalen I-ligger (steel99 LRFD)", templateId: "tw-steel-beam", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-steel-column", label: "Stalen kolom met voetplaat (steel99 LRFD)", templateId: "tw-steel-column", status: "gereed", gepubliceerd: true },
     ],
   },
 ];

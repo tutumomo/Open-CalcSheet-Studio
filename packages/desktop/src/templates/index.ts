@@ -8,6 +8,7 @@ import { twRcBeam } from "./tw-rc-beam";
 import { twRcColumn } from "./tw-rc-column";
 // 台灣版（steel99 鋼結構設計規範）
 import { twSteelBeam } from "./tw-steel-beam";
+import { twSteelColumn } from "./tw-steel-column";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -19,4 +20,5 @@ export const templates: Record<string, string> = {
   "tw-rc-beam": twRcBeam,
   "tw-rc-column": twRcColumn,
   "tw-steel-beam": twSteelBeam,
+  "tw-steel-column": twSteelColumn,
 };
