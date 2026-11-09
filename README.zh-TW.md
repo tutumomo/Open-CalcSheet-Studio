@@ -178,6 +178,17 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 若發現問題，歡迎[回報 Issue](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/issues)。
 
+## 後續開發路線圖（Roadmap）
+
+本專案已完成台灣版基礎架構與 10 個核心土木結構設計模組（階段 0～7）。依據工程實務需求，後續演進規劃如下（詳見 [工作計畫.md](docs/tw/工作計畫.md)）：
+
+1. **載重計算模組化**：靜力耐震載重（`seis113`）、耐風載重（`wind103full`）、樓地板活載重表（構造編第 17 條）與建材靜載重彙整試算。
+2. **本土構件模組擴充**：RC 樓版（單雙向版 `rc112`）、多樁樁帽（三樁/四樁桁架模式）、重力式與半重力式擋土牆、明渠水面線標準步進法（變量流推算）。
+3. **鋼結構 ASD 容許應力法雙軌**：鋼梁與鋼柱提供 `[LRFD, ASD]` 雙軌切換，符合工程送審習慣。
+4. **參數化繪圖介面（Designer UI）**：為梁、柱、擋土牆、滯洪池等模組建立 React SVG 互動式截面與工程幾何配置圖。
+5. **工址地理參數自動聯動**：選取縣市鄉鎮一鍵帶入法定基本設計風速與震區反應譜係數。
+6. **開源回饋與獨立發佈**：通用核心改進（MKS 單位制、多語結尾行解析）回饋 OpenAEC 上游，並完善台灣版專屬安裝發佈自動化。
+
 ## 核心架構
 
 計算核心（`packages/core`）以 TypeScript 開發，基於 mathjs 建置，亦可[作為獨立套件使用](docs/rekenkern-als-pakket.md)。桌面應用程式為 Tauri 2 框架（Rust 外殼），前端採用 React 19、CodeMirror 6 與 KaTeX；筆記本環境由 JupyterLite 與 Pyodide 驅動。共用設計系統與圖示來自 [OpenAEC Blueprint](https://github.com/OpenAEC-Foundation/OpenAEC-Blueprint)。
