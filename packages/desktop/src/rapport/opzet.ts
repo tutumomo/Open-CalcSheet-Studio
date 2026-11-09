@@ -49,82 +49,82 @@ function tekst(id: string, titel: Meertalig, niveau: 3 | 4): Knoop {
 }
 
 export const OPZET: readonly Knoop[] = [
-  { id: "inleiding", titel: { en: "Introduction", nl: "Inleiding" }, niveau: 1, inhoud: "tekst", nieuwePagina: true },
+  { id: "inleiding", titel: { en: "Introduction", nl: "Inleiding", "zh-TW": "簡介" }, niveau: 1, inhoud: "tekst", nieuwePagina: true },
   {
     // Sinds versie 2 van de rapportopbouw op een nieuwe pagina; oudere rapporten houden hun opmaak (model.ts).
-    id: "projectgegevens", titel: { en: "Project details", nl: "Projectgegevens" }, niveau: 1, nieuwePagina: true,
+    id: "projectgegevens", titel: { en: "Project details", nl: "Projectgegevens", "zh-TW": "專案資訊" }, niveau: 1, nieuwePagina: true,
     kinderen: [
-      { id: "projectomschrijving", titel: { en: "Project description", nl: "Projectomschrijving" }, niveau: 2, inhoud: "tekst" },
-      { id: "rol", titel: { en: "Role in the project and scope of this report", nl: "Rol binnen het project en bereik rapport" }, niveau: 2, inhoud: "rol" },
+      { id: "projectomschrijving", titel: { en: "Project description", nl: "Projectomschrijving", "zh-TW": "工程概述" }, niveau: 2, inhoud: "tekst" },
+      { id: "rol", titel: { en: "Role in the project and scope of this report", nl: "Rol binnen het project en bereik rapport", "zh-TW": "於專案中之角色與本報告範圍" }, niveau: 2, inhoud: "rol" },
     ],
   },
   {
-    id: "constructie", titel: { en: "Structure", nl: "Constructie" }, niveau: 1, nieuwePagina: true,
+    id: "constructie", titel: { en: "Structure", nl: "Constructie", "zh-TW": "結構系統" }, niveau: 1, nieuwePagina: true,
     kinderen: [
       {
-        id: "toelichting", titel: { en: "Description of the structure", nl: "Toelichting constructie" }, niveau: 2,
+        id: "toelichting", titel: { en: "Description of the structure", nl: "Toelichting constructie", "zh-TW": "結構說明" }, niveau: 2,
         kinderen: [
           {
-            id: "bestaand", titel: { en: "Existing situation", nl: "Bestaande situatie" }, niveau: 3, optioneel: true,
+            id: "bestaand", titel: { en: "Existing situation", nl: "Bestaande situatie", "zh-TW": "既有現況" }, niveau: 3, optioneel: true,
             kinderen: [
-              tekst("bestaand-verticaal", { en: "Vertical load path", nl: "Verticale belastingafdracht" }, 4),
-              tekst("bestaand-stabiliteit", { en: "Stability", nl: "Stabiliteit" }, 4),
-              tekst("bestaand-fundatie", { en: "Foundation", nl: "Fundatie" }, 4),
-              tekst("bestaand-beoordeling", { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie" }, 4),
+              tekst("bestaand-verticaal", { en: "Vertical load path", nl: "Verticale belastingafdracht", "zh-TW": "垂直載重傳遞路徑" }, 4),
+              tekst("bestaand-stabiliteit", { en: "Stability", nl: "Stabiliteit", "zh-TW": "側向穩定性" }, 4),
+              tekst("bestaand-fundatie", { en: "Foundation", nl: "Fundatie", "zh-TW": "基礎現況" }, 4),
+              tekst("bestaand-beoordeling", { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie", "zh-TW": "既有結構評估" }, 4),
             ],
           },
           // Bij nieuwbouw is er niets om te wijzigen: dan beschrijft dit blok het constructieprincipe.
           // Sinds versie 3 van de rapportopbouw; oudere rapporten houden Wijziging (model.ts).
           {
-            ...tekst("wijziging", { en: "Alteration", nl: "Wijziging" }, 3),
-            titelNieuwbouw: { en: "Structural concept", nl: "Constructieprincipe" },
+            ...tekst("wijziging", { en: "Alteration", nl: "Wijziging", "zh-TW": "變更設計" }, 3),
+            titelNieuwbouw: { en: "Structural concept", nl: "Constructieprincipe", "zh-TW": "結構概念" },
           },
-          tekst("belendingen", { en: "Adjoining buildings", nl: "Belendingen" }, 3),
+          tekst("belendingen", { en: "Adjoining buildings", nl: "Belendingen", "zh-TW": "鄰房現況與防護" }, 3),
         ],
       },
       {
-        id: "uitvoering", titel: { en: "Notes for construction", nl: "Aandachtspunten bij uitvoering" }, niveau: 2, nieuwePagina: true,
+        id: "uitvoering", titel: { en: "Notes for construction", nl: "Aandachtspunten bij uitvoering", "zh-TW": "施工注意事項" }, niveau: 2, nieuwePagina: true,
         kinderen: [
-          tekst("uitvoering-bestaand", { en: "Existing situation", nl: "Bestaande situatie" }, 3),
-          tekst("uitvoering-verbouw", { en: "Alteration, renovation", nl: "Verbouw, renovatie" }, 3),
-          tekst("uitvoering-nieuwbouw", { en: "New construction", nl: "Nieuwbouw" }, 3),
+          tekst("uitvoering-bestaand", { en: "Existing situation", nl: "Bestaande situatie", "zh-TW": "既有現況施工注意" }, 3),
+          tekst("uitvoering-verbouw", { en: "Alteration, renovation", nl: "Verbouw, renovatie", "zh-TW": "增改建及修繕" }, 3),
+          tekst("uitvoering-nieuwbouw", { en: "New construction", nl: "Nieuwbouw", "zh-TW": "新建工程" }, 3),
         ],
       },
     ],
   },
   {
-    id: "uitgangspunten", titel: { en: "Design basis", nl: "Uitgangspunten" }, niveau: 1, nieuwePagina: true, inspringen: 1,
+    id: "uitgangspunten", titel: { en: "Design basis", nl: "Uitgangspunten", "zh-TW": "設計基準" }, niveau: 1, nieuwePagina: true, inspringen: 1,
     kinderen: [
-      { id: "bouwwerk", titel: { en: "Structural design basis", nl: "Constructieve uitgangspunten bouwwerk" }, niveau: 2, inhoud: "bouwwerk" },
-      { id: "brand", titel: { en: "Structural fire design", nl: "Bouwconstructies bij brand" }, niveau: 2, inhoud: "brand" },
-      { id: "materialen", titel: { en: "Materials", nl: "Toegepaste materialen" }, niveau: 2, inhoud: "materialen" },
-      { id: "conservering", titel: { en: "Corrosion protection of steelwork", nl: "Conservering staalconstructie" }, niveau: 2, inhoud: "conservering" },
-      { id: "factoren", titel: { en: "Partial factors and combinations of actions", nl: "Belastingfactoren en belastingcombinaties" }, niveau: 2, inhoud: "factoren" },
+      { id: "bouwwerk", titel: { en: "Structural design basis", nl: "Constructieve uitgangspunten bouwwerk", "zh-TW": "建築結構設計基準" }, niveau: 2, inhoud: "bouwwerk" },
+      { id: "brand", titel: { en: "Structural fire design", nl: "Bouwconstructies bij brand", "zh-TW": "結構防火設計" }, niveau: 2, inhoud: "brand" },
+      { id: "materialen", titel: { en: "Materials", nl: "Toegepaste materialen", "zh-TW": "採用材料規格" }, niveau: 2, inhoud: "materialen" },
+      { id: "conservering", titel: { en: "Corrosion protection of steelwork", nl: "Conservering staalconstructie", "zh-TW": "鋼結構防蝕塗裝" }, niveau: 2, inhoud: "conservering" },
+      { id: "factoren", titel: { en: "Partial factors and combinations of actions", nl: "Belastingfactoren en belastingcombinaties", "zh-TW": "載重係數與載重組合" }, niveau: 2, inhoud: "factoren" },
       // Valt weg als uitgangspunten.bestaand.opnemen false is (nieuwbouw).
-      { id: "bestaand-situatie", titel: { en: "Existing situation", nl: "Bestaande situatie" }, niveau: 2, inhoud: "bestaand", optioneel: true },
-      { id: "trillingen", titel: { en: "Vibrations", nl: "Trillingen" }, niveau: 2, inhoud: "tekst" },
+      { id: "bestaand-situatie", titel: { en: "Existing situation", nl: "Bestaande situatie", "zh-TW": "既有現況" }, niveau: 2, inhoud: "bestaand", optioneel: true },
+      { id: "trillingen", titel: { en: "Vibrations", nl: "Trillingen", "zh-TW": "振動分析" }, niveau: 2, inhoud: "tekst" },
       // De tekst `vervormingen` is de inleidende zin boven de tabel.
-      { id: "vervormingen", titel: { en: "Deformations and horizontal displacements", nl: "Vervormingen en horizontale verplaatsingen" }, niveau: 2, inhoud: "vervormingen" },
-      { id: "montage", titel: { en: "Erection and construction stages", nl: "Montage en bouwfase" }, niveau: 2, inhoud: "tekst" },
-      { id: "rekenprogrammatuur", titel: { en: "Calculation software", nl: "Toegepaste rekenprogrammatuur" }, niveau: 2, inhoud: "tekst" },
-      { id: "temperatuur", titel: { en: "Thermal actions", nl: "Temperatuursinvloeden" }, niveau: 2, inhoud: "tekst" },
-      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen" }, niveau: 2, inhoud: "tekst" },
+      { id: "vervormingen", titel: { en: "Deformations and horizontal displacements", nl: "Vervormingen en horizontale verplaatsingen", "zh-TW": "變形與水平位移限制" }, niveau: 2, inhoud: "vervormingen" },
+      { id: "montage", titel: { en: "Erection and construction stages", nl: "Montage en bouwfase", "zh-TW": "安裝與施工階段" }, niveau: 2, inhoud: "tekst" },
+      { id: "rekenprogrammatuur", titel: { en: "Calculation software", nl: "Toegepaste rekenprogrammatuur", "zh-TW": "採用計算軟體" }, niveau: 2, inhoud: "tekst" },
+      { id: "temperatuur", titel: { en: "Thermal actions", nl: "Temperatuursinvloeden", "zh-TW": "溫度效應" }, niveau: 2, inhoud: "tekst" },
+      { id: "aardbeving", titel: { en: "Seismic actions", nl: "Aardbevingen", "zh-TW": "地震力分析" }, niveau: 2, inhoud: "tekst" },
     ],
   },
   {
-    id: "belastingen", titel: { en: "Loads", nl: "Belastingen" }, niveau: 1, nieuwePagina: true, inspringen: 1,
+    id: "belastingen", titel: { en: "Loads", nl: "Belastingen", "zh-TW": "載重條件" }, niveau: 1, nieuwePagina: true, inspringen: 1,
     kinderen: [
       // De tekst `sneeuw` staat onder de berekening van s.
-      { id: "sneeuw", titel: { en: "Snow loads(Q)", nl: "Sneeuwbelastingen(Q)" }, niveau: 2, inhoud: "sneeuw" },
-      { id: "wind", titel: { en: "Wind loads(Q)", nl: "Windbelastingen(Q)" }, niveau: 2, inhoud: "wind" },
-      { id: "regenwater", titel: { en: "Rainwater ponding(Q)", nl: "Regenwateraccumulatie(Q)" }, niveau: 2, inhoud: "tekst" },
-      { id: "veranderlijk", titel: { en: "Other variable loads(Q)", nl: "Overige veranderlijke belastingen(Q)" }, niveau: 2, inhoud: "veranderlijk" },
+      { id: "sneeuw", titel: { en: "Snow loads(Q)", nl: "Sneeuwbelastingen(Q)", "zh-TW": "積雪載重(Q)" }, niveau: 2, inhoud: "sneeuw" },
+      { id: "wind", titel: { en: "Wind loads(Q)", nl: "Windbelastingen(Q)", "zh-TW": "風力載重(Q)" }, niveau: 2, inhoud: "wind" },
+      { id: "regenwater", titel: { en: "Rainwater ponding(Q)", nl: "Regenwateraccumulatie(Q)", "zh-TW": "屋頂積水載重(Q)" }, niveau: 2, inhoud: "tekst" },
+      { id: "veranderlijk", titel: { en: "Other variable loads(Q)", nl: "Overige veranderlijke belastingen(Q)", "zh-TW": "其他活載重(Q)" }, niveau: 2, inhoud: "veranderlijk" },
       // Valt weg zonder opbouwen.
-      { id: "blijvend", titel: { en: "Permanent loads(G)", nl: "Blijvende belastingen(G)" }, niveau: 2, inhoud: "blijvend", optioneel: true },
+      { id: "blijvend", titel: { en: "Permanent loads(G)", nl: "Blijvende belastingen(G)", "zh-TW": "靜載重(G)" }, niveau: 2, inhoud: "blijvend", optioneel: true },
     ],
   },
   // Valt weg zonder rekenbladen.
-  { id: "berekeningen", titel: { en: "Calculations", nl: "Berekeningen" }, niveau: 1, inhoud: "berekeningen", optioneel: true, nieuwePagina: true },
+  { id: "berekeningen", titel: { en: "Calculations", nl: "Berekeningen", "zh-TW": "結構計算" }, niveau: 1, inhoud: "berekeningen", optioneel: true, nieuwePagina: true },
 ];
 
 /** Inhoudssoorten met een tekst in rapport.teksten naast hun tabel. */
@@ -376,7 +376,7 @@ export function inhoudVoorPaneel(r: Rapport, bladen: Blad[]): PaneelRegel[] {
 export interface Bijlage { letter: string; titel: string }
 
 /** Titel van bijlage A. */
-export const BIJLAGE_A: Meertalig = { en: "Detailed calculations", nl: "Uitgebreide uitwerking berekeningen" };
+export const BIJLAGE_A: Meertalig = { en: "Detailed calculations", nl: "Uitgebreide uitwerking berekeningen", "zh-TW": "詳細計算過程" };
 
 /** 0 → A, 1 → B, … 25 → Z, 26 → AA. */
 function bijlageLetter(index: number): string {

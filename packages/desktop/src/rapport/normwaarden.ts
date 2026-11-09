@@ -120,12 +120,12 @@ export interface FactorRij {
 
 /** De combinaties van tabel A1.4 en 6.14 t/m 6.16; de formulenummers blijven in elke taal gelijk. */
 const COMBINATIE: Record<"buitengewoon" | "karakteristiek" | "frequent" | "quasi" | "nietGebruikt", Meertalig> = {
-  buitengewoon: { en: "Accidental", nl: "Buitengewoon" },
-  karakteristiek: { en: "Characteristic", nl: "Karakteristiek" },
-  frequent: { en: "Frequent", nl: "Frequent" },
+  buitengewoon: { en: "Accidental", nl: "Buitengewoon", "zh-TW": "意外載重" },
+  karakteristiek: { en: "Characteristic", nl: "Karakteristiek", "zh-TW": "特徵組合" },
+  frequent: { en: "Frequent", nl: "Frequent", "zh-TW": "頻繁組合" },
   // Afgekort: voluit past hij niet in de kolom naast de factoren.
-  quasi: { en: "Quasi-perm.", nl: "Quasi-Blijvend" },
-  nietGebruikt: { en: "not used", nl: "niet gebruikt" },
+  quasi: { en: "Quasi-perm.", nl: "Quasi-Blijvend", "zh-TW": "準永久" },
+  nietGebruikt: { en: "not used", nl: "niet gebruikt", "zh-TW": "未使用" },
 };
 
 /**
@@ -212,24 +212,24 @@ const PSI_H: [number, number, number] = [0, 0, 0];
 
 /** NEN-EN 1991-1-1 NB (NB.1–6.2, NB.4–6.10) en NEN-EN 1990 NB (NB.2–A1.1). */
 export const CATEGORIEEN: readonly Categorie[] = [
-  { id: "A-vloer", label: { en: "Category A: domestic and residential areas", nl: "Categorie A: woon- en verblijfsruimtes" }, soort: "vloer", qk: 1.75, Qk: 3.0, psi: PSI_A },
-  { id: "A-trap", label: { en: "Category A: stairs", nl: "Categorie A: trappen" }, soort: "vloer", qk: 2.0, Qk: 3.0, psi: PSI_A },
-  { id: "A-balkon", label: { en: "Category A: balconies", nl: "Categorie A: balkons" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_A },
-  { id: "A-gemeenschappelijk", label: { en: "Category A: communal areas", nl: "Categorie A: gemeenschappelijke ruimtes" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_A },
-  { id: "B", label: { en: "Category B: office areas", nl: "Categorie B: kantoorruimtes" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_B },
-  { id: "B-verkeer", label: { en: "Category B: enclosed circulation areas", nl: "Categorie B: omsloten verkeersruimte" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_B },
-  { id: "C-verkeer", label: { en: "Category C: enclosed circulation areas", nl: "Categorie C: omsloten verkeersruimte" }, soort: "vloer", qk: 5.0, Qk: 3.0, psi: PSI_C_VERKEER },
-  { id: "C1", label: { en: "Category C1: areas with tables", nl: "Categorie C1: ruimtes met tafels" }, soort: "vloer", qk: 4.0, Qk: 3.0, psi: PSI_C },
-  { id: "C2", label: { en: "Category C2: areas with fixed seats", nl: "Categorie C2: ruimtes met vaste zitplaatsen" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_C },
-  { id: "C3", label: { en: "Category C3: areas without obstacles", nl: "Categorie C3: ruimtes zonder obstakels" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "C4", label: { en: "Category C4: areas for physical activities", nl: "Categorie C4: ruimtes voor lichamelijke activiteiten" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "C5", label: { en: "Category C5: areas for large crowds", nl: "Categorie C5: ruimtes voor grote menigten" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
-  { id: "D-verkeer", label: { en: "Category D: enclosed circulation areas", nl: "Categorie D: omsloten verkeersruimte" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
-  { id: "D1", label: { en: "Category D1: general retail", nl: "Categorie D1: detailhandel" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
-  { id: "D2", label: { en: "Category D2: department stores", nl: "Categorie D2: warenhuizen" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "A-vloer", label: { en: "Category A: domestic and residential areas", nl: "Categorie A: woon- en verblijfsruimtes", "zh-TW": "類別 A：住宅及居住空間" }, soort: "vloer", qk: 1.75, Qk: 3.0, psi: PSI_A },
+  { id: "A-trap", label: { en: "Category A: stairs", nl: "Categorie A: trappen", "zh-TW": "類別 A：樓梯" }, soort: "vloer", qk: 2.0, Qk: 3.0, psi: PSI_A },
+  { id: "A-balkon", label: { en: "Category A: balconies", nl: "Categorie A: balkons", "zh-TW": "類別 A：陽台" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_A },
+  { id: "A-gemeenschappelijk", label: { en: "Category A: communal areas", nl: "Categorie A: gemeenschappelijke ruimtes", "zh-TW": "類別 A：公共空間" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_A },
+  { id: "B", label: { en: "Category B: office areas", nl: "Categorie B: kantoorruimtes", "zh-TW": "類別 B：辦公空間" }, soort: "vloer", qk: 2.5, Qk: 3.0, psi: PSI_B },
+  { id: "B-verkeer", label: { en: "Category B: enclosed circulation areas", nl: "Categorie B: omsloten verkeersruimte", "zh-TW": "類別 B：室內走道通道" }, soort: "vloer", qk: 3.0, Qk: 3.0, psi: PSI_B },
+  { id: "C-verkeer", label: { en: "Category C: enclosed circulation areas", nl: "Categorie C: omsloten verkeersruimte", "zh-TW": "類別 C：室內走道通道" }, soort: "vloer", qk: 5.0, Qk: 3.0, psi: PSI_C_VERKEER },
+  { id: "C1", label: { en: "Category C1: areas with tables", nl: "Categorie C1: ruimtes met tafels", "zh-TW": "類別 C1：設有桌椅空間（餐廳、咖啡廳等）" }, soort: "vloer", qk: 4.0, Qk: 3.0, psi: PSI_C },
+  { id: "C2", label: { en: "Category C2: areas with fixed seats", nl: "Categorie C2: ruimtes met vaste zitplaatsen", "zh-TW": "類別 C2：固定座位空間（劇院、禮堂等）" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_C },
+  { id: "C3", label: { en: "Category C3: areas without obstacles", nl: "Categorie C3: ruimtes zonder obstakels", "zh-TW": "類別 C3：無障礙人潮活動空間（博物館等）" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "C4", label: { en: "Category C4: areas for physical activities", nl: "Categorie C4: ruimtes voor lichamelijke activiteiten", "zh-TW": "類別 C4：運動及體育活動空間（健身房等）" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "C5", label: { en: "Category C5: areas for large crowds", nl: "Categorie C5: ruimtes voor grote menigten", "zh-TW": "類別 C5：大量群聚空間（體育場、音樂廳等）" }, soort: "vloer", qk: 5.0, Qk: 7.0, psi: PSI_C },
+  { id: "D-verkeer", label: { en: "Category D: enclosed circulation areas", nl: "Categorie D: omsloten verkeersruimte", "zh-TW": "類別 D：室內走道通道" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "D1", label: { en: "Category D1: general retail", nl: "Categorie D1: detailhandel", "zh-TW": "類別 D1：一般零售商店" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  { id: "D2", label: { en: "Category D2: department stores", nl: "Categorie D2: warenhuizen", "zh-TW": "類別 D2：大型百貨商場" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
   // Q_k 2,0 kN: de NB-waarde voor gordingen, spanten en liggers direct onder het
   // dakbeschot (NB.4–6.10), de elementen waarvoor deze tabel bedoeld is.
-  { id: "H-dak", label: { en: "Category H: roofs", nl: "Categorie H: daken" }, soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
+  { id: "H-dak", label: { en: "Category H: roofs", nl: "Categorie H: daken", "zh-TW": "類別 H：非通行屋頂" }, soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
 ];
 
 export function categorie(id: string): Categorie | undefined {
@@ -273,9 +273,9 @@ const VB0: Record<Klasse, number> = { 1: 29.5, 2: 27.0, 3: 24.5 };          // t
 const Z0: Record<Klasse, number> = { 1: 0.005, 2: 0.2, 3: 0.5 };            // tabel NB.3–4.1, m
 const ZMIN: Record<Klasse, number> = { 1: 1, 2: 4, 3: 7 };                  // tabel NB.3–4.1, m
 const TERREIN: Record<Klasse, Meertalig> = {
-  1: { en: "coastal", nl: "kust" },
-  2: { en: "rural", nl: "onbebouwd" },
-  3: { en: "built-up", nl: "bebouwd" },
+  1: { en: "coastal", nl: "kust", "zh-TW": "海岸" },
+  2: { en: "rural", nl: "onbebouwd", "zh-TW": "鄉村/開闊" },
+  3: { en: "built-up", nl: "bebouwd", "zh-TW": "市區/密集" },
 };
 
 /**

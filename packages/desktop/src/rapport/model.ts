@@ -318,72 +318,77 @@ export const RAPPORT_VERSIE = 5;
 
 /** Suggesties voor de rapporttitel; de eerste is de standaard. */
 export const TITELS: readonly Meertalig[] = [
-  { en: "Structural advice & calculations", nl: "Constructieadvies & berekeningen" },
-  { en: "Structural calculation", nl: "Constructieve berekening" },
-  { en: "Structural advice", nl: "Constructief advies" },
-  { en: "Structural calculations and drawings", nl: "Constructieve berekeningen en tekeningen" },
-  { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie" },
+  { en: "Structural advice & calculations", nl: "Constructieadvies & berekeningen", "zh-TW": "結構計算書及說明" },
+  { en: "Structural calculation", nl: "Constructieve berekening", "zh-TW": "結構計算書" },
+  { en: "Structural advice", nl: "Constructief advies", "zh-TW": "結構設計說明" },
+  { en: "Structural calculations and drawings", nl: "Constructieve berekeningen en tekeningen", "zh-TW": "結構計算書及設計圖" },
+  { en: "Assessment of the existing structure", nl: "Beoordeling bestaande constructie", "zh-TW": "既有結構評估" },
 ];
 
 /** Suggesties voor de rol in 2.2; de eerste is de standaard. */
 export const ROLLEN: readonly Meertalig[] = [
-  { en: "Lead structural engineer", nl: "Hoofdconstructeur" },
-  { en: "Structural engineer", nl: "Constructeur" },
-  { en: "Structural consultant", nl: "Constructief adviseur" },
-  { en: "Checking engineer", nl: "Controlerend constructeur" },
+  { en: "Lead structural engineer", nl: "Hoofdconstructeur", "zh-TW": "計畫主持結構技師" },
+  { en: "Structural engineer", nl: "Constructeur", "zh-TW": "結構設計工程師" },
+  { en: "Structural consultant", nl: "Constructief adviseur", "zh-TW": "結構顧問" },
+  { en: "Checking engineer", nl: "Controlerend constructeur", "zh-TW": "審核技師" },
 ];
 
 /** Suggesties voor de soort bouwwerk in 4.1; de eerste is de standaard. */
 export const SOORTEN_BOUWWERK: readonly Meertalig[] = [
-  { en: "Dwelling", nl: "Woning" },
-  { en: "Single-family house", nl: "Eengezinswoning" },
-  { en: "Apartment building", nl: "Appartementencomplex" },
-  { en: "Villa", nl: "Villa" },
-  { en: "Office", nl: "Kantoor" },
-  { en: "Industrial hall", nl: "Bedrijfshal" },
-  { en: "Outbuilding", nl: "Bijgebouw" },
-  { en: "Shed", nl: "Schuur" },
+  { en: "Dwelling", nl: "Woning", "zh-TW": "住宅" },
+  { en: "Single-family house", nl: "Eengezinswoning", "zh-TW": "透天住宅" },
+  { en: "Apartment building", nl: "Appartementencomplex", "zh-TW": "集合住宅大樓" },
+  { en: "Villa", nl: "Villa", "zh-TW": "別墅" },
+  { en: "Office", nl: "Kantoor", "zh-TW": "辦公大樓" },
+  { en: "Industrial hall", nl: "Bedrijfshal", "zh-TW": "廠房 / 工業廠房" },
+  { en: "Outbuilding", nl: "Bijgebouw", "zh-TW": "附屬建物" },
+  { en: "Shed", nl: "Schuur", "zh-TW": "倉儲設施" },
 ];
 
-const NORMEN: Meertalig = { en: "NEN-EN 1990 to 1997", nl: "NEN-EN 1990 t/m 1997" };
-const EERSTE_UITGAVE: Meertalig = { en: "First issue", nl: "Eerste uitgave" };
-const NIET_VAN_TOEPASSING: Meertalig = { en: "n/a", nl: "n.v.t." };
+const NORMEN: Meertalig = { en: "NEN-EN 1990 to 1997", nl: "NEN-EN 1990 t/m 1997", "zh-TW": "台灣建築結構設計規範 (rc112/steel99/seis113/wind103)" };
+const EERSTE_UITGAVE: Meertalig = { en: "First issue", nl: "Eerste uitgave", "zh-TW": "初版發行" };
+const NIET_VAN_TOEPASSING: Meertalig = { en: "n/a", nl: "n.v.t.", "zh-TW": "不適用" };
 
 /** 4.3: de standaardregels; de sterkteklassen zijn codes en blijven in elke taal gelijk. */
 const MATERIALEN: readonly { type: Meertalig; soort: string; opmerking: Meertalig | string }[] = [
   {
-    type: { en: "In-situ concrete", nl: "TPG Beton" },
+    type: { en: "In-situ concrete", nl: "TPG Beton", "zh-TW": "場鑄混凝土" },
     soort: "C20/25",
-    opmerking: { en: "(for exposure classes see concrete calculations and drawing)", nl: "(voor milieuklassen zie berekening betononderdelen en tekening)" },
+    opmerking: {
+      en: "(for exposure classes see concrete calculations and drawing)",
+      nl: "(voor milieuklassen zie berekening betononderdelen en tekening)",
+      "zh-TW": "（暴露環境條件見混凝土計算及設計圖）",
+    },
   },
-  { type: { en: "Timber", nl: "Hout" }, soort: "C24", opmerking: "" },
-  { type: { en: "Wood-based panels", nl: "Plaatmateriaal" }, soort: "CE2+", opmerking: "" },
-  { type: { en: "Reinforcing steel", nl: "Wapeningsstaal" }, soort: "B500", opmerking: "" },
-  { type: { en: "Steel", nl: "Staal" }, soort: "S235", opmerking: "JR" },
-  { type: { en: "Grout under steel", nl: "Ondervoeging staal" }, soort: "K50", opmerking: "" },
+  { type: { en: "Timber", nl: "Hout", "zh-TW": "木材" }, soort: "C24", opmerking: "" },
+  { type: { en: "Wood-based panels", nl: "Plaatmateriaal", "zh-TW": "板材" }, soort: "CE2+", opmerking: "" },
+  { type: { en: "Reinforcing steel", nl: "Wapeningsstaal", "zh-TW": "鋼筋" }, soort: "B500", opmerking: "" },
+  { type: { en: "Steel", nl: "Staal", "zh-TW": "結構用鋼材" }, soort: "S235", opmerking: "JR" },
+  { type: { en: "Grout under steel", nl: "Ondervoeging staal", "zh-TW": "鋼骨座漿無收縮水泥砂漿" }, soort: "K50", opmerking: "" },
 ];
-const MATERIALEN_NOOT: Meertalig = { en: "(unless stated otherwise)", nl: "(tenzij anders aangegeven)" };
+const MATERIALEN_NOOT: Meertalig = { en: "(unless stated otherwise)", nl: "(tenzij anders aangegeven)", "zh-TW": "（除另有註明外）" };
 const BEVESTIGING: readonly { type: Meertalig; kwaliteit: string }[] = [
-  { type: { en: "Bolts", nl: "Bouten" }, kwaliteit: "8.8" },
-  { type: { en: "Coach screws", nl: "Houtdraaibout" }, kwaliteit: "4.6" },
-  { type: { en: "Chemical anchors", nl: "Chemische Ankers" }, kwaliteit: "5.8" },
+  { type: { en: "Bolts", nl: "Bouten", "zh-TW": "螺栓" }, kwaliteit: "8.8" },
+  { type: { en: "Coach screws", nl: "Houtdraaibout", "zh-TW": "木螺釘" }, kwaliteit: "4.6" },
+  { type: { en: "Chemical anchors", nl: "Chemische Ankers", "zh-TW": "化學錨栓" }, kwaliteit: "5.8" },
 ];
 const CONSERVERING: readonly { onderdeel: Meertalig; systeem: Meertalig }[] = [
-  { onderdeel: { en: "External structures", nl: "Buitenconstructies" }, systeem: { en: "Duplex or hot-dip galvanised", nl: "Duplex of thermisch verzinkt" } },
-  { onderdeel: { en: "In cavity walls", nl: "Constructies in spouw" }, systeem: { en: "Hot-dip galvanised", nl: "Thermisch verzinkt" } },
-  { onderdeel: { en: "Internal steelwork", nl: "Staal binnen" }, systeem: { en: "Paint system", nl: "Verf systeem" } },
+  { onderdeel: { en: "External structures", nl: "Buitenconstructies", "zh-TW": "室外部位構件" }, systeem: { en: "Duplex or hot-dip galvanised", nl: "Duplex of thermisch verzinkt", "zh-TW": "雙重防蝕或熱浸鍍鋅" } },
+  { onderdeel: { en: "In cavity walls", nl: "Constructies in spouw", "zh-TW": "雙層壁內構件" }, systeem: { en: "Hot-dip galvanised", nl: "Thermisch verzinkt", "zh-TW": "熱浸鍍鋅" } },
+  { onderdeel: { en: "Internal steelwork", nl: "Staal binnen", "zh-TW": "室內部構件" }, systeem: { en: "Paint system", nl: "Verf systeem", "zh-TW": "防銹底漆及面漆系統" } },
 ];
 const CONSERVERING_SLOT: Meertalig = {
   en: "Corrosion protection applies to newly installed structural elements.",
   nl: "Conservering wordt toegepast op nieuw te plaatsen constructieonderdelen.",
+  "zh-TW": "防蝕處理適用於新建或新安裝之結構構件。",
 };
 /** 4.8: de eisen zijn getallen en symbolen; die krijgen de notatie van de taal (standaardVervormingen). */
 const VERVORMINGEN: readonly { onderdeel: Meertalig; ueind: string; ubij: string; uhor: string }[] = [
-  { onderdeel: { en: "Vertical deflection of roofs", nl: "Verticale doorbuiging van daken" }, ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
-  { onderdeel: { en: "Vertical deflection of floors", nl: "Verticale doorbuiging van vloeren" }, ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
-  { onderdeel: { en: "Floors with masonry walls", nl: "Vloer met steenachtige wanden" }, ueind: "", ubij: "0,002l_rep", uhor: "" },
-  { onderdeel: { en: "Horizontal displacement, building", nl: "Horizontale verplaatsing bouwwerk" }, ueind: "", ubij: "", uhor: "H/300" },
-  { onderdeel: { en: "Horizontal displacement, partition", nl: "Horizontale verplaatsing afscheiding" }, ueind: "", ubij: "", uhor: "< 20 mm" },
+  { onderdeel: { en: "Vertical deflection of roofs", nl: "Verticale doorbuiging van daken", "zh-TW": "屋頂垂直撓度限制" }, ueind: "0,004l_rep", ubij: "0,004l_rep", uhor: "" },
+  { onderdeel: { en: "Vertical deflection of floors", nl: "Verticale doorbuiging van vloeren", "zh-TW": "樓地板垂直撓度限制" }, ueind: "0,004l_rep", ubij: "0,003l_rep", uhor: "" },
+  { onderdeel: { en: "Floors with masonry walls", nl: "Vloer met steenachtige wanden", "zh-TW": "支承磚石隔間牆之樓地板" }, ueind: "", ubij: "0,002l_rep", uhor: "" },
+  { onderdeel: { en: "Horizontal displacement, building", nl: "Horizontale verplaatsing bouwwerk", "zh-TW": "建築物側向位移限制" }, ueind: "", ubij: "", uhor: "H/300" },
+  { onderdeel: { en: "Horizontal displacement, partition", nl: "Horizontale verplaatsing afscheiding", "zh-TW": "隔間牆側向位移限制" }, ueind: "", ubij: "", uhor: "< 20 mm" },
 ];
 
 const meertalig = (x: Meertalig | string): x is Meertalig => typeof x !== "string";
