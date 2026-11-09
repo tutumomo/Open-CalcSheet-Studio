@@ -155,7 +155,17 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
   - `swc_tech`：水土保持技術規範
 
   木構造規範尚未收錄。
-- **取數只能用已驗證庫** `tools/regs/verified/*.json`，入庫規則見 `docs/規範公式圖表入庫SOP.md`。
+- WorkBench 只收錄 34 部規範，**不一定涵蓋本專案所需**。來源分級（A 已驗證庫／B 官方線上來源／C 不得取數）
+  定在 AGENTS.md §3；各規範的現行版次、主管機關、母規範（ACI、AISC、AASHTO 等）對應、
+  缺口清單與 B 級數值紀錄集中在 `docs/tw/規範來源.md`。
+- B 級（上網補齊）的做法：
+  1. 只用官方網站（全國法規資料庫 law.moj.gov.tw、國土管理署、交通部、水利署、農村發展及水土保持署、
+     工程會、標準檢驗局）；先確認是否有比 WorkBench 更新的版次。
+  2. 數值逐列記進 `docs/tw/規範來源.md`（條號／表號、修正日期、網址、擷取日期），不抄條文。
+  3. 寫進程式時在 `bron` 欄位註明「B 級：〈規範〉〈條號〉（〈修正日期〉）」，
+     並在對應的 `check-tw-*.mjs` 以 repo 內的資料核對。
+  4. 若 WorkBench 之後補上同一條的已驗證資料，改用 A 級，並核對兩者一致。
+- **A 級取數**用已驗證庫 `tools/regs/verified/*.json`，入庫規則見 `docs/規範公式圖表入庫SOP.md`。
   - MCP `regs` 伺服器提供 `regs_ask`、`regs_search`、`regs_clause`、`regs_formula`、`regs_table`、`regs_list`。
     `regs_clause` 開頭標「【可信度：低】」的內容不得取數；回報時附上來源（條文＋頁碼）與 warnings。
   - 也可在 WorkBench 目錄執行 CLI：
