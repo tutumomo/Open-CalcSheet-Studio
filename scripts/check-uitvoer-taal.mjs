@@ -270,5 +270,21 @@ console.log("\n5. De namen in het IFCX-document");
   meld(leesIfcx(nlBlok.document).elementen.some((e) => /^Balk 1$/.test(e.naam)), "in het Nederlands Balk 1");
 }
 
+// ── 6. Meertalige slotregel in leesResultaat ──────────────────────────────
+console.log("\n6. Meertalige slotregel in leesResultaat");
+{
+  const testSlot = (tekst) => leesResultaat([{ type: "text", text: tekst }], "test");
+  const rNlPass = testSlot("Maatgevende UC = 0.85 → voldoet");
+  meld(rNlPass.uc === 0.85 && rNlPass.voldoet === true, "Nederlands: Maatgevende UC = 0.85 → voldoet");
+  const rEnPass = testSlot("Governing UC = 0.85 → OK");
+  meld(rEnPass.uc === 0.85 && rEnPass.voldoet === true, "Engels: Governing UC = 0.85 → OK");
+  const rZhPass = testSlot("控制 UC = 0.85 → 合格");
+  meld(rZhPass.uc === 0.85 && rZhPass.voldoet === true, "Traditioneel Chinees: 控制 UC = 0.85 → 合格");
+  const rZhFail = testSlot("控制 UC = 1.15 → 不合格");
+  meld(rZhFail.uc === 1.15 && rZhFail.voldoet === false, "Traditioneel Chinees: 不合格 wordt niet als voldoet gezien");
+  const rZhGeen = testSlot("總結：未檢核");
+  meld(rZhGeen.nietGetoetst === true && rZhGeen.voldoet === null, "Traditioneel Chinees: 總結：未檢核");
+}
+
 console.log(fouten === 0 ? "\nUitvoer in de taal van de app: alles in orde." : `\n${fouten} controle(s) gezakt.`);
 process.exit(fouten === 0 ? 0 : 1);

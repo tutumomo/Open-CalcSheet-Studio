@@ -1,0 +1,144 @@
+name: Release (Taiwan Edition / 台灣版發佈)
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: '發佈標籤（例如 v2026.45.2-tw.1）'
+        required: true
+        type: string
+      draft:
+        description: '先建立為草稿（Draft Release，建議開啟）'
+        required: false
+        default: true
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: 驗證台灣版預設配置與全數檢查（91 checks）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: 檢核預設語言為繁體中文（STANDAARD_TAAL = zh-TW）
+        run: |
+          node -e '
+            const fs = require("node:fs");
+            const cfg = fs.readFileSync("packages/desktop/src/i18n/config.ts", "utf8");
+            if (!cfg.includes("export const STANDAARD_TAAL = \"zh-TW\"")) {
+              console.error("STANDAARD_TAAL is not zh-TW!");
+              process.exit(1);
+            }
+            console.log("OK: STANDAARD_TAAL = zh-TW");
+          '
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Run all checks
+        run: npm run check
+
+      - name: Run Taiwan infrastructure validation
+        run: node scripts/valideer-tw-basis.mjs
+
+  build-bundle:
+    name: 打包安裝檔 (${{ matrix.platform }})
+    needs: verify
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: 'windows-latest'
+            artifact: 'calcsheet-tw-windows'
+            bundle_glob: 'packages/desktop/src-tauri/target/release/bundle/nsis/*-setup.exe'
+          - platform: 'macos-latest'
+            artifact: 'calcsheet-tw-macos'
+            bundle_glob: 'packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg'
+          - platform: 'ubuntu-22.04'
+            artifact: 'calcsheet-tw-linux'
+            bundle_glob: 'packages/desktop/src-tauri/target/release/bundle/deb/*.deb'
+
+    runs-on: ${{ matrix.platform }}
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js 24
+        uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install system dependencies (Ubuntu)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
+
+      - name: Install workspace dependencies
+        run: npm ci
+
+      - name: Build core package
+        run: npm run build --workspace=@ifc-calc/core
+
+      - name: Build Tauri installer bundle
+        working-directory: packages/desktop
+        run: npm run tauri build
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: ${{ matrix.artifact }}
+          path: ${{ matrix.bundle_glob }}
+          if-no-files-found: error
+
+  publish-release:
+    name: 建立台灣版 GitHub Release 與 SHA256 校驗碼
+    needs: build-bundle
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Download all installer artifacts
+        uses: actions/download-artifact@v7
+        with:
+          path: dist-assets
+          merge-multiple: true
+
+      - name: Generate SHA256SUMS.txt
+        working-directory: dist-assets
+        run: |
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ inputs.tag }}
+          IS_DRAFT: ${{ inputs.draft }}
+        run: |
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z._-]+)?$ ]]; then
+            echo "Invalid tag format: $TAG"
+            exit 1
+          fi
+          DRAFT_FLAG=""
+          if [ "$IS_DRAFT" = "true" ]; then
+            DRAFT_FLAG="--draft"
+          fi
+          gh release create "$TAG" dist-assets/* \
+            --title "Open CalcSheet Studio 台灣版 $TAG" \
+            --notes "Open CalcSheet Studio 台灣工程規範版（預設 zh-TW 繁體中文介面、台灣 MKS 單位制與 15 組本土結構／大地／水保／載重計算模組）。請參閱 SHA256SUMS.txt 核對安裝檔雜湊值。" \
+            $DRAFT_FLAG
