@@ -99,7 +99,8 @@
       "tw-retaining-wall": "鋼筋混凝土懸臂式擋土牆（found112 / swc_tech）",
       "tw-drainage-channel": "鋼筋混凝土排水溝與明渠水理（swc_tech / rc112）",
       "tw-detention-basin": "滯洪池設計與檢核（swc_tech）",
-      "tw-box-culvert": "鋼筋混凝土箱涵設計與檢核（hwbridge / rc112）"
+      "tw-box-culvert": "鋼筋混凝土箱涵設計與檢核（hwbridge / rc112）",
+      "tw-sediment-basin": "沉砂池設計與檢核（swc_tech 第 35、92、93 條）"
     }
   },
   "kiezer": {

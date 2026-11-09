@@ -99,7 +99,8 @@
       "tw-retaining-wall": "RC cantilever retaining wall (found112 / swc_tech)",
       "tw-drainage-channel": "RC drainage channel and open-channel hydraulics (swc_tech / rc112)",
       "tw-detention-basin": "Detention basin design check (swc_tech)",
-      "tw-box-culvert": "RC box culvert design check (hwbridge / rc112)"
+      "tw-box-culvert": "RC box culvert design check (hwbridge / rc112)",
+      "tw-sediment-basin": "Sediment basin design check (swc_tech 35 / 92 / 93)"
     }
   },
   "kiezer": {

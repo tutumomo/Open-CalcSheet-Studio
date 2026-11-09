@@ -15,6 +15,7 @@ import { twRetainingWall } from "./tw-retaining-wall";
 import { twDrainageChannel } from "./tw-drainage-channel";
 import { twDetentionBasin } from "./tw-detention-basin";
 import { twBoxCulvert } from "./tw-box-culvert";
+import { twSedimentBasin } from "./tw-sediment-basin";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -32,4 +33,5 @@ export const templates: Record<string, string> = {
   "tw-drainage-channel": twDrainageChannel,
   "tw-detention-basin": twDetentionBasin,
   "tw-box-culvert": twBoxCulvert,
+  "tw-sediment-basin": twSedimentBasin,
 };

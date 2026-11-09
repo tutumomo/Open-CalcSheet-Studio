@@ -101,6 +101,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
     - **排水溝與明渠水理**（`tw-drainage-channel`）：合理化公式設計流量、曼寧公式滿流容量、牛頓迭代正常水深、流速與出水高限制、側壁靜止土壓抗彎剪力配筋。
     - **滯洪池**（`tw-detention-basin`）：合理化三階段洪峰流量、三角形歷線蓄洪容積、出流洪峰上限、孔口出流、緊急溢洪堰容量與堤頂出水高檢核。
     - **鋼筋混凝土箱涵**（`tw-box-culvert`，`hwbridge` / `rc112`）：HS20-44 輪重透過填土分佈與涵洞衝擊係數、表 3.3 第 VIII 組載重組合、平面閉合剛架（`raamwerk`）內力、頂底版與側牆抗彎剪力配筋、內角加腋、滿流排水容量、地盤承載力與抗浮。
+    - **沉砂池**（`tw-sediment-basin`，`swc_tech` 114）：通用土壤流失公式（USLE）土壤流失量、開挖整地與未開挖分區泥砂生產量、臨時性 1.5 倍設計容量、池體容積、深度範圍（1.5～3.5 m，垂直共構豁免）、矩形溢流堰通水能力與池頂出水高檢核。
 - **歐洲規範模組**（Eurocode，非台灣規範）：
   - **木托梁樓板**（EN 1995-1-1）、**木/鋼梁**（EN 1993-1-1）與**雙樁樁帽**（EN 1992-1-1），搭配荷蘭國家附錄。透過[線上模組庫](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules)可直接新增模組。參閱[木托梁檢核原理](docs/balklaag-toetsing.md)與[雙樁樁帽檢核原理](docs/tweepaalspoer-toetsing.md)。
   - 雙樁樁帽在圖紙旁提供 3D 結構模型，即時展示樁帽、基樁、柱子與各鋼筋籠。**新增模組**畫面為每個選項提供圖示預覽。
@@ -134,7 +135,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 測試與可靠性
 
-- **80 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **81 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。
