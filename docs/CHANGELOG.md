@@ -7,7 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
-- 台灣版（工址風速聯動）：新增 `TwWindLoadDesigner`，依縣市／行政區從內政部建築研究所開放資料（355 區）帶入建議 V10；`tw-wind-load` 的 V_10 改為 `?{}` 輸入，計算結果不變。震區 SDS／SD1 仍需手動輸入。
+- 台灣版（本土工址地理參數聯動）：建立 `normen/twSiteWind.ts`（內政部建築研究所開放資料 355 個行政區建議 V10）與 `normen/twSiteSeismic.ts`（行政院公報耐震規範表 2-1 全國 20 縣市 327 區＋表 2-6(b) 雙北一般震區 29 區之 SsD/S1D、表 2-3-1/2-3-2 共 13 組活動斷層近斷層修正曲線、表 2-4(a)/(b) 地盤放大係數 Fa/Fv）；新增 `TwWindLoadDesigner` 與 `TwSeismicLoadDesigner` 支援一鍵計算並帶入 `V_10`、`S_DS`、`S_D1` 至計算表。
 - 台灣版（參數化繪圖介面）：新增 `TwRcBeamDesigner`（梁斷面、保護層、主筋排數、箍筋間距）、`TwRetainingWallDesigner`（立壁、牆趾、牆踵、Rankine 滑動楔形、超載）、`TwDetentionBasinDesigner`（池體斷面、設計水位、孔口、溢洪口）；`tw-retaining-wall`、`tw-detention-basin` 輸入改為 `?{}` 形式以便視圖寫回，計算結果不變。
 - 台灣版（鋼結構設計法雙軌）：`tw-steel-beam` 與 `tw-steel-column` 新增 LRFD／ASD 選單（steel99 第（一）篇）。ASD 梁限結實斷面且 Lb ≤ Lc，ASD 柱限純軸壓且不檢核柱腳；其餘拒算。檢查腳本新增 ASD 掃描、負向與拒算案例。
 - 台灣版（常用結構與大地模組擴充）：新增 `tw-rc-slab`（rc112 單向板）、`tw-pile-cap`（rc112／found112 三／四樁樁帽壓拉桿模型）、`tw-gravity-retaining-wall`（found112／swc_tech／rc112 重力式擋土牆）、`tw-backwater-profile`（swc_tech 明渠水面線標準步進法），結尾行皆為「控制 UC」，無效輸入拒算；新增四支 `check-tw-*.mjs`（獨立求解器掃描、負向與拒算案例）。
