@@ -83,6 +83,12 @@
     "talen": {
       "en": "English",
       "nl": "Dutch"
+    },
+    "opzetSoort": "Report structure",
+    "opzetSoortHint": "Choose between Taiwan codes and Eurocode chapter structure.",
+    "opzetSoortOpties": {
+      "tw": "Taiwan structural calculation structure",
+      "eurocode": "Eurocode structure"
     }
   },
   "revisies": {

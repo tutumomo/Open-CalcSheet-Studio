@@ -13,12 +13,16 @@
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
 import type { Rapport } from "./model.ts";
+// ── 台灣版 ────────────────────────────────────────────────────────────────
+import { BIJLAGE_TW_A, bouwTwOpzet } from "./tw/opzet.ts";
 
 export type Inhoud =
   | "tekst" | "rol"
   | "bouwwerk" | "brand" | "materialen" | "conservering" | "factoren" | "bestaand" | "vervormingen"
   | "sneeuw" | "wind" | "veranderlijk" | "blijvend"
-  | "berekeningen";
+  | "berekeningen"
+  // ── 台灣版 ──
+  | "tw-normen";
 
 export interface Knoop {
   /** Ook de sleutel in rapport.teksten als inhoud "tekst" is (of een tekst bij een tabel heeft). */
@@ -281,6 +285,11 @@ function bouwKnoop(k: Knoop, nummer: string, r: Rapport, bladen: Blad[]): Rappor
  * weg; de bijlageletters (bijlagen()) houden dan hun plek: B blijft B.
  */
 export function bouwOpzet(r: Rapport, bladen: Blad[]): Rapportknoop[] {
+  // ── 台灣版 ────────────────────────────────────────────────────────────────
+  if (r.opzetSoort === "tw") {
+    return bouwTwOpzet(r, bladen);
+  }
+  // ── 上游原版 ──────────────────────────────────────────────────────────────
   return OPZET
     .filter((k) => !valtWeg(k, r, bladen))
     .map((k, i) => bouwKnoop(k, String(i + 1), r, bladen));
@@ -399,7 +408,8 @@ function bijlageLetter(index: number): string {
  */
 export function bijlagen(r: Rapport, bladen: Blad[]): Bijlage[] {
   const uit: Bijlage[] = [];
-  if (bladen.some((b) => !staatInHoofdstuk(r, b))) uit.push({ letter: "A", titel: inTaal(BIJLAGE_A, r.taal) });
+  const titelA = r.opzetSoort === "tw" ? inTaal(BIJLAGE_TW_A, r.taal) : inTaal(BIJLAGE_A, r.taal);
+  if (bladen.some((b) => !staatInHoofdstuk(r, b))) uit.push({ letter: "A", titel: titelA });
   r.bijlagen
     .map((t) => t.trim())
     .filter((t) => t !== "")

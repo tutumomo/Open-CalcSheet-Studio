@@ -83,6 +83,12 @@
     "talen": {
       "en": "英文",
       "nl": "荷蘭文"
+    },
+    "opzetSoort": "報告架構",
+    "opzetSoortHint": "選取結構計算書的章節架構標準。",
+    "opzetSoortOpties": {
+      "tw": "台灣結構計算書架構",
+      "eurocode": "歐洲規範（Eurocode）架構"
     }
   },
   "revisies": {

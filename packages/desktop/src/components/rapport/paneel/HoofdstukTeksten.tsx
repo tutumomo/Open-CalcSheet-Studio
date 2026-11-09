@@ -2,7 +2,7 @@ import { useTranslation } from "react-i18next";
 import { inTaal, type Meertalig } from "../../../rapport/meertalig";
 import { ROLLEN } from "../../../rapport/model";
 import type { Knoop } from "../../../rapport/opzet";
-import { vindKnoop } from "./hulp";
+import { vindKnoop, HOOFDSTUKKEN_TW } from "./hulp";
 import TekstVeld, { Invulvelden } from "./TekstVeld";
 import { Kop, Sectie, Veld, Vink, useRapport } from "./velden";
 
@@ -19,9 +19,11 @@ const HOOFDSTUKKEN = ["inleiding", "projectgegevens", "constructie"];
  */
 export default function HoofdstukTeksten() {
   const { t } = useTranslation("rapport");
+  const rapport = useRapport();
+  const hoofdstukken = rapport.opzetSoort === "tw" ? HOOFDSTUKKEN_TW : HOOFDSTUKKEN;
   return (
     <Sectie id="teksten" titel={t("secties.teksten")} intro={t("teksten.intro")}>
-      {HOOFDSTUKKEN.map((id) => {
+      {hoofdstukken.map((id) => {
         const knoop = vindKnoop(id);
         return knoop ? <KnoopInvoer key={id} knoop={knoop} /> : null;
       })}

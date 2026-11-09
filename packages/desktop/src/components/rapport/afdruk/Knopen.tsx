@@ -11,6 +11,14 @@ import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
 import { Bestaand, Bouwwerk, Brand, Conservering, Factoren, Materialen, Vervormingen } from "./Uitgangspunten";
 import { Groep, Sneeuw, Veranderlijk, Wind } from "./Belastingen";
+// ── 台灣版 ────────────────────────────────────────────────────────────────
+import { bepaalTwEindoordeel, verzamelTwNormen } from "../../../rapport/tw/opzet";
+import {
+  TW_DAK_VERANDERLIJK_T26,
+  TW_RC_BELASTINGCOMBINATIES,
+  TW_VERANDERLIJK_BIJZONDER,
+  TW_VLOER_VERANDERLIJK_STATUS,
+} from "../../../rapport/tw/normwaarden";
 
 /*
  * De hoofdstukken van het rapport: koppen met nummering, en per soort inhoud
@@ -91,13 +99,140 @@ function RolInhoud({ w }: { w: RapportWeergave }) {
 function BerekeningenInhoud({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
   const paragrafen = knoop.kinderen.filter((k) => k.blad);
   if (paragrafen.length === 0) return null;
+
+  // 台灣版檢核章節總結卡
+  const isTw = w.rapport.opzetSoort === "tw";
+  const eindoordeel = isTw
+    ? bepaalTwEindoordeel(
+        w.bladen.map((b) => ({
+          voldoet: b.resultaat.voldoet,
+          nietGetoetst: b.resultaat.nietGetoetst,
+          uc: b.resultaat.uc,
+        })),
+      )
+    : null;
+
   return (
     <>
+      {isTw && eindoordeel && (
+        <>
+          <Rij klasse="rpa-koprij">
+            <Cel k={1} n={3} o>{w.taal === "zh-TW" ? "結構檢核總結判定" : "Overall verification result"}</Cel>
+            <Cel k={4} n={3}>{w.taal === "zh-TW" ? "全案最大控制檢核比" : "Governing UC"}</Cel>
+            <Cel k={7} n={3}>{w.taal === "zh-TW" ? "檢核項目統計" : "Check items"}</Cel>
+          </Rij>
+          <Rij klasse="rpa-tt">
+            <Cel k={1} n={3} klasse="rpa-vet" o>{eindoordeel.oordeel}</Cel>
+            <Cel k={4} n={3} klasse="rpa-vet">{eindoordeel.ucMax !== null ? `UC ${w.f(eindoordeel.ucMax, 2)}` : "—"}</Cel>
+            <Cel k={7} n={3}>
+              {w.taal === "zh-TW"
+                ? `共 ${eindoordeel.aantal} 項（合格：${eindoordeel.geslaagd}，不合格：${eindoordeel.afgekeurd}，未檢核：${eindoordeel.ongecontroleerd}）`
+                : `Total ${eindoordeel.aantal} (Passed: ${eindoordeel.geslaagd}, Failed: ${eindoordeel.afgekeurd}, Unchecked: ${eindoordeel.ongecontroleerd})`}
+            </Cel>
+          </Rij>
+          <Leeg />
+        </>
+      )}
       <h3 className="rpa-io-kop">{w.t("afdruk.inhoud.inhoudsopgave")}</h3>
       {paragrafen.map((k) => (
         <Rij key={k.id} klasse="rpa-tt">
           <Cel k={1} n={3} o>{k.nummer} {k.titel}</Cel>
           <PaginaCel anker={k.id} />
+        </Rij>
+      ))}
+      <Leeg />
+    </>
+  );
+}
+
+/** 台灣版：設計規範自動彙整表格 */
+function TwNormenInhoud({ w }: { w: RapportWeergave }) {
+  const normen = verzamelTwNormen(w.bladen.map((b) => ({ naam: b.ex.naam, norm: b.resultaat.norm })));
+  const tekst = w.rapport.teksten["tw-normen"];
+  return (
+    <>
+      {tekst && <Tekst tekst={tekst} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />}
+      <Leeg />
+      <Rij klasse="rpa-koprij">
+        <Cel k={1} n={3} o>{w.taal === "zh-TW" ? "規範代碼與名稱" : "Code ID & Title"}</Cel>
+        <Cel k={4} n={3}>{w.taal === "zh-TW" ? "發布版次與機關" : "Edition"}</Cel>
+        <Cel k={7} n={3}>{w.taal === "zh-TW" ? "本案引用計算表" : "Applied Sheets"}</Cel>
+      </Rij>
+      {normen.length > 0 ? (
+        normen.map((n) => (
+          <Rij key={n.normId} klasse="rpa-tt">
+            <Cel k={1} n={3} o>{n.naam}</Cel>
+            <Cel k={4} n={3}>{n.editie}</Cel>
+            <Cel k={7} n={3}>{n.bladen.join("、")}</Cel>
+          </Rij>
+        ))
+      ) : (
+        <Rij klasse="rpa-tt">
+          <Cel k={1} n={9}>{w.rapport.normen || (w.taal === "zh-TW" ? "依中華民國現行建築技術規則及結構設計規範" : "Taiwan Building Codes")}</Cel>
+        </Rij>
+      )}
+      <Leeg />
+    </>
+  );
+}
+
+/** 台灣版：載重組合（rc112 表 5.3.1） */
+function TwCombinatiesInhoud({ w }: { w: RapportWeergave }) {
+  const taal = w.taal;
+  return (
+    <>
+      <Rij klasse="rpa-koprij">
+        <Cel k={1} n={2} o>{taal === "zh-TW" ? "組合編號" : "ID"}</Cel>
+        <Cel k={3} n={4}>{taal === "zh-TW" ? "設計強度計算式" : "Design formula"}</Cel>
+        <Cel k={7} n={3}>{taal === "zh-TW" ? "控制狀況與出處" : "Condition & Source"}</Cel>
+      </Rij>
+      {TW_RC_BELASTINGCOMBINATIES.map((c) => (
+        <Rij key={c.id} klasse="rpa-tt">
+          <Cel k={1} n={2} o>{c.naam}（{c.id}）</Cel>
+          <Cel k={3} n={4} klasse="rpa-vet">{c.formule}</Cel>
+          <Cel k={7} n={3}>{c.omschrijving}</Cel>
+        </Rij>
+      ))}
+      <Leeg />
+      <p className="rpa-tekst">{taal === "zh-TW" ? "出處：A 級 建築物混凝土結構設計規範 (rc112) 第 5.3 節表 5.3.1。" : "Source: A-level rc112 Table 5.3.1."}</p>
+    </>
+  );
+}
+
+/** 台灣版：活載重（構造編第 17 條待補說明、第 26 條屋頂活載重表） */
+function TwVeranderlijkInhoud({ w }: { w: RapportWeergave }) {
+  const taal = w.taal;
+  return (
+    <>
+      <Rij klasse="rpa-koprij">
+        <Cel k={1} n={4} o>{taal === "zh-TW" ? "樓地板活載重場所" : "Floor use"}</Cel>
+        <Cel k={5} n={2}>{taal === "zh-TW" ? "最低均布載重" : "Uniform load"}</Cel>
+        <Cel k={7} n={3}>{taal === "zh-TW" ? "依據與出處" : "Basis & Source"}</Cel>
+      </Rij>
+      <Rij klasse="rpa-tt">
+        <Cel k={1} n={9} klasse="rpa-cursief">{TW_VLOER_VERANDERLIJK_STATUS}</Cel>
+      </Rij>
+      {TW_VERANDERLIJK_BIJZONDER.map((item, i) => (
+        <Rij key={i} klasse="rpa-tt">
+          <Cel k={1} n={4} o>{item.gebruik}</Cel>
+          <Cel k={5} n={2}>{`${item.qlast_kgf} kgf/m²`}</Cel>
+          <Cel k={7} n={3}>{item.bron}</Cel>
+        </Rij>
+      ))}
+      <Leeg />
+      <h4 className="rpa-kop">{taal === "zh-TW" ? "屋頂最低活載重（建築技術規則建築構造編第 26 條表）" : "Minimum roof live load (Art. 26)"}</h4>
+      <Rij klasse="rpa-koprij">
+        <Cel k={1} n={3} o>{taal === "zh-TW" ? "屋頂種類與坡度" : "Roof type & slope"}</Cel>
+        <Cel k={4} n={2}>≤ 20 m²</Cel>
+        <Cel k={6} n={2}>20–60 m²</Cel>
+        <Cel k={8} n={2}>{"> 60 m²"}</Cel>
+      </Rij>
+      {TW_DAK_VERANDERLIJK_T26.map((r, i) => (
+        <Rij key={i} klasse="rpa-tt">
+          <Cel k={1} n={3} o>{r.dakvorm} ({r.helling})</Cel>
+          <Cel k={4} n={2}>{`${r.klein_20} kgf/m²`}</Cel>
+          <Cel k={6} n={2}>{`${r.midden_60} kgf/m²`}</Cel>
+          <Cel k={8} n={2}>{`${r.groot_60} kgf/m²`}</Cel>
         </Rij>
       ))}
       <Leeg />
@@ -145,6 +280,7 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
 function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
   switch (knoop.inhoud) {
     case "tekst":
+      if (knoop.id === "tw-normen") return <TwNormenInhoud w={w} />;
       return <Tekst tekst={w.rapport.teksten[knoop.id]} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />;
     case "rol":
       return <RolInhoud w={w} />;
@@ -157,7 +293,7 @@ function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
     case "conservering":
       return <Conservering w={w} />;
     case "factoren":
-      return <Factoren w={w} />;
+      return w.rapport.opzetSoort === "tw" ? <TwCombinatiesInhoud w={w} /> : <Factoren w={w} />;
     case "bestaand":
       return <Bestaand w={w} />;
     case "vervormingen":
@@ -167,9 +303,11 @@ function InhoudVan({ knoop, w }: { knoop: Rapportknoop; w: RapportWeergave }) {
     case "wind":
       return <Wind w={w} />;
     case "veranderlijk":
-      return <Veranderlijk w={w} />;
+      return w.rapport.opzetSoort === "tw" ? <TwVeranderlijkInhoud w={w} /> : <Veranderlijk w={w} />;
     case "berekeningen":
       return <BerekeningenInhoud knoop={knoop} w={w} />;
+    case "tw-normen":
+      return <TwNormenInhoud w={w} />;
     default:
       // "blijvend" krijgt in voegToe een eigen behandeling; zonder inhoud is er niets.
       return null;

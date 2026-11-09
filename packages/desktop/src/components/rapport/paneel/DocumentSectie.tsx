@@ -44,6 +44,16 @@ export default function DocumentSectie() {
       intro={t("document.intro")}
     >
       <Keuze label={t("document.taal")} pad="taal" waarde={rapport.taal} opties={taalOpties} hint={t("document.taalHint")} />
+      <Keuze
+        label={t("document.opzetSoort")}
+        pad="opzetSoort"
+        waarde={rapport.opzetSoort ?? "eurocode"}
+        opties={[
+          { waarde: "tw", label: t("document.opzetSoortOpties.tw") },
+          { waarde: "eurocode", label: t("document.opzetSoortOpties.eurocode") },
+        ]}
+        hint={t("document.opzetSoortHint")}
+      />
       <Veld
         label={t("document.titel")}
         pad="titel"

@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（結構計算書報告架構）：新增符合台灣工程實務之七章結構計算書報告架構（設計概要、設計規範、材料強度、載重、分析、檢核、附錄）；報告模型新增 `opzetSoort: "eurocode" | "tw"`（RAPPORT_VERSIE 提升至 6），缺此欄位或版本小於 6 之既有專案自動相容預設 "eurocode" 並維持逐字元完全相同輸出，新建立之繁中報告預設 "tw"；整合已驗證規範載重組合（rc112 表 5.3.1）、屋頂活載重（構造編第 26 條）、耐震用途係數（第 43-1 條）與材料體積重量（第 11 條）、地板面與牆壁重量（第 14、15 條）；樓地板活載重表因官方附表尚未入庫而維持空表並明確標示「待補：建築技術規則建築構造編第 17 條附表」，停車場、公共走廊樓梯、屋頂露臺與活動隔牆依第 17、21 條官方條文列入；檢核章節實作 worst-case 決策原則與自動彙整去重引用規範清單
 - 台灣版（rc112 混凝土結構）：新增「鋼筋混凝土矩形梁設計與檢核」計算模組（`tw-rc-beam`），依內政部《建築物混凝土結構設計規範》（112年8月10日版）提供單筋與雙筋梁之完整計算與檢核；涵蓋 β1 應力塊係數、閉合解中性軸求解、εt 鋼筋拉應變與延展性判定、強度折減係數 ϕ、標稱與設計抗彎強度 ϕMn、最小受拉鋼筋量 As,min（9.6.1.2）、混凝土剪力強度 Vc（詳細法 a）、鋼筋剪力強度 Vs、斷面剪力上限 Vs,max（22.5.1.2）、最小剪力筋量 (Av/s)min（9.6.3.3）、雙分支箍筋最大間距 s,max（表 9.7.6.2.2）、裂縫控制受拉鋼筋最大間距 s,crack（24.3.2）、免算撓度梁深下限 h,min（表 9.3.1.1）以及 Bischoff 有效慣性矩 Ie（24.2.3.5）與長期總撓度檢核；模組目錄新增「台灣規範 — 混凝土」分類、專屬縮圖及相容報告標頭之「控制 UC」判定
 - 台灣版（zh-TW）：新增繁體中文介面在地化，涵蓋全部 12 個命名空間共 3,023 個詞條，依台灣工程慣用術語翻譯；預設介面語言改為繁體中文（zh-TW）；介面上的日期與數字格式採台灣慣例（西元年、小數點為點、千分位為逗號）；設定對話方塊「重設為預設值」支援預設繁體中文
 - De antwoorden van Open FEM Studio op `@toets`-blokken gaan mee in het projectbestand, met de datum en de versie waarmee getoetst is. Een geopend blad toont zijn uitkomst zonder opnieuw te toetsen, ook op een computer zonder FEM Studio. Vóór het afdrukken worden blokken zonder antwoord eerst getoetst. Heeft CalcSheet een andere versie van FEM Studio dan waarmee getoetst is, dan meldt het blad dat en biedt het "Opnieuw toetsen" aan; dat gebeurt nooit vanzelf

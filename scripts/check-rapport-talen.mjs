@@ -100,7 +100,7 @@ kop("1. Het model");
 {
   gelijk("inTaal: de gevraagde taal", inTaal({ en: "a", nl: "b" }, "nl"), "b");
   gelijk("inTaal: ontbreekt die, dan Engels", inTaal({ en: "a", nl: "b" }, "de"), "a");
-  gelijk("de versie van de rapportopbouw is omhoog", RAPPORT_VERSIE, 5);
+  gelijk("de versie van de rapportopbouw is omhoog", RAPPORT_VERSIE, 6);
 
   const en = nieuw("en");
   const nl = nieuw("nl");

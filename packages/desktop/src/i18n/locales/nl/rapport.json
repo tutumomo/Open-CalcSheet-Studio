@@ -83,6 +83,12 @@
     "talen": {
       "en": "Engels",
       "nl": "Nederlands"
+    },
+    "opzetSoort": "Rapportopbouw",
+    "opzetSoortHint": "Kies voor Taiwanese normen of de Eurocode-opbouw.",
+    "opzetSoortOpties": {
+      "tw": "Taiwanese constructieve berekening",
+      "eurocode": "Eurocode-opbouw"
     }
   },
   "revisies": {

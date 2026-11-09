@@ -9,6 +9,11 @@ import type { BureauProfiel } from "../../../rapport/model.ts";
 import { fmt } from "../../../rapport/normwaarden.ts";
 import { OPZET, type Knoop } from "../../../rapport/opzet.ts";
 import type { Pad } from "../../../rapport/pad.ts";
+// ── 台灣版 ────────────────────────────────────────────────────────────────
+import { OPZET_TW } from "../../../rapport/tw/opzet.ts";
+
+/** 台灣版報告面板章節文字清單 */
+export const HOOFDSTUKKEN_TW = ["tw-ontwerpoverzicht", "tw-normen", "tw-seismisch", "tw-analysemethode", "tw-bijlagen"] as const;
 
 /** Zoekt een knoop in de vaste opzet op id, diepte eerst. */
 export function vindKnoop(id: string, lijst: readonly Knoop[] = OPZET): Knoop | undefined {
@@ -16,6 +21,13 @@ export function vindKnoop(id: string, lijst: readonly Knoop[] = OPZET): Knoop | 
     if (k.id === id) return k;
     const dieper = k.kinderen ? vindKnoop(id, k.kinderen) : undefined;
     if (dieper) return dieper;
+  }
+  if (lijst === OPZET) {
+    for (const k of OPZET_TW) {
+      if (k.id === id) return k;
+      const dieper = k.kinderen ? vindKnoop(id, k.kinderen) : undefined;
+      if (dieper) return dieper;
+    }
   }
   return undefined;
 }

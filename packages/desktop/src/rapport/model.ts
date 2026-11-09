@@ -250,6 +250,11 @@ export interface Rapport {
   /** De taal van het rapport op papier: koppen, vaste woorden, teksten en rekenbladen. */
   taal: string;
   /**
+   * 台灣版：報告架構種類（"eurocode" 歐規 或 "tw" 台灣結構計算書）。
+   * 缺此欄位或版本小於 6 時視為 "eurocode"（舊報告維持原架構一字不變）；新開繁中報告預設 "tw"。
+   */
+  opzetSoort: "eurocode" | "tw";
+  /**
    * Per tekst-id de taal waarin de gebruiker die tekst typte. Staat die taal anders dan
    * `taal`, dan meldt het paneel dat de tekst nog vertaald moet worden (taalwissel.ts).
    * Een meegeleverde variant heeft hier geen regel: die wisselt mee.
@@ -308,8 +313,10 @@ export interface Rapport {
  *   5  het rapport heeft een taal en de meegeleverde teksten zijn meertalig. Een
  *      ouder rapport krijgt taal = "nl", want zijn inhoud is Nederlands, en wat
  *      erin ontbreekt wordt Nederlands aangevuld.
+ *   6  台灣版報告架構（opzetSoort: "eurocode" | "tw"）。缺此欄位或版本小於 6 時視為
+ *      "eurocode"，確保舊報告維持歐洲規範章節架構逐字元完全相同；新開繁中報告預設 "tw"。
  */
-export const RAPPORT_VERSIE = 5;
+export const RAPPORT_VERSIE = 6;
 
 // ── Wat de app meelevert ────────────────────────────────────────────────────
 // Elke waarde die in een nieuw rapport staat of als suggestie wordt aangeboden, in elke
@@ -497,6 +504,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
   return {
     versie: RAPPORT_VERSIE,
     taal,
+    opzetSoort: taal === "zh-TW" ? "tw" : "eurocode",
     tekstTaal: {},
     titel: inTaal(TITELS[0], taal),
     kenmerk: "",
@@ -668,11 +676,17 @@ export function normaliseerRapport(
   const opmaak = object(o.opmaak) ?? {};
   const keuze = (x: unknown, standaard: boolean) => (typeof x === "boolean" ? x : versie < 3 ? false : standaard);
   const situatie = normaliseerSituatie(o.situatie);
+  // 台灣版：報告架構種類。版本小於 6 或未指定時預設為 "eurocode"，確保舊報告輸出維持原樣。
+  const opzetSoort: "eurocode" | "tw" =
+    o && (o.opzetSoort === "tw" || o.opzetSoort === "eurocode")
+      ? o.opzetSoort
+      : (versie < 6 ? "eurocode" : s.opzetSoort);
 
   return {
     // Een nieuwer rapport houdt zijn hogere versie: zijn eigen bijwerkingen zijn al gedaan.
     versie: Math.max(versie, RAPPORT_VERSIE),
     taal,
+    opzetSoort,
     tekstTaal: Object.fromEntries(Object.entries(tekstRecord(o.tekstTaal)).filter(([, t]) => leesTaal(t) !== undefined)),
     titel: tekst(o.titel, s.titel),
     kenmerk: tekst(o.kenmerk, s.kenmerk),

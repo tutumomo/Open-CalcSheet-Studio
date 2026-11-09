@@ -98,7 +98,7 @@ kop("model.ts — standaardrapport");
 {
   const teksten = { inleiding: "Inleidende tekst.", rol: "{adviseur} heeft opdracht." };
   const r = standaardNl(VANDAAG, teksten);
-  gelijk("versie van de rapportopbouw", [r.versie, RAPPORT_VERSIE], [5, 5]);
+  gelijk("versie van de rapportopbouw", [r.versie, RAPPORT_VERSIE], [6, 6]);
   gelijk("geen eigen keuzes voor een nieuwe pagina", r.nieuwePagina, {});
   gelijk("opmaak: Constructieprincipe, subkoppen en de bladen in de inhoudsopgave", r.opmaak,
     { constructieprincipe: true, subkoppen: true, bladenInInhoud: true });
@@ -226,7 +226,7 @@ kop("model.ts — een opgeslagen rapport van vóór versie 2 verandert niet onge
   const geopend = normaliseerRapport(JSON.parse(JSON.stringify(oud)), VANDAAG, tekstenNl());
 
   gelijk("alleen versie, taal en de keuzes voor Projectgegevens en de opmaak komen erbij", geopend, {
-    ...oud, versie: 5, taal: "nl", tekstTaal: {}, nieuwePagina: { projectgegevens: false }, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false },
+    ...oud, versie: 6, taal: "nl", tekstTaal: {}, nieuwePagina: { projectgegevens: false }, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false },
   });
   gelijk("tekst met de vorige naam blijft staan", geopend.teksten.rekenprogrammatuur, OUDE_TEKST);
   gelijk("Projectgegevens loopt door na de inleiding, zoals het was",
@@ -244,9 +244,9 @@ kop("model.ts — een opgeslagen rapport van vóór versie 2 verandert niet onge
     bouwOpzet(normaliseerRapport({ ...oud, versie: 2 }, VANDAAG, {}), [])[1].nieuwePagina, true);
   gelijk("ongeldige versie telt als 1", ["2", 2.5, 0, -1, null].map((v) => metKeuze({}, v)),
     Array(5).fill({ projectgegevens: false }));
-  const later = normaliseerRapport({ ...oud, versie: 6 }, VANDAAG, {});
+  const later = normaliseerRapport({ ...oud, versie: 7 }, VANDAAG, {});
   gelijk("rapport van een nieuwere versie houdt zijn versie en zijn keuzes",
-    [later.versie, later.nieuwePagina, later.opmaak], [6, {}, { constructieprincipe: true, subkoppen: true, bladenInInhoud: true }]);
+    [later.versie, later.nieuwePagina, later.opmaak], [7, {}, { constructieprincipe: true, subkoppen: true, bladenInInhoud: true }]);
 }
 
 kop("model.ts — een opgeslagen rapport van vóór versie 3: kop Wijziging en geen subkoppen");
@@ -269,7 +269,7 @@ kop("model.ts — een opgeslagen rapport van vóór versie 3: kop Wijziging en g
 
   for (const [naam, oud] of [["versie 2", v2], ["versie 1", v1]]) {
     const geopend = normaliseerRapport(JSON.parse(JSON.stringify(oud)), VANDAAG, tekstenNl());
-    gelijk(`${naam}: opmaak uit als eigen keuze`, [geopend.versie, geopend.opmaak], [5, { constructieprincipe: false, subkoppen: false, bladenInInhoud: false }]);
+    gelijk(`${naam}: opmaak uit als eigen keuze`, [geopend.versie, geopend.opmaak], [6, { constructieprincipe: false, subkoppen: false, bladenInInhoud: false }]);
     toets(`${naam}: is nieuwbouw`, !beschrijftBestaand(geopend));
     gelijk(`${naam}: kop blijft Wijziging`, [titelVan(wijziging, geopend), blok(geopend)], ["Wijziging", ["wijziging: Wijziging"]]);
     gelijk(`${naam}: tekst zonder subkoppen`, koppen(geopend), []);
@@ -278,7 +278,7 @@ kop("model.ts — een opgeslagen rapport van vóór versie 3: kop Wijziging en g
       normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, tekstenNl()), geopend);
   }
   gelijk("versie 2: verder komt er niets bij", normaliseerRapport(JSON.parse(JSON.stringify(v2)), VANDAAG, tekstenNl()),
-    { ...v2, versie: 5, taal: "nl", tekstTaal: {}, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false } });
+    { ...v2, versie: 6, taal: "nl", tekstTaal: {}, opmaak: { constructieprincipe: false, subkoppen: false, bladenInInhoud: false } });
 
   // De gebruiker zet de keuzes zelf om; daarna blijven ze zo, ook na opnieuw openen.
   const geopend = normaliseerRapport(JSON.parse(JSON.stringify(v2)), VANDAAG, tekstenNl());
@@ -311,7 +311,7 @@ kop("model.ts en opzet.ts — een opgeslagen rapport van vóór versie 4: de inh
   v3.inHoofdstuk = { "ex-a": true };
   const geopend = normaliseerRapport(JSON.parse(JSON.stringify(v3)), VANDAAG, tekstenNl());
   gelijk("versie 3: de bladen blijven uit de inhoudsopgave", geopend.opmaak, { constructieprincipe: true, subkoppen: true, bladenInInhoud: false });
-  gelijk("versie 3: verder komt er niets bij", geopend, { ...v3, versie: 5, taal: "nl", tekstTaal: {}, opmaak: geopend.opmaak });
+  gelijk("versie 3: verder komt er niets bij", geopend, { ...v3, versie: 6, taal: "nl", tekstTaal: {}, opmaak: geopend.opmaak });
   gelijk("versie 3: opnieuw openen verandert niets meer",
     normaliseerRapport(JSON.parse(JSON.stringify(geopend)), VANDAAG, tekstenNl()), geopend);
   const knopen = bouwOpzet(geopend, bladen);

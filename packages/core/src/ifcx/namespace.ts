@@ -125,6 +125,7 @@ export const UITKOMST_STATUS = ['voldoet', 'voldoet_niet', 'geen_oordeel', 'niet
 const RAPPORT = object({
   versie: opt(GEHEEL),
   taal: opt(TEKST),
+  opzetSoort: opt(keuze('eurocode', 'tw')),
   tekstTaal: opt(VRIJ),
   ...velden(['titel', 'kenmerk', 'normen', 'opdrachtgeverAdres', 'verantwoordelijk', 'uitvoerend']),
   fase: opt(keuze('', 'SO', 'VO', 'DO', 'TO', 'UO')),
