@@ -35,6 +35,7 @@ const beelden: Record<string, ReactNode> = {
   "tw-isolated-footing": <>{r(25, 55, 110, 25)}{r(65, 15, 30, 40)}{kracht(80, -5)}{kracht(50, 95, 180)}{kracht(80, 95, 180)}{kracht(110, 95, 180)}</>,
   "tw-steel-beam": <>{r(24, 30, 112, 8)}{r(74, 38, 12, 34)}{r(24, 72, 112, 8)}{kracht(80, 2)}</>,
   "tw-steel-column": <>{r(62, 10, 8, 70)}{r(70, 40, 20, 10)}{r(90, 10, 8, 70)}{r(45, 80, 70, 8)}{kracht(80, -10)}{kracht(80, 88, 180)}</>,
+  "tw-retaining-wall": <>{r(25, 70, 110, 15)}{r(55, 15, 20, 55)}{kracht(120, 35, 90)}{kracht(105, 55, 90)}{kracht(50, 95, 180)}{kracht(75, 95, 180)}{kracht(105, 95, 180)}</>,
 };
 
 export default function ModuleAfbeelding({ templateId, beeldUrl }: { templateId: string; beeldUrl?: string | null }) {

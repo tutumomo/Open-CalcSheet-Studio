@@ -123,6 +123,16 @@ export const moduleCatalogus: TreeNode[] = [
       { kind: "item", id: "sheet-tw-steel-column", label: "Stalen kolom met voetplaat (steel99 LRFD)", templateId: "tw-steel-column", status: "gereed", gepubliceerd: true },
     ],
   },
+  {
+    kind: "category",
+    id: "cat-tw-civil",
+    label: "Taiwanese normen — Civiel",
+    defaultExpanded: true,
+    count: 1,
+    children: [
+      { kind: "item", id: "sheet-tw-retaining-wall", label: "Keermuur van gewapend beton (found112 / swc_tech)", templateId: "tw-retaining-wall", status: "gereed", gepubliceerd: true },
+    ],
+  },
 ];
 
 export const bibliotheek: TreeNode[] = [

@@ -82,6 +82,7 @@
       "cat-beton": "Beton",
       "cat-tw-rc": "Taiwanese normen — Beton",
       "cat-tw-steel": "Taiwanese normen — Staal",
+      "cat-tw-civil": "Taiwanese normen — Civiel",
       "rekentaal-samples": "Voorbeelden"
     },
     "modules": {
@@ -94,7 +95,8 @@
       "tw-rc-column": "Gewapend betonnen kolom (rc112)",
       "tw-isolated-footing": "Gewapend betonnen fundering op staal (found112 / rc112)",
       "tw-steel-beam": "Stalen I-ligger (steel99 LRFD)",
-      "tw-steel-column": "Stalen kolom met voetplaat (steel99 LRFD)"
+      "tw-steel-column": "Stalen kolom met voetplaat (steel99 LRFD)",
+      "tw-retaining-wall": "Keermuur van gewapend beton (found112 / swc_tech)"
     }
   },
   "kiezer": {

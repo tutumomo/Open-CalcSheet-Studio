@@ -10,6 +10,8 @@ import { twIsolatedFooting } from "./tw-isolated-footing";
 // 台灣版（steel99 鋼結構設計規範）
 import { twSteelBeam } from "./tw-steel-beam";
 import { twSteelColumn } from "./tw-steel-column";
+// 台灣版（found112 / swc_tech 基礎與土木水保規範）
+import { twRetainingWall } from "./tw-retaining-wall";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -23,4 +25,5 @@ export const templates: Record<string, string> = {
   "tw-isolated-footing": twIsolatedFooting,
   "tw-steel-beam": twSteelBeam,
   "tw-steel-column": twSteelColumn,
+  "tw-retaining-wall": twRetainingWall,
 };

@@ -82,6 +82,7 @@
       "cat-beton": "Concrete",
       "cat-tw-rc": "Taiwan codes — Concrete",
       "cat-tw-steel": "Taiwan codes — Steel",
+      "cat-tw-civil": "Taiwan codes — Civil & Geotech",
       "rekentaal-samples": "Examples"
     },
     "modules": {
@@ -94,7 +95,8 @@
       "tw-rc-column": "RC rectangular column (rc112)",
       "tw-isolated-footing": "RC isolated spread footing (found112 / rc112)",
       "tw-steel-beam": "Steel I-beam (steel99 LRFD)",
-      "tw-steel-column": "Steel H-column & base plate (steel99 LRFD)"
+      "tw-steel-column": "Steel H-column & base plate (steel99 LRFD)",
+      "tw-retaining-wall": "RC cantilever retaining wall (found112 / swc_tech)"
     }
   },
   "kiezer": {
