@@ -127,6 +127,11 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
   如果要讓歐規模組在 zh-TW 介面下顯示中文，得另外擴充翻譯機制，而且仍須標示 Eurocode。
 - **檢查覆蓋範圍**：`check-renders.mjs` 只掃 `templates/` 這一層的 `.ts`，
   所以台灣表一律放 `templates/tw-<模組>.ts`。
+- **檢查腳本與 README 數量聯動**：`check-readme.mjs` 會統計 `scripts/` 下符合 `/^check-.*\.mjs$/` 的檔案總數，
+  必須與 `README.md` 及 `README.nl.md` 的「N check scripts」一致。輔助性質或單獨執行的工具若不希望牽動此計數，
+  應命名為其他前綴（例如 `valideer-*.mjs`）。
+- **測試腳本按鈕文字匹配**：`scripts/rapport-pdf.mjs` 與 `scripts/proef-*.mjs` 透過 DOM 文字選取按鈕（`/^(Rapport|Report|報告)$/`），
+  新增或修改功能區按鈕時需注意多語言相容。
 
 ### 單位
 
