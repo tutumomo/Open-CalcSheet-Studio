@@ -105,11 +105,13 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-rc",
     label: "Taiwanese normen — Beton",
     defaultExpanded: true,
-    count: 3,
+    count: 5,
     children: [
       { kind: "item", id: "sheet-tw-rc-beam", label: "Gewapend betonnen ligger (rc112)", templateId: "tw-rc-beam", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-rc-column", label: "Gewapend betonnen kolom (rc112)", templateId: "tw-rc-column", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-isolated-footing", label: "Gewapend betonnen fundering op staal (found112 / rc112)", templateId: "tw-isolated-footing", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-rc-slab", label: "Gewapend betonnen eenrichtingsplaat (rc112)", templateId: "tw-rc-slab", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-pile-cap", label: "Paalfundering met drie of vier palen, staafwerkmodel (rc112)", templateId: "tw-pile-cap", status: "gereed", gepubliceerd: true },
     ],
   },
   {
@@ -128,13 +130,15 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-civil",
     label: "Taiwanese normen — Civiel",
     defaultExpanded: true,
-    count: 5,
+    count: 7,
     children: [
       { kind: "item", id: "sheet-tw-retaining-wall", label: "Keermuur van gewapend beton (found112 / swc_tech)", templateId: "tw-retaining-wall", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-drainage-channel", label: "Afwateringsgoot van gewapend beton (swc_tech / rc112)", templateId: "tw-drainage-channel", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-detention-basin", label: "Bergingsbassin (swc_tech)", templateId: "tw-detention-basin", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-box-culvert", label: "Gewapend betonnen duiker (hwbridge / rc112)", templateId: "tw-box-culvert", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-sediment-basin", label: "Bezinkbak (swc_tech 35 / 92 / 93)", templateId: "tw-sediment-basin", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-gravity-retaining-wall", label: "Zwaartekrachtkeermuur van ongewapend beton of metselwerk (found112 / swc_tech)", templateId: "tw-gravity-retaining-wall", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-backwater-profile", label: "Wateroppervlakteprofiel in open kanaal, standaardstapmethode (swc_tech)", templateId: "tw-backwater-profile", status: "gereed", gepubliceerd: true },
     ],
   },
   {

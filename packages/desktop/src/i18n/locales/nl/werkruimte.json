@@ -104,7 +104,11 @@
       "tw-sediment-basin": "Bezinkbak (swc_tech 35 / 92 / 93)",
       "tw-seismic-load": "Aardbevingsbelasting, statische methode (seis113)",
       "tw-wind-load": "Windbelasting op gebouwen (wind103full)",
-      "tw-dead-live-loads": "Permanente en veranderlijke vloerbelasting (btr_struct)"
+      "tw-dead-live-loads": "Permanente en veranderlijke vloerbelasting (btr_struct)",
+      "tw-rc-slab": "Gewapend betonnen eenrichtingsplaat (rc112)",
+      "tw-pile-cap": "Paalfundering met drie of vier palen, staafwerkmodel (rc112)",
+      "tw-gravity-retaining-wall": "Zwaartekrachtkeermuur van ongewapend beton of metselwerk (found112 / swc_tech)",
+      "tw-backwater-profile": "Wateroppervlakteprofiel in open kanaal, standaardstapmethode (swc_tech)"
     }
   },
   "kiezer": {
