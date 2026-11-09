@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（鋼結構設計法雙軌）：`tw-steel-beam` 與 `tw-steel-column` 新增 LRFD／ASD 選單（steel99 第（一）篇）。ASD 梁限結實斷面且 Lb ≤ Lc，ASD 柱限純軸壓且不檢核柱腳；其餘拒算。檢查腳本新增 ASD 掃描、負向與拒算案例。
 - 台灣版（常用結構與大地模組擴充）：新增 `tw-rc-slab`（rc112 單向板）、`tw-pile-cap`（rc112／found112 三／四樁樁帽壓拉桿模型）、`tw-gravity-retaining-wall`（found112／swc_tech／rc112 重力式擋土牆）、`tw-backwater-profile`（swc_tech 明渠水面線標準步進法），結尾行皆為「控制 UC」，無效輸入拒算；新增四支 `check-tw-*.mjs`（獨立求解器掃描、負向與拒算案例）。
 - 台灣版（載重計算模組化）：新增三個載重產生器模組，歸入「台灣規範 — 載重」分類，結尾行皆為「總結：未檢核」（不做合格判定）。`tw-seismic-load`（`seis113` 靜力分析法：T、S_aD、R_a、F_u、V、F_t、各層 F_x；僅一般工址規則建築，臺北盆地拒算）；`tw-wind-load`（`wind103full` 式 2.6、2.7 風速壓與各層風力、基底剪力與傾倒力矩；α、z_g、G·Cp 由使用者輸入）；`tw-dead-live-loads`（`btr_struct` 第 25、26 條與第 17 條最小值，單位面積 D、L、折減與 rc112 因數化載重；第 17 條各用途活載重表未入庫，由使用者輸入）。各附獨立算式檢查腳本（`check-tw-seismic-load.mjs`、`check-tw-wind-load.mjs`、`check-tw-dead-live-loads.mjs`）。
 - 台灣版（階段 2b／3 補齊）：新增繁中報告黃金檔（`scripts/fixtures/rapport-zh-TW.html`），`check-rapport-talen.mjs` 檢查繁中報告無殘留荷蘭文與英文；台灣材料重量庫新增 59 筆建築技術規則構造編第 11～15 條載重（`tw-btr-*`，kgf→kN 以 0.00981 反算核對）；型鋼規格庫新增槽鋼、等邊／不等邊角鋼、方矩形鋼管與圓形鋼管及 STKR／STK 鋼材等級（手冊值，非 A 級已驗證，詳見 `docs/tw/規範來源.md` §5.11）；新增載重組合共用 `#include` 片段 `tw-load-combos-rc112`（rc112 表 5.3.1 U₁～U₇）與 `tw-load-combos-steel-asd`（steel99 §2.2 式 2.2-1～2.2-5），原未完成殘稿改指向本片段；上游 Eurocode 模組在目錄與列印標頭加註「Eurocode，非台灣規範」；新增 `check-tw-profielen`、`check-tw-load-combos`、`check-tw-eurocode` 三支檢查
