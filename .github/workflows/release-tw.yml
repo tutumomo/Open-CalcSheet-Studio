@@ -78,7 +78,7 @@ jobs:
           cache: npm
 
       - name: Install Rust stable
-        uses: dtolnay/rust-toolchain@stable
+        run: rustup toolchain install stable --profile minimal && rustup default stable
 
       - name: Install system dependencies (Ubuntu)
         if: matrix.platform == 'ubuntu-22.04'
