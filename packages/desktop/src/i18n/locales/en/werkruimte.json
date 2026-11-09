@@ -89,7 +89,8 @@
       "tweepaalspoer": "Two-pile cap (reinforced concrete)",
       "doorsnede-spanningen": "Section stresses",
       "rekentaal-demo": "Open CalcSheet Studio demo",
-      "tw-rc-beam": "RC rectangular beam (rc112)"
+      "tw-rc-beam": "RC rectangular beam (rc112)",
+      "tw-rc-column": "RC rectangular column (rc112)"
     }
   },
   "kiezer": {

@@ -105,9 +105,10 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-rc",
     label: "Taiwanese normen — Beton",
     defaultExpanded: true,
-    count: 1,
+    count: 2,
     children: [
       { kind: "item", id: "sheet-tw-rc-beam", label: "Gewapend betonnen ligger (rc112)", templateId: "tw-rc-beam", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-rc-column", label: "Gewapend betonnen kolom (rc112)", templateId: "tw-rc-column", status: "gereed", gepubliceerd: true },
     ],
   },
 ];

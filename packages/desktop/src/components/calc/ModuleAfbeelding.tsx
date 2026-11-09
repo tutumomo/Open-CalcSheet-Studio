@@ -31,6 +31,7 @@ const beelden: Record<string, ReactNode> = {
   balklaag: <>{[0, 1, 2, 3].map((i) => <path key={i} d={`M${24 + i * 23} 62l28-35 9 3-28 35v10l-9-3Z`} fill={vlak} />)}{p("m24 62 81 11 31-37M24 72l81 11 31-37")}</>,
   // 台灣版
   "tw-rc-beam": <>{r(24, 28, 112, 48)}{kracht(80, 2)}</>,
+  "tw-rc-column": <>{r(50, 15, 60, 70)}{kracht(80, -5)}{kracht(80, 85, 180)}</>,
 };
 
 export default function ModuleAfbeelding({ templateId, beeldUrl }: { templateId: string; beeldUrl?: string | null }) {
