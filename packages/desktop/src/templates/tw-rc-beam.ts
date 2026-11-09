@@ -351,5 +351,3 @@ c_num = if(has_top ≡ 2; if(Asp0 > 0; c_double; c_single); c_single)
     '<b>總結：無效輸入，未檢核</b>。幾何尺寸不足或未配置有效鋼筋。
 #end if
 `;
-
-export const twRcBeamTemplate = twRcBeam;

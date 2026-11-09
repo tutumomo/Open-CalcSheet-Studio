@@ -465,5 +465,58 @@
     "opgesteldDoor": "Prepared by {{naam}}",
     "paginaWoord": "Page",
     "vanWoord": "of"
+  },
+  "twRcBeam": {
+    "titel": "Parametric view — RC rectangular beam",
+    "kop": "Section reinforcement",
+    "velden": {
+      "cc": "Clear cover cc",
+      "barT": "Tension bar size",
+      "nT": "Tension bars",
+      "lagen": "Bar layers",
+      "hasTop": "Compression steel",
+      "barC": "Compression bar size",
+      "nC": "Compression bars",
+      "barV": "Stirrup size",
+      "legs": "Stirrup legs"
+    },
+    "keuzes": {
+      "enkel": "Single layer",
+      "dubbel": "Two layers",
+      "geenDruk": "Singly reinforced",
+      "metDruk": "Doubly reinforced"
+    },
+    "noot": "Loads, materials and checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Cross-section and stirrup spacing (elevation)",
+    "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
+  },
+  "twRetainingWall": {
+    "titel": "Parametric view — cantilever retaining wall",
+    "kop": "Soil and loads",
+    "velden": {
+      "gamma": "Backfill unit weight γs",
+      "phi": "Friction angle φ",
+      "q": "Surcharge q",
+      "qa": "Allowable bearing qa",
+      "mu": "Base friction μ",
+      "dsoil": "Toe soil depth Df"
+    },
+    "noot": "The sheet has no groundwater input, so no water line is drawn; the dashed line is the Rankine wedge (45° + φ/2).",
+    "doorsnede": "Section: stem, toe, heel and active wedge",
+    "glijvlak": "Failure plane angle 45° + φ/2",
+    "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
+  },
+  "twDetentionBasin": {
+    "titel": "Parametric view — detention basin",
+    "kop": "Basin",
+    "velden": {
+      "b0": "Bottom width B0",
+      "z": "Side slope 1:z",
+      "n": "Number of orifices"
+    },
+    "noot": "Below the orifice invert is dead storage; the dashed line is the emergency spillway level (design level + overflow depth).",
+    "doorsnede": "Section: floor, slopes, design level, orifice and spillway",
+    "talud": "Side slope",
+    "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
   }
 }

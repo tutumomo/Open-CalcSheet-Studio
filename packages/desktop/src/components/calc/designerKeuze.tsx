@@ -4,6 +4,9 @@ import BalklaagDesigner from "./BalklaagDesigner";
 import DoorsnedeDesigner from "./DoorsnedeDesigner";
 import LiggerDesigner from "./LiggerDesigner";
 import TweepaalspoerDesigner from "./TweepaalspoerDesigner";
+import TwDetentionBasinDesigner from "./TwDetentionBasinDesigner";
+import TwRcBeamDesigner from "./TwRcBeamDesigner";
+import TwRetainingWallDesigner from "./TwRetainingWallDesigner";
 import { hoortBij } from "../../templates/vertalingen";
 
 /**
@@ -23,6 +26,9 @@ const DESIGNERS: { marker: string; beeld: () => ReactElement }[] = [
   { marker: "Ligger van hout of staal", beeld: () => <LiggerDesigner /> },
   { marker: "Tweepaalspoer", beeld: () => <TweepaalspoerDesigner /> },
   { marker: "Spanningen in een doorsnede", beeld: () => <DoorsnedeDesigner /> },
+  { marker: "鋼筋混凝土矩形梁設計與檢核", beeld: () => <TwRcBeamDesigner /> },
+  { marker: "懸臂式擋土牆", beeld: () => <TwRetainingWallDesigner /> },
+  { marker: "滯洪池", beeld: () => <TwDetentionBasinDesigner /> },
 ];
 
 /** Het beeld dat bij deze bladtekst hoort, of null als er geen is. */

@@ -97,11 +97,11 @@ meld(r0.uc === 0.94, `leesResultaat 辨識 UC = 0.94（實際 ${r0.uc}）`);
 // -----------------------------------------------------------------------------
 console.log("\n2. 參數變化案例（牆高 6.0 m，底寬 4.0 m）");
 const modWall2 = twRetainingWall
-  .replace("H_wall = 5.0'm", "H_wall = 6.0'm")
-  .replace("B_base = 3.2'm", "B_base = 4.0'm")
-  .replace("h_base = 0.5'm", "h_base = 0.6'm")
-  .replace("t_stem = 0.5'm", "t_stem = 0.6'm")
-  .replace("L_toe = 0.9'm", "L_toe = 1.1'm")
+  .replace("H_wall = ?{5.0}", "H_wall = ?{6.0}")
+  .replace("B_base = ?{3.2}", "B_base = ?{4.0}")
+  .replace("h_base = ?{0.5}", "h_base = ?{0.6}")
+  .replace("t_stem = ?{0.5}", "t_stem = ?{0.6}")
+  .replace("L_toe = ?{0.9}", "L_toe = ?{1.1}")
   .replace("s_stem = 150'mm", "s_stem = 120'mm");
 
 const nodes2 = evaluate(parse(modWall2), {});
@@ -109,8 +109,8 @@ const uit2 = leesGetallen(nodes2);
 const r2 = leesResultaat(nodes2, "tw-retaining-wall");
 
 meld(!isNaN(uit2.UC_max) && uit2.UC_max > 0, "牆高 6.0 m 案例: 無錯誤訊息或 NaN");
-meld(uit2.H_wall === 6.0, "牆高為 6.0 m");
-meld(uit2.B_base === 4.0, "底版寬度為 4.0 m");
+meld(uit2.h_stem === 5.4, "牆高為 6.0 m");
+meld(uit2.L_heel === 4.0 - 1.1 - 0.6, "底版寬度為 4.0 m");
 meld(r2.voldoet === true, "加高牆體配合加寬底版後判定合格");
 meld(uit2.FS_ot >= 2.0, `抗傾覆安全係數 FS_ot = ${uit2.FS_ot.toFixed(2)} ≥ 2.0`);
 meld(uit2.FS_sl >= 1.5, `抗滑安全係數 FS_sl = ${uit2.FS_sl.toFixed(2)} ≥ 1.5`);
@@ -121,22 +121,22 @@ meld(uit2.FS_sl >= 1.5, `抗滑安全係數 FS_sl = ${uit2.FS_sl.toFixed(2)} ≥
 console.log("\n3. 負向測試與安全防護");
 
 // 3.1 牆身超過水保規範 8 m 上限
-const modOverHeight = twRetainingWall.replace("H_wall = 5.0'm", "H_wall = 8.5'm");
+const modOverHeight = twRetainingWall.replace("H_wall = ?{5.0}", "H_wall = ?{8.5}");
 const rOverHeight = leesResultaat(evaluate(parse(modOverHeight), {}), "tw-retaining-wall");
 meld(rOverHeight.voldoet === false, "牆高 8.5 m 超過水保規範 8 m 上限：判定不合格");
 
 // 3.2 超載過大抗傾覆不足
-const modOverturn = twRetainingWall.replace("q_surcharge = 10.0'kN/m^2", "q_surcharge = 80.0'kN/m^2");
+const modOverturn = twRetainingWall.replace("q_surcharge = ?{10.0}", "q_surcharge = ?{80.0}");
 const rOverturn = leesResultaat(evaluate(parse(modOverturn), {}), "tw-retaining-wall");
 meld(rOverturn.voldoet === false, "超載過大抗傾覆不足：判定不合格");
 
 // 3.3 摩擦係數過低抗滑不足
-const modSlide = twRetainingWall.replace("mu_base = 0.55'-", "mu_base = 0.30'-");
+const modSlide = twRetainingWall.replace("mu_base = ?{0.55}", "mu_base = ?{0.30}");
 const rSlide = leesResultaat(evaluate(parse(modSlide), {}), "tw-retaining-wall");
 meld(rSlide.voldoet === false, "基底摩擦過低抗滑不足：判定不合格");
 
 // 3.4 容許地盤承載力過低
-const modBearing = twRetainingWall.replace("qa_allow = 220.0'kN/m^2", "qa_allow = 80.0'kN/m^2");
+const modBearing = twRetainingWall.replace("qa_allow = ?{220.0}", "qa_allow = ?{80.0}");
 const rBearing = leesResultaat(evaluate(parse(modBearing), {}), "tw-retaining-wall");
 meld(rBearing.voldoet === false, "地盤承載力超載：判定不合格");
 
@@ -158,7 +158,7 @@ const rJoint = leesResultaat(evaluate(parse(modJoint), {}), "tw-retaining-wall")
 meld(rJoint.voldoet === false, "伸縮縫間距大於 40 m：判定不合格");
 
 // 3.8 幾何尺寸異常：頂厚大於底厚
-const modGeom = twRetainingWall.replace("t_top = 0.3'm", "t_top = 0.7'm");
+const modGeom = twRetainingWall.replace("t_top = ?{0.3}", "t_top = ?{0.7}");
 const rGeom = leesResultaat(evaluate(parse(modGeom), {}), "tw-retaining-wall");
 meld(rGeom.voldoet === false, "立壁頂厚大於底厚：判定不合格");
 
@@ -268,10 +268,10 @@ for (const H of H_list) {
         });
 
         const modScript = twRetainingWall
-          .replace("H_wall = 5.0'm", `H_wall = ${H.toFixed(1)}'m`)
-          .replace("B_base = 3.2'm", `B_base = ${B.toFixed(1)}'m`)
-          .replace("phi_deg = 32'deg", `phi_deg = ${phi_in}'deg`)
-          .replace("mu_base = 0.55'-", `mu_base = ${mu_in.toFixed(2)}'-`);
+          .replace("H_wall = ?{5.0}", `H_wall = ?{${H.toFixed(1)}}`)
+          .replace("B_base = ?{3.2}", `B_base = ?{${B.toFixed(1)}}`)
+          .replace("phi_deg = ?{32}", `phi_deg = ?{${phi_in}}`)
+          .replace("mu_base = ?{0.55}", `mu_base = ?{${mu_in.toFixed(2)}}`);
 
         const res = leesResultaat(evaluate(parse(modScript), {}), "tw-retaining-wall");
         if (res.voldoet === sol.ok) {

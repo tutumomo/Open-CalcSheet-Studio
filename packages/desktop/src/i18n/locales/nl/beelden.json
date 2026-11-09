@@ -465,5 +465,58 @@
     "opgesteldDoor": "Opgesteld door {{naam}}",
     "paginaWoord": "Pagina",
     "vanWoord": "van"
+  },
+  "twRcBeam": {
+    "titel": "Parametrisch beeld — rechthoekige betonbalk",
+    "kop": "Doorsnede en wapening",
+    "velden": {
+      "cc": "Dekking cc",
+      "barT": "Trekstaaf",
+      "nT": "Aantal trekstaven",
+      "lagen": "Wapeningslagen",
+      "hasTop": "Drukwapening",
+      "barC": "Drukstaaf",
+      "nC": "Aantal drukstaven",
+      "barV": "Beugel",
+      "legs": "Beugelbenen"
+    },
+    "keuzes": {
+      "enkel": "Eén laag",
+      "dubbel": "Twee lagen",
+      "geenDruk": "Enkel gewapend",
+      "metDruk": "Dubbel gewapend"
+    },
+    "noot": "Lasten, materialen en toetsingen staan in het blad; het beeld rekent niet.",
+    "doorsnede": "Doorsnede en beugelafstand (aanzicht)",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twRetainingWall": {
+    "titel": "Parametrisch beeld — keerwand (cantilever)",
+    "kop": "Grond en lasten",
+    "velden": {
+      "gamma": "Volumegewicht γs",
+      "phi": "Wrijvingshoek φ",
+      "q": "Bovenbelasting q",
+      "qa": "Toelaatbare draagkracht qa",
+      "mu": "Wrijving onderzijde μ",
+      "dsoil": "Grondbedekking teen Df"
+    },
+    "noot": "Het blad heeft geen grondwaterstand als invoer, dus er staat geen waterlijn; de streeplijn is het Rankine-glijvlak (45° + φ/2).",
+    "doorsnede": "Doorsnede: stam, teen, hiel en glijvlak",
+    "glijvlak": "Hoek glijvlak 45° + φ/2",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twDetentionBasin": {
+    "titel": "Parametrisch beeld — bergingsvijver",
+    "kop": "Vijver",
+    "velden": {
+      "b0": "Bodembreedte B0",
+      "z": "Talud 1:z",
+      "n": "Aantal openingen"
+    },
+    "noot": "Onder de onderkant van de opening ligt dode berging; de streeplijn is het niveau van de noodoverlaat (ontwerppeil + overlaatdiepte).",
+    "doorsnede": "Doorsnede: bodem, taluds, ontwerppeil, opening en overlaat",
+    "talud": "Talud",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
   }
 }
