@@ -47,6 +47,12 @@ export const STELSELS = {
     lijnlast: 'klf', vlakbelasting: 'psf', spanning: 'ksi',
     volumegewicht: 'pcf', massa: 'lb',
   },
+  'tw-mks': {
+    lengte: 'm', maat: 'cm', oppervlakte: 'm^2', doorsnedeOppervlakte: 'cm^2',
+    weerstandsmoment: 'cm^3', traagheidsmoment: 'cm^4', kracht: 'tf', moment: 'tf m',
+    lijnlast: 'tf / m', vlakbelasting: 'tf / m^2', spanning: 'kgf / cm^2',
+    volumegewicht: 'tf / m^3', massa: 't',
+  },
 } as const satisfies Record<string, Required<Stelsel>>;
 
 /**
@@ -67,7 +73,9 @@ const OP_NAAM: Record<string, Grootheid> = {
   'mm^3': 'weerstandsmoment', 'cm^3': 'weerstandsmoment', 'in^3': 'weerstandsmoment', 'inch^3': 'weerstandsmoment',
   'mm^4': 'traagheidsmoment', 'cm^4': 'traagheidsmoment', 'm^4': 'traagheidsmoment', 'in^4': 'traagheidsmoment', 'inch^4': 'traagheidsmoment',
   'kN/m^2': 'vlakbelasting', 'N/m^2': 'vlakbelasting', kPa: 'vlakbelasting', Pa: 'vlakbelasting', psf: 'vlakbelasting', ksf: 'vlakbelasting',
+  'tf/m^2': 'vlakbelasting', 'tf/m²': 'vlakbelasting', 'kgf/m^2': 'vlakbelasting', 'kgf/m²': 'vlakbelasting',
   'N/mm^2': 'spanning', 'kN/mm^2': 'spanning', MPa: 'spanning', GPa: 'spanning', psi: 'spanning', ksi: 'spanning',
+  'kgf/cm^2': 'spanning', 'kgf/cm²': 'spanning', 'tf/cm^2': 'spanning', 'tf/cm²': 'spanning',
 };
 
 /** Herkend aan de dimensie, voor eenheden die niet in OP_NAAM staan (`N mm`, `lbf / ft`). */
@@ -211,7 +219,7 @@ export function eenheidUitBeeld(e: string): string {
     .replace(/(\p{L})([1-4])(?![\p{L}\p{N}])/gu, (_, l: string, n: string) => (n === '1' ? l : `${l}^${n}`))
     .replace(/·/g, ' ')
     .replace(/(\p{L})\.(\p{L})/gu, '$1 $2')
-    .replace(/^([kMG]?N)m(?=$|[\s^])/, '$1 m');
+    .replace(/^([kMG]?N|tf|kgf)m(?=$|[\s^])/, '$1 m');
 }
 
 /** Een eenheid zoals de rekenkern hem schrijft, netjes in beeld: kN / m^2 → kN/m², kip ft → kip·ft. */

@@ -23,7 +23,11 @@ const AMERIKAANS: [string, string][] = [
   ['pcf', '1 lbf/ft^3'],
 ];
 
-for (const [naam, definitie] of AMERIKAANS) math.createUnit(naam, definitie);
+const TAIWAN_MKS: [string, string][] = [
+  ['tf', '1000 kgf'],
+];
+
+for (const [naam, definitie] of [...AMERIKAANS, ...TAIWAN_MKS]) math.createUnit(naam, definitie);
 
 /** De eenheden die de rekenkern zelf kent, vóór eigen eenheden van een blad of project. */
 const INGEBOUWD: ReadonlySet<string> = new Set(Object.keys((math.Unit as unknown as { UNITS: object }).UNITS));
