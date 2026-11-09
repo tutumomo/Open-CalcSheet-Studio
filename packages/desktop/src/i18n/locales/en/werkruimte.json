@@ -83,6 +83,7 @@
       "cat-tw-rc": "Taiwan codes — Concrete",
       "cat-tw-steel": "Taiwan codes — Steel",
       "cat-tw-civil": "Taiwan codes — Civil & Geotech",
+      "cat-tw-load": "Taiwan codes — Loads",
       "rekentaal-samples": "Examples"
     },
     "modules": {
@@ -100,7 +101,10 @@
       "tw-drainage-channel": "RC drainage channel and open-channel hydraulics (swc_tech / rc112)",
       "tw-detention-basin": "Detention basin design check (swc_tech)",
       "tw-box-culvert": "RC box culvert design check (hwbridge / rc112)",
-      "tw-sediment-basin": "Sediment basin design check (swc_tech 35 / 92 / 93)"
+      "tw-sediment-basin": "Sediment basin design check (swc_tech 35 / 92 / 93)",
+      "tw-seismic-load": "Seismic load, equivalent static method (seis113)",
+      "tw-wind-load": "Wind load on buildings (wind103full)",
+      "tw-dead-live-loads": "Dead and live floor loads (btr_struct)"
     }
   },
   "kiezer": {

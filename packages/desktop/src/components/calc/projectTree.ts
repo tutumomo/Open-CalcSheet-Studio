@@ -137,6 +137,18 @@ export const moduleCatalogus: TreeNode[] = [
       { kind: "item", id: "sheet-tw-sediment-basin", label: "Bezinkbak (swc_tech 35 / 92 / 93)", templateId: "tw-sediment-basin", status: "gereed", gepubliceerd: true },
     ],
   },
+  {
+    kind: "category",
+    id: "cat-tw-load",
+    label: "Taiwanese normen — Belastingen",
+    defaultExpanded: true,
+    count: 3,
+    children: [
+      { kind: "item", id: "sheet-tw-seismic-load", label: "Aardbevingsbelasting, statische methode (seis113)", templateId: "tw-seismic-load", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-wind-load", label: "Windbelasting op gebouwen (wind103full)", templateId: "tw-wind-load", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-dead-live-loads", label: "Permanente en veranderlijke vloerbelasting (btr_struct)", templateId: "tw-dead-live-loads", status: "gereed", gepubliceerd: true },
+    ],
+  },
 ];
 
 export const bibliotheek: TreeNode[] = [

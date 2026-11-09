@@ -83,6 +83,7 @@
       "cat-tw-rc": "台灣規範 — 混凝土",
       "cat-tw-steel": "台灣規範 — 鋼結構",
       "cat-tw-civil": "台灣規範 — 土木大地",
+      "cat-tw-load": "台灣規範 — 載重",
       "rekentaal-samples": "範例"
     },
     "modules": {
@@ -100,7 +101,10 @@
       "tw-drainage-channel": "鋼筋混凝土排水溝與明渠水理（swc_tech / rc112）",
       "tw-detention-basin": "滯洪池設計與檢核（swc_tech）",
       "tw-box-culvert": "鋼筋混凝土箱涵設計與檢核（hwbridge / rc112）",
-      "tw-sediment-basin": "沉砂池設計與檢核（swc_tech 第 35、92、93 條）"
+      "tw-sediment-basin": "沉砂池設計與檢核（swc_tech 第 35、92、93 條）",
+      "tw-seismic-load": "建築物靜力分析法地震力計算（seis113）",
+      "tw-wind-load": "建築物風速壓與各層風力（wind103full）",
+      "tw-dead-live-loads": "樓版與屋頂靜載重與活載重彙整（btr_struct）"
     }
   },
   "kiezer": {

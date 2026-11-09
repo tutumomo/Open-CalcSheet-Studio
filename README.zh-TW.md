@@ -117,6 +117,9 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 | **滯洪池設計** | `tw-detention-basin` | 水保規範（`swc_tech`）第 16～19、94～97 條 | 已校準（gereed） | `scripts/check-tw-detention-basin.mjs` |
 | **RC 箱涵設計** | `tw-box-culvert` | 公路橋梁設計規範（`hwbridge`）第 3、4 章／`rc112` | 已校準（gereed） | `scripts/check-tw-box-culvert.mjs` |
 | **沉砂池設計** | `tw-sediment-basin` | 水保規範（`swc_tech`）第 35、92、93 條／`sewer_std` | 已校準（gereed） | `scripts/check-tw-sediment-basin.mjs` |
+| **建築物耐震載重** | `tw-seismic-load` | 耐震設計規範（`seis113`）第 2.2、2.6、2.9、2.11 節 | 已校準（gereed） | `scripts/check-tw-seismic-load.mjs` |
+| **建築物耐風載重** | `tw-wind-load` | 耐風設計規範（`wind103full`）式 2.6、2.7 | 已校準（gereed） | `scripts/check-tw-wind-load.mjs` |
+| **靜活載重彙整** | `tw-dead-live-loads` | 建築技術規則構造編（`btr_struct`）第 11、17、25、26 條 | 已校準（gereed） | `scripts/check-tw-dead-live-loads.mjs` |
 - **歐洲規範模組**（Eurocode，非台灣規範）：
   - **木托梁樓板**（EN 1995-1-1）、**木/鋼梁**（EN 1993-1-1）與**雙樁樁帽**（EN 1992-1-1），搭配荷蘭國家附錄。透過[線上模組庫](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules)可直接新增模組。參閱[木托梁檢核原理](docs/balklaag-toetsing.md)與[雙樁樁帽檢核原理](docs/tweepaalspoer-toetsing.md)。
   - 雙樁樁帽在圖紙旁提供 3D 結構模型，即時展示樁帽、基樁、柱子與各鋼筋籠。**新增模組**畫面為每個選項提供圖示預覽。

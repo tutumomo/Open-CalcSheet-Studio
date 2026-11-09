@@ -16,6 +16,9 @@ import { twDrainageChannel } from "./tw-drainage-channel";
 import { twDetentionBasin } from "./tw-detention-basin";
 import { twBoxCulvert } from "./tw-box-culvert";
 import { twSedimentBasin } from "./tw-sediment-basin";
+import { twSeismicLoad } from "./tw-seismic-load";
+import { twWindLoad } from "./tw-wind-load";
+import { twDeadLiveLoads } from "./tw-dead-live-loads";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -34,4 +37,7 @@ export const templates: Record<string, string> = {
   "tw-detention-basin": twDetentionBasin,
   "tw-box-culvert": twBoxCulvert,
   "tw-sediment-basin": twSedimentBasin,
+  "tw-seismic-load": twSeismicLoad,
+  "tw-wind-load": twWindLoad,
+  "tw-dead-live-loads": twDeadLiveLoads,
 };

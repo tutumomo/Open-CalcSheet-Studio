@@ -83,6 +83,7 @@
       "cat-tw-rc": "Taiwanese normen — Beton",
       "cat-tw-steel": "Taiwanese normen — Staal",
       "cat-tw-civil": "Taiwanese normen — Civiel",
+      "cat-tw-load": "Taiwanese normen — Belastingen",
       "rekentaal-samples": "Voorbeelden"
     },
     "modules": {
@@ -100,7 +101,10 @@
       "tw-drainage-channel": "Afwateringsgoot van gewapend beton (swc_tech / rc112)",
       "tw-detention-basin": "Bergingsbassin (swc_tech)",
       "tw-box-culvert": "Gewapend betonnen duiker (hwbridge / rc112)",
-      "tw-sediment-basin": "Bezinkbak (swc_tech 35 / 92 / 93)"
+      "tw-sediment-basin": "Bezinkbak (swc_tech 35 / 92 / 93)",
+      "tw-seismic-load": "Aardbevingsbelasting, statische methode (seis113)",
+      "tw-wind-load": "Windbelasting op gebouwen (wind103full)",
+      "tw-dead-live-loads": "Permanente en veranderlijke vloerbelasting (btr_struct)"
     }
   },
   "kiezer": {
