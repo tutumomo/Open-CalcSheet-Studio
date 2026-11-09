@@ -77,14 +77,18 @@ export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
     if (n.type === "text") tekstdelen.push(n.text);
   }
   const tekst = tekstdelen.join(" ").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
-  const slot = Math.max(tekst.lastIndexOf("Maatgevende UC"), tekst.lastIndexOf("Governing UC"));
+  const slot = Math.max(
+    tekst.lastIndexOf("Maatgevende UC"),
+    tekst.lastIndexOf("Governing UC"),
+    tekst.lastIndexOf("控制 UC"),
+  );
   let voldoet: boolean | null = null;
   if (slot >= 0) {
     const zin = tekst.slice(slot, slot + 240);
-    voldoet = !/voldoe[nt] niet|\bnot OK\b/.test(zin) && /voldoe[nt]|\bOK\b/.test(zin);
+    voldoet = !/voldoe[nt] niet|\bnot OK\b|不合格/.test(zin) && /voldoe[nt]|\bOK\b|合格/.test(zin);
     // Staat UC_max niet zichtbaar in het blad, dan het getal uit de slotzin.
     if (uc === null) {
-      const m = zin.match(/(?:Maatgevende|Governing) UC\s*=\s*([\d.,]+|∞)/);
+      const m = zin.match(/(?:Maatgevende|Governing|控制)\s*UC\s*=\s*([\d.,]+|∞)/);
       const w = m ? getal(m[1]) : NaN;
       if (!Number.isNaN(w)) uc = w;
     }
@@ -93,7 +97,7 @@ export function leesResultaat(nodes: EvaluatedNode[], naam: string): Resultaat {
   }
   const r: Resultaat = { titel, norm, uc, voldoet };
   // Alleen zonder slotzin: "Maatgevende UC … voldoet niet" gaat altijd voor.
-  if (slot < 0 && /Eindoordeel: (?:ongeldige invoer, )?niet getoetst|Overall result: (?:invalid input, )?not verified/.test(tekst)) {
+  if (slot < 0 && /Eindoordeel: (?:ongeldige invoer, )?niet getoetst|Overall result: (?:invalid input, )?not verified|總結[：:]\s*(?:無效輸入[，,]?\s*)?未檢核/.test(tekst)) {
     r.nietGetoetst = true;
   }
   return r;
