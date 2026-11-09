@@ -21,7 +21,18 @@ jobs:
     name: 驗證台灣版預設配置與全數檢查（91 checks）
     runs-on: ubuntu-latest
     steps:
+      - name: 驗證觸發分支僅限 main
+        env:
+          TRIGGER_REF: ${{ github.ref }}
+        run: |
+          if [ "$TRIGGER_REF" != "refs/heads/main" ]; then
+            echo "::error::Release workflow must be triggered from refs/heads/main (got $TRIGGER_REF)"
+            exit 1
+          fi
+
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v6
@@ -70,6 +81,8 @@ jobs:
     runs-on: ${{ matrix.platform }}
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
 
       - name: Setup Node.js 24
         uses: actions/setup-node@v6
@@ -104,13 +117,15 @@ jobs:
           if-no-files-found: error
 
   publish-release:
-    name: 建立台灣版 GitHub Release 與 SHA256 校驗碼
+    name: 建立台灣版 GitHub Release 與校驗檔
     needs: build-bundle
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@v6
+        with:
+          ref: ${{ github.sha }}
 
       - name: Download all installer artifacts
         uses: actions/download-artifact@v7
@@ -129,16 +144,38 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ inputs.tag }}
           IS_DRAFT: ${{ inputs.draft }}
+          TARGET_SHA: ${{ github.sha }}
         run: |
           if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z._-]+)?$ ]]; then
-            echo "Invalid tag format: $TAG"
+            echo "::error::Invalid tag format: $TAG"
             exit 1
           fi
+
+          # 檢查遠端 tag 是否已存在，防止覆蓋既有標籤
+          if git ls-remote --exit-code --tags origin "refs/tags/$TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $TAG already exists on remote origin!"
+            exit 1
+          fi
+
+          # 檢查 GitHub Release 是否已存在
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::error::Release $TAG already exists!"
+            exit 1
+          fi
+
           DRAFT_FLAG=""
           if [ "$IS_DRAFT" = "true" ]; then
             DRAFT_FLAG="--draft"
           fi
+
+          RELEASE_NOTES="## Open CalcSheet Studio 台灣版 $TAG
+
+- **來源 Commit**：\`$TARGET_SHA\`（由 main 分支經 91 項自動化測試通過後建置）
+- **功能摘要**：預設繁體中文（zh-TW）介面、台灣 MKS 單位制（tf, kgf/cm²）與 15 組本土結構／大地／水保／載重計算模組。
+- **簽名狀態**：本發佈產物為社群預建安裝檔（未具商業 Authenticode / Developer ID 憑證簽名）。執行時若遇 SmartScreen 或 Gatekeeper 提示，可參閱文件指示放行，並依隨附 SHA256SUMS.txt 檔比對安裝檔雜湊值。"
+
           gh release create "$TAG" dist-assets/* \
+            --target "$TARGET_SHA" \
             --title "Open CalcSheet Studio 台灣版 $TAG" \
-            --notes "Open CalcSheet Studio 台灣工程規範版（預設 zh-TW 繁體中文介面、台灣 MKS 單位制與 15 組本土結構／大地／水保／載重計算模組）。請參閱 SHA256SUMS.txt 核對安裝檔雜湊值。" \
+            --notes "$RELEASE_NOTES" \
             $DRAFT_FLAG
