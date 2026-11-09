@@ -53,8 +53,8 @@ function ref({ SDS, SD1, I, sys, R, ay, n, h, w }) {
 const base = { SDS: 0.8, SD1: 0.45, I: 1.0, sys: 2, R: 4.8, ay: 1.5, n: 8, h: 3.5, w: 450 };
 const set = (tpl, p) =>
   [
-    ["S_DS = 0.80'-", `S_DS = ${p.SDS}'-`],
-    ["S_D1 = 0.45'-", `S_D1 = ${p.SD1}'-`],
+    ["S_DS = ?{0.80}", `S_DS = ?{${p.SDS}}`],
+    ["S_D1 = ?{0.45}", `S_D1 = ?{${p.SD1}}`],
     ["I_eq = 1.0'-", `I_eq = ${p.I}'-`],
     ["sys = 2'-", `sys = ${p.sys}'-`],
     ["R_duct = 4.8'-", `R_duct = ${p.R}'-`],
@@ -114,13 +114,58 @@ for (const n of [8, 20]) {
 console.log("\n4. 無效輸入一律拒算");
 for (const [名, 舊, 新] of [
   ["臺北盆地", "taipei = 0'-", "taipei = 1'-"],
-  ["S_DS 小於 S_D1/2.5", "S_DS = 0.80'-", "S_DS = 0.10'-"],
+  ["S_DS 小於 S_D1/2.5", "S_DS = ?{0.80}", "S_DS = ?{0.10}"],
   ["R 超出 6", "R_duct = 4.8'-", "R_duct = 7'-"],
   ["I 非 1.0/1.25/1.5", "I_eq = 1.0'-", "I_eq = 1.1'-"],
   ["重量為零", "W_st = 450'tf", "W_st = 0'tf"],
 ]) {
   const { uit, res } = draai(vervang(twSeismicLoad, 舊, 新));
   meld(uit.V === undefined && res.voldoet !== true && res.nietGetoetst === true, `${名} 拒算`);
+}
+
+
+console.log("\n5. 工址行政區震區參數與近斷層修正資料庫（seis113 表 2-1、2-3-1、2-3-2、2-4、2-6(b)）");
+{
+  const {
+    TW_SITE_SEISMIC,
+    TW_SITE_SEISMIC_COUNT,
+    TW_SITE_SEISMIC_TABLE21_COUNT,
+    calcSeismicFa,
+    calcSeismicFv,
+    calcSiteDesignSpectrum,
+  } = await import("../packages/desktop/src/normen/twSiteSeismic.ts");
+  const allEntries = Object.values(TW_SITE_SEISMIC).flatMap((x) => Object.values(x));
+  meld(allEntries.length === TW_SITE_SEISMIC_COUNT && allEntries.length === 356, `共 ${allEntries.length} 個行政區條目（表 2-1 327 區＋表 2-6(b) 雙北一般震區 29 區）`);
+  meld(TW_SITE_SEISMIC_TABLE21_COUNT === 327, "表 2-1 全國 20 縣市 327 鄉鎮市區完整收錄");
+  meld(Object.keys(TW_SITE_SEISMIC).length === 22, "涵蓋全部 22 個直轄市與縣市");
+  meld(allEntries.every((e) => e.SsD >= 0.35 && e.SsD <= 0.80 && e.S1D >= 0.20 && e.S1D <= 0.50), "所有 SsD、S1D 皆落於規範範圍");
+
+  // 抽樣對照規範原表
+  const yilan = TW_SITE_SEISMIC["宜蘭縣"]["宜蘭市"];
+  meld(yilan.SsD === 0.80 && yilan.S1D === 0.45 && yilan.faults.length === 0, "宜蘭縣宜蘭市：SsD=0.80, S1D=0.45, 無近斷層");
+  const heping = TW_SITE_SEISMIC["臺中市"]["和平區"];
+  meld(heping.SsD === 0.70 && heping.S1D === 0.40 && heping.faults.includes("車籠埔斷層全段"), "臺中市和平區（表 2-1）：SsD=0.70, S1D=0.40, 含車籠埔斷層全段");
+  const wenshan = TW_SITE_SEISMIC["臺北市"]["文山區（一般震區5里）"];
+  meld(wenshan.SsD === 0.60 && wenshan.S1D === 0.35, "臺北市文山區一般震區里（表 2-6(b)）：SsD=0.60, S1D=0.35");
+
+  // 表 2-4(a)/(b) 工址放大係數與線性內插核對
+  meld(calcSeismicFa(1, 0.70) === 1.0 && calcSeismicFa(2, 0.55) === 1.1 && Math.abs(calcSeismicFa(3, 0.65) - 1.15) < 1e-9, "表 2-4(a) Fa 內插正確");
+  meld(calcSeismicFv(1, 0.40) === 1.0 && calcSeismicFv(2, 0.35) === 1.4 && Math.abs(calcSeismicFv(3, 0.375) - 1.65) < 1e-9, "表 2-4(b) Fv 內插正確");
+
+  // 規範 2.4 節解說範例：南投縣水里鄉鄰近車籠埔斷層，r = 13.5 km 時 SsD 為 0.80 與 0.70 之內插 = 0.75
+  const nf = calcSiteDesignSpectrum(heping, 1, "車籠埔斷層全段", 13.5);
+  meld(Math.abs(nf.SsD - 0.75) < 1e-9 && nf.nearFaultApplied === true, `表 2-3-1 車籠埔斷層 0.70 區（和平區）r=13.5 km → SsD=${nf.SsD}（預期 0.75）`);
+
+  // 近斷層 r=2 km（新城斷層，竹北市，第二類地盤）：SsD(2)=0.86, S1D(2)=0.51 → Fa=1.0, Fv=1.1 → SDS=0.86, SD1=0.561
+  const zhubei = TW_SITE_SEISMIC["新竹縣"]["竹北市"];
+  const zbSpec = calcSiteDesignSpectrum(zhubei, 2, "新城斷層", 2.0);
+  meld(Math.abs(zbSpec.SsD - 0.86) < 1e-9 && Math.abs(zbSpec.S1D - 0.51) < 1e-9 && Math.abs(zbSpec.SDS - 0.86) < 1e-9 && Math.abs(zbSpec.SD1 - 0.561) < 1e-9, "竹北市新城斷層 r=2 km 第二類地盤 SDS=0.86, SD1=0.561");
+
+  // 確認一鍵帶入覆寫生效：將計算出的 SDS、SD1 寫入範本並驗證基底剪力 V 隨之更新
+  const nOverride = evaluate(parse(twSeismicLoad), { S_DS: String(zbSpec.SDS), S_D1: String(zbSpec.SD1) });
+  const uOverride = leesGetallen(nOverride);
+  const eOverride = ref({ ...base, SDS: zbSpec.SDS, SD1: zbSpec.SD1 });
+  meld(near(uOverride.V, eOverride.V), `S_DS、S_D1 覆寫生效：V = ${uOverride.V.toFixed(3)} tf（預期 ${eOverride.V.toFixed(3)} tf）`);
 }
 
 console.log(fouten === 0 ? "\n全部通過。" : `\n${fouten} 項失敗。`);

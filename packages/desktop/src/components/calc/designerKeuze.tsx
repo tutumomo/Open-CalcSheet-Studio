@@ -7,6 +7,7 @@ import TweepaalspoerDesigner from "./TweepaalspoerDesigner";
 import TwDetentionBasinDesigner from "./TwDetentionBasinDesigner";
 import TwRcBeamDesigner from "./TwRcBeamDesigner";
 import TwRetainingWallDesigner from "./TwRetainingWallDesigner";
+import TwSeismicLoadDesigner from "./TwSeismicLoadDesigner";
 import TwWindLoadDesigner from "./TwWindLoadDesigner";
 import { hoortBij } from "../../templates/vertalingen";
 
@@ -30,6 +31,7 @@ const DESIGNERS: { marker: string; beeld: () => ReactElement }[] = [
   { marker: "鋼筋混凝土矩形梁設計與檢核", beeld: () => <TwRcBeamDesigner /> },
   { marker: "懸臂式擋土牆", beeld: () => <TwRetainingWallDesigner /> },
   { marker: "滯洪池", beeld: () => <TwDetentionBasinDesigner /> },
+  { marker: "建築物靜力分析法地震力計算", beeld: () => <TwSeismicLoadDesigner /> },
   { marker: "建築物風速壓與各層風力", beeld: () => <TwWindLoadDesigner /> },
 ];
 

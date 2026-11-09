@@ -532,5 +532,30 @@
     "neem": "Overnemen in blad",
     "noot": "Aanbevolen waarden komen uit de open data van het ABRI ({{aantal}} districten, jaar 114) en zijn indicatief; controleer of ze overeenkomen met V10(C) uit artikel 2.4 van de norm.",
     "klik": "Kies een district en druk op Overnemen; V10 gaat terug naar het blad."
+  },
+  "twSeismicLoad": {
+    "titel": "Parametrisch beeld — aardbevingsbelasting (zone- en breukparameters)",
+    "kop": "Seismische zone en nabije breuk",
+    "kies": "Kies",
+    "velden": {
+      "county": "Provincie/stad",
+      "town": "Gemeente/district",
+      "soil": "Grondklasse (tabel 2-4)",
+      "fault": "Nabije actieve breuk (tabel 2-3)",
+      "rKm": "Afstand tot breuk r (km)",
+      "zone": "Zonecoëfficiënten SsD / S1D",
+      "fafv": "Grondfactoren Fa / Fv",
+      "aanbevolen": "Berekende SDS / SD1",
+      "huidig": "Huidige SDS / SD1 in blad"
+    },
+    "keuzes": {
+      "soil1": "Type 1 (Stijve grond Vs30 ≥ 270)",
+      "soil2": "Type 2 (Matige grond 180 ≤ Vs30 < 270)",
+      "soil3": "Type 3 (Slappe grond Vs30 < 180)",
+      "geenFault": "Geen nabije breuk (r ≥ 14 km)"
+    },
+    "neem": "Overnemen in blad",
+    "noot": "Volgens de Taiwanese aardbevingsnorm (seis113) tabellen 2-1, 2-3-1, 2-3-2, 2-4(a)/(b) en 2-6(b) ({{aantal}} districten buiten het Taipei-bekken).",
+    "klik": "Kies een district, grondklasse en breukafstand en druk op Overnemen; S_DS en S_D1 gaan terug naar het blad."
   }
 }

@@ -532,5 +532,30 @@
     "neem": "Apply to sheet",
     "noot": "Recommended values come from ABRI open data ({{aantal}} districts, year 114) and are for reference only; confirm they match V10(C) of code clause 2.4.",
     "klik": "Pick a district and press Apply; V10 is written back to the sheet."
+  },
+  "twSeismicLoad": {
+    "titel": "Parametric view — seismic load (site zone & near-fault parameters)",
+    "kop": "Site seismic zone & near-fault factors",
+    "kies": "Select",
+    "velden": {
+      "county": "County / city",
+      "town": "Township / district",
+      "soil": "Site class (Table 2-4)",
+      "fault": "Nearby active fault (Table 2-3)",
+      "rKm": "Fault distance r (km)",
+      "zone": "Zone coeffs SsD / S1D",
+      "fafv": "Site factors Fa / Fv",
+      "aanbevolen": "Computed SDS / SD1",
+      "huidig": "Current SDS / SD1 in sheet"
+    },
+    "keuzes": {
+      "soil1": "Type 1 (Stiff soil Vs30 ≥ 270)",
+      "soil2": "Type 2 (Medium soil 180 ≤ Vs30 < 270)",
+      "soil3": "Type 3 (Soft soil Vs30 < 180)",
+      "geenFault": "No near-fault (r ≥ 14 km)"
+    },
+    "neem": "Apply to sheet",
+    "noot": "Based on Taiwan Seismic Code (seis113) Tables 2-1, 2-3-1, 2-3-2, 2-4(a)/(b) and 2-6(b) ({{aantal}} general-zone districts). Taipei Basin microzones are excluded.",
+    "klik": "Pick a district, site class and fault distance, then press Apply; S_DS and S_D1 are written back to the sheet."
   }
 }
