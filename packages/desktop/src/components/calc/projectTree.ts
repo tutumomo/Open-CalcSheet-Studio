@@ -128,11 +128,12 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-civil",
     label: "Taiwanese normen — Civiel",
     defaultExpanded: true,
-    count: 3,
+    count: 4,
     children: [
       { kind: "item", id: "sheet-tw-retaining-wall", label: "Keermuur van gewapend beton (found112 / swc_tech)", templateId: "tw-retaining-wall", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-drainage-channel", label: "Afwateringsgoot van gewapend beton (swc_tech / rc112)", templateId: "tw-drainage-channel", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-detention-basin", label: "Bergingsbassin (swc_tech)", templateId: "tw-detention-basin", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-box-culvert", label: "Gewapend betonnen duiker (hwbridge / rc112)", templateId: "tw-box-culvert", status: "gereed", gepubliceerd: true },
     ],
   },
 ];

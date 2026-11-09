@@ -98,7 +98,8 @@
       "tw-steel-column": "Stalen kolom met voetplaat (steel99 LRFD)",
       "tw-retaining-wall": "Keermuur van gewapend beton (found112 / swc_tech)",
       "tw-drainage-channel": "Afwateringsgoot van gewapend beton (swc_tech / rc112)",
-      "tw-detention-basin": "Bergingsbassin (swc_tech)"
+      "tw-detention-basin": "Bergingsbassin (swc_tech)",
+      "tw-box-culvert": "Gewapend betonnen duiker (hwbridge / rc112)"
     }
   },
   "kiezer": {

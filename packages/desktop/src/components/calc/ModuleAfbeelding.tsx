@@ -38,6 +38,7 @@ const beelden: Record<string, ReactNode> = {
   "tw-retaining-wall": <>{r(25, 70, 110, 15)}{r(55, 15, 20, 55)}{kracht(120, 35, 90)}{kracht(105, 55, 90)}{kracht(50, 95, 180)}{kracht(75, 95, 180)}{kracht(105, 95, 180)}</>,
   "tw-drainage-channel": <>{r(30, 30, 12, 50)}{r(118, 30, 12, 50)}{r(30, 74, 100, 8)}{p("M44 58q9 5 18 0t18 0 18 0 18 0")}{kracht(80, 2)}</>,
   "tw-detention-basin": <>{p("M20 40 40 80H120L140 40")}{r(40, 62, 80, 18)}{kracht(30, 10)}{kracht(130, 10)}{p("M120 70h30")}</>,
+  "tw-box-culvert": <>{r(25, 20, 110, 12)}{r(25, 78, 110, 14)}{r(25, 32, 14, 46)}{r(121, 32, 14, 46)}{p("M39 42l10-10M121 42l-10-10M39 68l10 10M121 68l-10 10")}{kracht(80, 0)}</>,
 };
 
 export default function ModuleAfbeelding({ templateId, beeldUrl }: { templateId: string; beeldUrl?: string | null }) {
