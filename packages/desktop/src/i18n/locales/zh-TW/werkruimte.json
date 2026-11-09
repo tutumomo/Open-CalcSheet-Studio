@@ -97,7 +97,8 @@
       "tw-steel-beam": "鋼結構 H 型鋼梁（steel99 LRFD）",
       "tw-steel-column": "鋼結構 H 型鋼柱與柱腳（steel99 LRFD）",
       "tw-retaining-wall": "鋼筋混凝土懸臂式擋土牆（found112 / swc_tech）",
-      "tw-drainage-channel": "鋼筋混凝土排水溝與明渠水理（swc_tech / rc112）"
+      "tw-drainage-channel": "鋼筋混凝土排水溝與明渠水理（swc_tech / rc112）",
+      "tw-detention-basin": "滯洪池設計與檢核（swc_tech）"
     }
   },
   "kiezer": {

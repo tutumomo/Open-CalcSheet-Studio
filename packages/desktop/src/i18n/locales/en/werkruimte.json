@@ -97,7 +97,8 @@
       "tw-steel-beam": "Steel I-beam (steel99 LRFD)",
       "tw-steel-column": "Steel H-column & base plate (steel99 LRFD)",
       "tw-retaining-wall": "RC cantilever retaining wall (found112 / swc_tech)",
-      "tw-drainage-channel": "RC drainage channel and open-channel hydraulics (swc_tech / rc112)"
+      "tw-drainage-channel": "RC drainage channel and open-channel hydraulics (swc_tech / rc112)",
+      "tw-detention-basin": "Detention basin design check (swc_tech)"
     }
   },
   "kiezer": {
