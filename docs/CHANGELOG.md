@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（參數化繪圖介面）：新增 `TwRcBeamDesigner`（梁斷面、保護層、主筋排數、箍筋間距）、`TwRetainingWallDesigner`（立壁、牆趾、牆踵、Rankine 滑動楔形、超載）、`TwDetentionBasinDesigner`（池體斷面、設計水位、孔口、溢洪口）；`tw-retaining-wall`、`tw-detention-basin` 輸入改為 `?{}` 形式以便視圖寫回，計算結果不變。
 - 台灣版（鋼結構設計法雙軌）：`tw-steel-beam` 與 `tw-steel-column` 新增 LRFD／ASD 選單（steel99 第（一）篇）。ASD 梁限結實斷面且 Lb ≤ Lc，ASD 柱限純軸壓且不檢核柱腳；其餘拒算。檢查腳本新增 ASD 掃描、負向與拒算案例。
 - 台灣版（常用結構與大地模組擴充）：新增 `tw-rc-slab`（rc112 單向板）、`tw-pile-cap`（rc112／found112 三／四樁樁帽壓拉桿模型）、`tw-gravity-retaining-wall`（found112／swc_tech／rc112 重力式擋土牆）、`tw-backwater-profile`（swc_tech 明渠水面線標準步進法），結尾行皆為「控制 UC」，無效輸入拒算；新增四支 `check-tw-*.mjs`（獨立求解器掃描、負向與拒算案例）。
 - 台灣版（載重計算模組化）：新增三個載重產生器模組，歸入「台灣規範 — 載重」分類，結尾行皆為「總結：未檢核」（不做合格判定）。`tw-seismic-load`（`seis113` 靜力分析法：T、S_aD、R_a、F_u、V、F_t、各層 F_x；僅一般工址規則建築，臺北盆地拒算）；`tw-wind-load`（`wind103full` 式 2.6、2.7 風速壓與各層風力、基底剪力與傾倒力矩；α、z_g、G·Cp 由使用者輸入）；`tw-dead-live-loads`（`btr_struct` 第 25、26 條與第 17 條最小值，單位面積 D、L、折減與 rc112 因數化載重；第 17 條各用途活載重表未入庫，由使用者輸入）。各附獨立算式檢查腳本（`check-tw-seismic-load.mjs`、`check-tw-wind-load.mjs`、`check-tw-dead-live-loads.mjs`）。
