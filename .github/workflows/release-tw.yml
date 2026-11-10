@@ -79,7 +79,11 @@ jobs:
             artifact: 'calcsheet-tw-macos'
             bundle_glob: 'packages/desktop/src-tauri/target/release/bundle/dmg/*.dmg'
           - platform: 'ubuntu-22.04'
-            artifact: 'calcsheet-tw-linux'
+            artifact: 'calcsheet-tw-linux-x64'
+            bundle_glob: 'packages/desktop/src-tauri/target/release/bundle/deb/*.deb'
+          # Ubuntu 26.04 arm64（aarch64，NVIDIA Linux 核心）：在 24.04 arm64 建置，glibc 向上相容 26.04
+          - platform: 'ubuntu-24.04-arm'
+            artifact: 'calcsheet-tw-linux-arm64'
             bundle_glob: 'packages/desktop/src-tauri/target/release/bundle/deb/*.deb'
 
     runs-on: ${{ matrix.platform }}
@@ -98,7 +102,7 @@ jobs:
         run: rustup toolchain install stable --profile minimal && rustup default stable
 
       - name: Install system dependencies (Ubuntu)
-        if: matrix.platform == 'ubuntu-22.04'
+        if: startsWith(matrix.platform, 'ubuntu')
         run: |
           sudo apt-get update
           sudo apt-get install -y libwebkit2gtk-4.1-dev libappindicator3-dev librsvg2-dev patchelf
