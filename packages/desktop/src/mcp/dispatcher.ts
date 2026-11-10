@@ -24,9 +24,9 @@ export const STANDAARD_PROTOCOLVERSIE = "2025-06-18";
  * Engels en kort, want het gaat met elk gesprek mee.
  */
 export const MCP_INSTRUCTIES = [
-  "Open CalcSheet Studio is a desktop app for structural calculations to the Eurocodes with the Dutch national annexes. You are working in the project the user has open.",
+  "Open CalcSheet Studio (Taiwan edition) is a desktop app for structural, geotechnical, drainage and load calculations. The tw-* modules follow Taiwan codes (RC 112, steel 99, seismic 113, wind 103, foundation 112, building technical regulations, soil and water conservation); the other modules follow the Eurocodes with the Dutch national annexes. Check each module's stated code before relying on it. You are working in the project the user has open.",
   "",
-  "- A project has project data (consequence class CC, wind region, terrain category, design life, project header) that apply to every sheet, calculation sheets (each with its own calculation text and input values), PDF sheets and a structural report.",
+  "- A project has project data (consequence class CC, wind region, terrain category, design life, project header; these Eurocode-style items matter for the non-tw modules) that apply to every sheet, calculation sheets (each with its own calculation text and input values), PDF sheets and a structural report.",
   "- Start with project_get. Add modules with modules_list + sheet_add; read and change inputs with sheet_get + sheet_set_input; compute with sheet_evaluate. UC is a unity check: UC <= 1.0 passes.",
   "- Every change goes through the app's undo history (undo/redo) and marks the project unsaved; save only when the user asks (project_save). Never invent input values the user did not give you: say which values you assumed.",
   "- calc_evaluate computes loose calculation text without touching the project; formulas_list finds standard formulas to insert with sheet_insert_formula.",

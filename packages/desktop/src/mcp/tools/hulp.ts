@@ -114,11 +114,26 @@ export function veldenVan(source: string): { velden: Invoerveld[]; fout?: string
   }
 }
 
-export function invoerJson(v: Invoerveld, waarden: Record<string, string>): Record<string, unknown> {
+/**
+ * Leesbare veldnamen uit de tekst: bij `H = ?{5}', Wanddikte (m)'` is dat
+ * "Wanddikte (m)", de toelichting achter het vraagteken. Velden zonder
+ * toelichting ontbreken in het resultaat.
+ */
+export function veldLabels(bron: string): Record<string, string> {
+  const uit: Record<string, string> = {};
+  for (const regel of bron.split(/\r?\n/)) {
+    const m = regel.match(/^\s*([\p{L}_][\p{L}\p{N}_]*)\s*=\s*\?[^']*'\s*[,，]?\s*(.*?)\s*'?\s*$/u);
+    if (m && m[2] && !(m[1] in uit)) uit[m[1]] = m[2];
+  }
+  return uit;
+}
+
+export function invoerJson(v: Invoerveld, waarden: Record<string, string>, bron = ""): Record<string, unknown> {
   const gezet = waarden[v.naam] !== undefined;
   const waarde = gezet ? waarden[v.naam] : v.beginwaarde;
   const uit: Record<string, unknown> = {
     name: v.naam,
+    label: veldLabels(bron)[v.naam] ?? v.naam,
     kind: v.soort === "keuze" ? "choice" : "input",
     value: waarde,
     isSet: gezet,

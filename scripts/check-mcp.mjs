@@ -99,6 +99,7 @@ console.log("Dispatcher:");
   gelijk(init.result?.serverInfo, { name: MCP_SERVERNAAM, version: "0.0.0-check" }, "serverInfo");
   meld(init.result?.capabilities?.tools !== undefined, "capabilities.tools");
   meld(typeof init.result?.instructions === "string" && init.result.instructions.includes("project_get"), "instructions noemen project_get");
+  meld(init.result.instructions.includes("Taiwan") && init.result.instructions.includes("tw-*"), "instructions noemen de Taiwanese modules");
   gelijk(await verwerkMcpBericht(JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }), deps), "", "notificatie: geen antwoord");
   gelijk((await rpc("ping")).result, {}, "ping");
   const lijst = (await rpc("tools/list")).result.tools;
@@ -166,6 +167,15 @@ let liggerId = null;
   const mat = g.data.inputs.find((v) => v.name === "materiaal");
   meld(mat && mat.value === "1" && mat.isSet === false && mat.selectedText === "Hout", "sheet_get: keuzelijst met beginwaarde", JSON.stringify(mat));
   meld(typeof g.data.source === "string" && g.data.source.length > 1000 && g.data.result === undefined, "sheet_get: tekst, zonder uitkomst bij evaluate=false");
+
+  // veldlabels: toelichting achter het vraagteken, anders de naam zelf
+  const twAdd = await roep("sheet_add", { source: "H_wall = ?{5.0}', 擋土牆總高度 H（m）'\nB = ?{2} m\nx = H_wall * 1" });
+  const twGet = await roep("sheet_get", { id: twAdd.data.id, evaluate: false });
+  const hw = twGet.data.inputs.find((v) => v.name === "H_wall");
+  meld(hw && typeof hw.label === "string" && hw.label.includes("擋土牆總高度"), "sheet_get: label uit de toelichting", JSON.stringify(hw));
+  meld(twGet.data.inputs.find((v) => v.name === "B")?.label === "B", "sheet_get: zonder toelichting is het label de naam");
+  await roep("sheet_remove", { id: twAdd.data.id });
+  await roep("sheet_select", { id: liggerId });
 
   const zonderId = await roep("sheet_get", { evaluate: false });
   meld(zonderId.data?.id === liggerId, "sheet_get zonder id: het open blad");

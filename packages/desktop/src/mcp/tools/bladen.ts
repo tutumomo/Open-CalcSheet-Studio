@@ -158,7 +158,7 @@ export const BLADTOOLS: McpToolDef[] = [
         id,
         name: blad?.naam ?? naam,
         templateId: tid,
-        inputs: velden.map((v) => invoerJson(v, blad?.waarden ?? {})),
+        inputs: velden.map((v) => invoerJson(v, blad?.waarden ?? {}, bron)),
         ...(leesfout ? { parseError: leesfout } : {}),
       });
     },
@@ -238,7 +238,7 @@ export const BLADTOOLS: McpToolDef[] = [
       const data: Record<string, unknown> = {
         ...basis,
         source: blad.source,
-        inputs: velden.map((v) => invoerJson(v, blad.waarden)),
+        inputs: velden.map((v) => invoerJson(v, blad.waarden, blad.source)),
         otherValues: Object.fromEntries(Object.entries(blad.waarden).filter(([k]) => !veldnamen.has(k))),
       };
       if (leesfout) data.parseError = leesfout;
@@ -272,7 +272,7 @@ export const BLADTOOLS: McpToolDef[] = [
         id: blad.id,
         name: blad.naam,
         lines: source.split("\n").length,
-        inputs: velden.map((v) => invoerJson(v, blad.waarden)),
+        inputs: velden.map((v) => invoerJson(v, blad.waarden, blad.source)),
         ...(leesfout ? { parseError: leesfout } : {}),
       });
     },
