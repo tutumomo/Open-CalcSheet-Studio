@@ -6,12 +6,12 @@
 
 **可回溯查驗的結構計算書：每項結果都顯示公式、數值與單位，所有計算表彙整成一份完整報告。**
 
-[![Release](https://img.shields.io/github/v/release/OpenAEC-Foundation/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
+[![Release](https://img.shields.io/github/v/release/tutumomo/Open-CalcSheet-Studio?include_prereleases&label=release&color=D97706)](https://github.com/tutumomo/Open-CalcSheet-Studio/releases)
 [![CI](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml/badge.svg)](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/license-LGPL--3.0-blue)](#授權條款)
 [![語言](https://img.shields.io/badge/語言-繁體中文%20%C2%B7%20English%20%C2%B7%20Dutch-informational)](#畫面截圖)
 
-### [下載應用程式](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases)
+### [下載應用程式](https://github.com/tutumomo/Open-CalcSheet-Studio/releases/latest)
 
 ![木托梁樓版：輸入畫面附圖面與連動檢核比，旁邊為展開的計算表，面板中顯示專案與材料庫](docs/images/readme/hero.png)
 
@@ -29,17 +29,18 @@ Open CalcSheet Studio 是一套專為結構與土木工程師打造的桌面應�
 
 ## 下載
 
-取得[最新發佈版本](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/latest)。每日從 `main` 分支自動建置 [nightly build](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/tag/nightly)。
+取得[最新發佈版本](https://github.com/tutumomo/Open-CalcSheet-Studio/releases/latest)（台灣版，預設繁體中文介面）。
 
 | 作業系統 | 安裝檔案 |
 |----------|----------|
-| **Windows** | `.exe` 安裝程式 (x64)，支援全系統或單一使用者安裝 |
-| **macOS** | `.dmg`（通用二進位：支援 Apple silicon 與 Intel） |
-| **Linux** | `.deb`、`.AppImage` |
+| **Windows** | `*_x64-setup.exe` 安裝程式 (x64) |
+| **macOS** | `*_aarch64.dmg`（僅 Apple Silicon，無 Intel 版） |
+| **Linux x64** | `*_amd64.deb` |
+| **Linux arm64** | `*_arm64.deb`（aarch64，如 Ubuntu 26.04 arm64）：`sudo apt install ./檔名.deb` |
 
 應用程式無內建更新程式：直接安裝新版本覆蓋舊版本即可。專案為一般檔案，會完整保留於原本儲存位置。
 
-發佈流程包含嚴格的數位簽章機制：Windows Authenticode 簽章、macOS Developer ID 經 Apple 官方公證，Linux 則附獨立 OpenPGP 簽名（`.asc`）。隨附的 `SHA256SUMS.txt` 列出每個檔案的校驗碼，詳見[如何驗證下載檔案](docs/ondertekening.md)。
+台灣版安裝檔**未經數位簽章**（無 Windows Authenticode、無 Apple Developer ID 公證），作業系統可能顯示安全性提示。隨附的 `SHA256SUMS.txt` 僅用於核對下載檔案是否完整，不能證明檔案來源。
 
 ## 為什麼使用它？
 
