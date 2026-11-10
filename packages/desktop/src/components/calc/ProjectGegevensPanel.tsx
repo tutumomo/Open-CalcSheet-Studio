@@ -2,7 +2,11 @@ import { ucTekst } from "./bladLezen";
 import { Fragment, useMemo, useState } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
-import { PROJECT_VELDEN, kFiVoor, keuzesVoor, vervallenKeuze, type Keuze, type VeldDef } from "../../store/projectGegevens";
+import {
+  PROJECT_VELDEN, getalWaarde, kFiVoor, keuzesVoor, twIVoor, twIwVoor, twTerreinVoor, vervallenKeuze,
+  type Keuze, type VeldDef,
+} from "../../store/projectGegevens";
+import TwWindKiezer from "./TwWindKiezer";
 import WindAreaMap from "./WindAreaMap";
 import LocatieKiezer from "./LocatieKiezer";
 import EenhedenEditor from "./EenhedenEditor";
@@ -21,7 +25,15 @@ const GROEP_SLEUTELS: Record<string, string> = {
   "Project": "project",
   "Basis of design (NEN-EN 1990 + NB)": "grondslagen",
   "Wind (NEN-EN 1991-1-4 + NB)": "wind",
+  "Basis of design (Taiwan)": "twGrondslagen",
+  "Site (Taiwan)": "twLocatie",
 };
+
+/**
+ * De Eurocode-groepen (upstream): ze blijven staan omdat de vier Eurocode-modules ze lezen,
+ * maar zitten in een uitklapbaar blok onderaan. De Taiwanese groepen staan bovenaan.
+ */
+const EUROCODE_GROEPEN = new Set(["Calculation method", "Basis of design (NEN-EN 1990 + NB)", "Wind (NEN-EN 1991-1-4 + NB)"]);
 
 /**
  * Formulier met de gegevens die voor het héle project gelden.
@@ -57,6 +69,10 @@ export default function ProjectGegevensPanel() {
 
   const cc = parseFloat(gegevens.CC ?? "2");
   const kFi = kFiVoor(Number.isFinite(cc) ? cc : 2);
+  const klasseRuw = parseFloat(gegevens.tw_klasse ?? "4");
+  const twKlasse = Number.isFinite(klasseRuw) ? klasseRuw : 4;
+  const terreinRuw = parseFloat(gegevens.tw_terrein ?? "3");
+  const twTerrein = twTerreinVoor(Number.isFinite(terreinRuw) ? terreinRuw : 3);
 
   const groepNaam = (naam: string) => {
     const sleutel = GROEP_SLEUTELS[naam];
@@ -81,32 +97,7 @@ export default function ProjectGegevensPanel() {
     });
   };
 
-  return (
-    <div className="pg-panel">
-      <div className="pg-kop">
-        <h1>{t("algemeen.projectgegevens")}</h1>
-        <p>
-          {exemplaren.length === 0
-            ? t("gegevens.introGeen")
-            : t("gegevens.intro", { count: exemplaren.length })}
-        </p>
-      </div>
-
-      <div className="pg-groep">
-        <h2>{t("gegevens.bestand")}</h2>
-        <label className="pg-veld">
-          <span className="pg-label">{t("gegevens.projectnaam")}</span>
-          <input
-            type="text"
-            value={projectNaam}
-            placeholder={t("gegevens.projectnaamPlaceholder")}
-            onChange={(e) => zetProjectNaam(e.target.value)}
-          />
-          <span className="pg-hint">{t("gegevens.projectnaamHint")}</span>
-        </label>
-      </div>
-
-      {groepen.map((groep) => (
+  const toonGroep = (groep: { naam: string; velden: VeldDef[] }) => (
         <div className="pg-groep" key={groep.naam}>
           <h2>{groepNaam(groep.naam)}</h2>
           {groep.velden.map((veld) => (
@@ -132,9 +123,14 @@ export default function ProjectGegevensPanel() {
               ) : (
                 <input
                   type="text"
-                  value={gegevens[veld.naam] ?? ""}
+                  inputMode={veld.type === "getal" ? "decimal" : undefined}
+                  aria-invalid={veld.type === "getal" && getalWaarde(gegevens[veld.naam] ?? veld.standaard) === undefined ? true : undefined}
+                  value={gegevens[veld.naam] ?? (veld.type === "getal" ? veld.standaard : "")}
                   onChange={(e) => zetGegeven(veld.naam, e.target.value)}
                 />
+              )}
+              {veld.type === "getal" && getalWaarde(gegevens[veld.naam] ?? veld.standaard) === undefined && (
+                <span className="pg-afgeleid pg-fout">{t("gegevens.geenGetal", { standaard: veld.standaard })}</span>
               )}
               {veld.hint && <span className="pg-hint">{veldTekst(veld, "hint")}</span>}
               {vervallenKeuze(veld, gegevens[veld.naam] ?? "") && (
@@ -145,9 +141,21 @@ export default function ProjectGegevensPanel() {
                   {t("gegevens.afgeleid")} K<sub>FI</sub> = {ucTekst(kFi)}
                 </span>
               )}
+              {veld.naam === "tw_klasse" && (
+                <span className="pg-afgeleid">
+                  {t("gegevens.afgeleid")} I<sub>{t("gegevens.twNaarBron.aardbeving")}</sub> = {ucTekst(twIVoor(twKlasse))} · I<sub>{t("gegevens.twNaarBron.wind")}</sub> = {ucTekst(twIwVoor(twKlasse))}
+                </span>
+              )}
+              {veld.naam === "tw_terrein" && (
+                <span className="pg-afgeleid">
+                  {t("gegevens.afgeleid")} α = {ucTekst(twTerrein.alpha)} · z<sub>g</sub> ={" "}
+                  {twTerrein.zg > 0 ? `${twTerrein.zg} m` : t("gegevens.twZgOnbekend")}
+                </span>
+              )}
             </label>
             {veld.naam === "eenheden" && <EenhedenEditor />}
             {veld.naam === "locatie" && <LocatieKiezer />}
+            {veld.naam === "tw_V10" && <TwWindKiezer />}
             {veld.naam === "windgebied" && (
               <div className="pg-windkaart">
                 <button
@@ -174,7 +182,40 @@ export default function ProjectGegevensPanel() {
             </Fragment>
           ))}
         </div>
-      ))}
+  );
+
+  return (
+    <div className="pg-panel">
+      <div className="pg-kop">
+        <h1>{t("algemeen.projectgegevens")}</h1>
+        <p>
+          {exemplaren.length === 0
+            ? t("gegevens.introGeen")
+            : t("gegevens.intro", { count: exemplaren.length })}
+        </p>
+      </div>
+
+      <div className="pg-groep">
+        <h2>{t("gegevens.bestand")}</h2>
+        <label className="pg-veld">
+          <span className="pg-label">{t("gegevens.projectnaam")}</span>
+          <input
+            type="text"
+            value={projectNaam}
+            placeholder={t("gegevens.projectnaamPlaceholder")}
+            onChange={(e) => zetProjectNaam(e.target.value)}
+          />
+          <span className="pg-hint">{t("gegevens.projectnaamHint")}</span>
+        </label>
+      </div>
+
+      {groepen.filter((g) => !EUROCODE_GROEPEN.has(g.naam)).map(toonGroep)}
+
+      <details className="pg-euro">
+        <summary>{t("gegevens.euroModules")}</summary>
+        <p className="pg-hint">{t("gegevens.euroModulesHint")}</p>
+        {groepen.filter((g) => EUROCODE_GROEPEN.has(g.naam)).map(toonGroep)}
+      </details>
 
       <p className="pg-voet">
         <Trans

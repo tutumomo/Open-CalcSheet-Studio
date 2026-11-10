@@ -12,7 +12,8 @@
  * Zie `projectStore.ts` voor die scheiding.
  */
 
-export type VeldType = "tekst" | "keuze";
+/** `getal`: een tekstveld waarvan de waarde als getal in de bladen komt (komma of punt). */
+export type VeldType = "tekst" | "keuze" | "getal";
 
 export interface Keuze {
   label: string;
@@ -84,6 +85,74 @@ export const PROJECT_VELDEN: VeldDef[] = [
   { groep: "Project", naam: "constructeur", label: "Structural engineer", type: "tekst", standaard: "" },
   { groep: "Project", naam: "locatie", label: "Location", type: "tekst", standaard: "" },
   { groep: "Project", naam: "onderdeel", label: "Part", type: "tekst", standaard: "" },
+
+  // ── 台灣設計基礎與工址（台灣版）──────────────────────────────────────────
+  // 變數一律以 tw_ 開頭，避免與 Eurocode 欄位衝突。tw_klasse 與 tw_terrein 是選擇，
+  // 用途係數與地況參數由它們導出（見 projectScope），像 K_FI 由 CC 導出一樣。
+  {
+    groep: "Basis of design (Taiwan)",
+    naam: "tw_klasse",
+    label: "Building use category",
+    type: "keuze",
+    standaard: "4",
+    opties: [
+      { label: "Category 1 — must stay operational after the event (government emergency offices, fire/police/telecom, evacuation schools, hospitals, power and water plants)", waarde: "1" },
+      { label: "Category 2 — storage of large quantities of toxic or explosive materials", waarde: "2" },
+      { label: "Category 3 — places where crowds gather (above the area thresholds of the code)", waarde: "3" },
+      { label: "Category 4 — other ordinary buildings (default)", waarde: "4" },
+    ],
+    hint: "Seismic importance factor I (building technical regulations, structures, art. 43-1 and seismic code 2.8): category 1 → 1,5 · 2 → 1,5 · 3 → 1,25 · 4 → 1,0. Wind importance factor I (wind code 2.5): categories 1–3 → 1,1 · 4 → 1,0. Every sheet receives tw_I and tw_Iw. The classification lists in the codes decide; the area thresholds for category 3 are in the code text. The wind code's temporary-structure class (I = 0,9) is not offered here.",
+  },
+  {
+    groep: "Basis of design (Taiwan)",
+    naam: "tw_DesignLife",
+    label: "Design working life (information)",
+    type: "keuze",
+    standaard: "50",
+    opties: [
+      { label: "25 years — temporary or low-importance structures", waarde: "25" },
+      { label: "50 years — ordinary buildings and structures (default)", waarde: "50" },
+      { label: "100 years — important or monumental structures", waarde: "100" },
+    ],
+    hint: "Information for the print header only: the Taiwan modules do not calculate with it. The wind code relates importance to the return period (25 / 50 / 100 years); see tw_klasse for the factor that is actually used.",
+  },
+  {
+    groep: "Site (Taiwan)",
+    naam: "tw_terrein",
+    label: "Terrain category (wind code)",
+    type: "keuze",
+    standaard: "3",
+    opties: [
+      { label: "A — centre of a large city, at least 50% of the buildings higher than 20 m", waarde: "1" },
+      { label: "B — suburbs, small towns, scattered obstacles of 10–20 m", waarde: "2" },
+      { label: "C — flat open terrain, grassland, coast or lake shore (default)", waarde: "3" },
+    ],
+    hint: "Terrain categories of the building wind code 2.3. The wind exponent α is derived (A 0,32 · B 0,25 · C 0,15). The gradient height z_g is only recorded for category C (300 m); for A and B it is 0, and the wind-load sheet then refuses to calculate until it is entered in the sheet from table 2.2. Intermediate terrain: use the category that gives the larger wind force.",
+  },
+  {
+    groep: "Site (Taiwan)",
+    naam: "tw_V10",
+    label: "Basic design wind speed V10(C) (m/s)",
+    type: "getal",
+    standaard: "40.0",
+    hint: "10-minute mean wind speed, terrain C, 10 m height, 50-year return period (wind code 2.4). Pick a district below for the ABRI suggestion, or type the value. A new wind-load sheet starts from this value when you changed it; an existing sheet keeps its own V_10.",
+  },
+  {
+    groep: "Site (Taiwan)",
+    naam: "tw_SDS",
+    label: "Site short-period design spectral acceleration S_DS",
+    type: "getal",
+    standaard: "0.80",
+    hint: "Seismic code 2.5 (S_DS = F_a·S_S^D; Taipei basin from 2.7). Depends on district, soil and near-fault distance: use the seismic-load sheet's helper for the exact value. A new seismic-load sheet starts from this value when you changed it.",
+  },
+  {
+    groep: "Site (Taiwan)",
+    naam: "tw_SD1",
+    label: "Site 1-second design spectral acceleration S_D1",
+    type: "getal",
+    standaard: "0.45",
+    hint: "Seismic code 2.5 (S_D1 = F_v·S_1^D; Taipei basin from 2.7). Same remarks as S_DS. A new seismic-load sheet starts from this value when you changed it.",
+  },
 
   // ── Grondslagen (NEN-EN 1990 + NB) ───────────────────────────────────────
   {
@@ -207,11 +276,70 @@ export function keuzesVoor(veld: VeldDef, ruw: string): Keuze[] {
   return [...opties, { label, waarde: ruw }];
 }
 
+/**
+ * Invoervelden van een Taiwanese module die bij het toevoegen met de waarde van
+ * het project beginnen: bladinvoer → projectveld. Alleen een waarde die de
+ * gebruiker zelf wijzigde (afwijkend van de standaard van het veld) wordt
+ * overgenomen; een ongewijzigd project laat de eigen beginwaarde van de module
+ * staan. Daarna beheert het blad zijn waarde zelf.
+ */
+const SJABLOON_STARTWAARDEN: Record<string, Record<string, string>> = {
+  "tw-wind-load": { V_10: "tw_V10" },
+  "tw-seismic-load": { S_DS: "tw_SDS", S_D1: "tw_SD1" },
+};
+
+export function startWaarden(templateId: string, g: ProjectGegevens): Record<string, string> {
+  const uit: Record<string, string> = {};
+  for (const [invoer, veldNaam] of Object.entries(SJABLOON_STARTWAARDEN[templateId] ?? {})) {
+    const veld = PROJECT_VELDEN.find((v) => v.naam === veldNaam);
+    const n = getalWaarde(g[veldNaam] ?? "");
+    if (veld && n !== undefined && n !== getalWaarde(veld.standaard)) uit[invoer] = String(n);
+  }
+  return uit;
+}
+
 /** K_FI bij een gevolgklasse — tabel B3, met de opmerking bij tabel NB.4 – A1.2(B). */
 export function kFiVoor(cc: number): number {
   if (cc <= 1) return 0.9;
   if (cc >= 3) return 1.1;
   return 1.0;
+}
+
+/**
+ * Aardbevingsgebruiksfactor I（耐震用途係數）bij gebouwcategorie 1..4 —
+ * 建築技術規則建築構造編 第 43-1 條（已驗證表 btr_struct_seismic_I）與
+ * 建築物耐震設計規範 2.8（seis113_I_class）：1,5 / 1,5 / 1,25 / 1,0.
+ */
+export function twIVoor(klasse: number): number {
+  if (klasse <= 1) return 1.5;
+  if (klasse === 2) return 1.5;
+  if (klasse === 3) return 1.25;
+  return 1.0;
+}
+
+/**
+ * 耐風用途係數 I（建築物耐風設計規範 2.5，已驗證表 wind103full_use_factor_I）：
+ * 第一、二、三類 1.1，其他 1.0。與耐震用途係數不同，不可互用。
+ */
+export function twIwVoor(klasse: number): number {
+  return klasse >= 1 && klasse <= 3 ? 1.1 : 1.0;
+}
+
+/**
+ * 地況 A/B/C（代碼 1/2/3）的風剖面指數 α 與梯度高度 z_g（耐風規範 2.3，表 2.2）。
+ * α 取自 2.3 節解說（A 0.32、B 0.25、C 0.15）；z_g 僅地況 C（300 m）有已驗證依據，
+ * A、B 回傳 0：風力範本以 z_g ≥ 1 拒算，不以猜測值代替。
+ */
+export function twTerreinVoor(code: number): { alpha: number; zg: number } {
+  if (code <= 1) return { alpha: 0.32, zg: 0 };
+  if (code === 2) return { alpha: 0.25, zg: 0 };
+  return { alpha: 0.15, zg: 300 };
+}
+
+/** Een getalveld: komma of punt, `undefined` bij iets wat geen getal is. */
+export function getalWaarde(ruw: string): number | undefined {
+  const n = Number(ruw.trim().replace(",", "."));
+  return ruw.trim() !== "" && Number.isFinite(n) ? n : undefined;
 }
 
 /**
@@ -243,6 +371,10 @@ export function projectScope(g: ProjectGegevens): Record<string, unknown> {
     if (veld.type === "keuze") {
       const n = parseFloat(geldendeWaarde(veld, ruw));
       if (Number.isFinite(n)) scope[veld.naam] = n;
+    } else if (veld.type === "getal") {
+      // Een ongeldige invoer valt terug op de standaardwaarde, zodat een blad
+      // nooit op een tekst of NaN rekent.
+      scope[veld.naam] = getalWaarde(ruw) ?? getalWaarde(veld.standaard) ?? 0;
     } else {
       // Ook lege tekstvelden krijgen een waarde: een blad dat de projectnaam
       // afdrukt mag niet omvallen op "onbekende variabele" omdat het veld nog
@@ -252,5 +384,12 @@ export function projectScope(g: ProjectGegevens): Record<string, unknown> {
   }
   const cc = typeof scope.CC === "number" ? scope.CC : 2;
   scope.K_FI = kFiVoor(cc);
+  // 台灣：用途係數與地況參數由所選類別導出（與 K_FI 同理）。
+  const klasse = typeof scope.tw_klasse === "number" ? scope.tw_klasse : 4;
+  scope.tw_I = twIVoor(klasse);
+  scope.tw_Iw = twIwVoor(klasse);
+  const terrein = twTerreinVoor(typeof scope.tw_terrein === "number" ? scope.tw_terrein : 3);
+  scope.tw_alpha_w = terrein.alpha;
+  scope.tw_zg = terrein.zg;
   return scope;
 }

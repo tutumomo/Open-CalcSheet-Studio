@@ -28,7 +28,7 @@ function projectVariabelen() {
   const bron = readFileSync(join(SRC, "store/projectGegevens.ts"), "utf8");
   const namen = [...bron.matchAll(/naam:\s*"([^"]+)"/g)].map((m) => m[1]);
   if (namen.length === 0) throw new Error("geen projectvelden gevonden in projectGegevens.ts");
-  return new Set([...namen, "K_FI"]);
+  return new Set([...namen, "K_FI", "tw_I", "tw_Iw", "tw_alpha_w", "tw_zg"]);
 }
 
 const PROJECT = projectVariabelen();

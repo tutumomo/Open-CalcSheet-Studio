@@ -7,6 +7,7 @@ import { usePrintStore } from "../../store/printStore";
 import { ucTekst } from "./bladResultaat";
 import { rekenBladDoor, zorgVoorKernstijlen, type DoorgerekendBlad } from "./bladDoorrekenen";
 import { rekenversie } from "./bladVersie";
+import { isEurocodeBlad } from "./eurocodeModules";
 import { Oordeel, PrintBlad } from "./PrintBlad";
 import "./PrintDocument.css";
 import { metToetsingen } from "../../rekenen/toetsCache";
@@ -61,6 +62,8 @@ export function useUitdraai(): Uitdraai {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplaren, gegevens, selectie, soort, i18next.language, toetsV]);
 
+  const heeftTw = exemplaren.some((e) => e.templateId?.startsWith("tw-"));
+  const heeftEuro = !heeftTw || exemplaren.some(isEurocodeBlad);
   const kop: Array<[string, string | undefined]> = [
     [op("projectnummer"), gegevens.project_nummer],
     [op("projectnaam"), gegevens.project_naam],
@@ -68,17 +71,29 @@ export function useUitdraai(): Uitdraai {
     [op("opdrachtgever"), gegevens.opdrachtgever],
     [op("constructeur"), gegevens.constructeur],
     [op("locatie"), gegevens.locatie],
-    [op("gevolgklasse"), gegevens.CC ? `CC${gegevens.CC}` : undefined],
-    [op("betrouwbaarheidsklasse"), gegevens.RC ? `RC${gegevens.RC}` : undefined],
-    [op("levensduur"), gegevens.DesignLife ? op("jaar", { n: projectWaarde(gegevens, "DesignLife") }) : undefined],
+    // 台灣版：有台灣模組時印台灣的設計基礎；Eurocode 欄位（CC、RC、荷蘭 NB 年限、
+    // 計算方法）只在專案有上游 Eurocode 計算表（或完全沒有台灣表）時印。
+    ...(heeftTw
+      ? ([
+          [op("twKlasse"), gegevens.tw_klasse ? op("twKlasseWaarde", { n: gegevens.tw_klasse }) : undefined],
+          [op("twTerrein"), gegevens.tw_terrein ? op("twTerreinWaarde", { n: ["", "A", "B", "C"][Number(gegevens.tw_terrein)] ?? "" }) : undefined],
+          [op("twLevensduur"), gegevens.tw_DesignLife ? op("jaar", { n: gegevens.tw_DesignLife }) : undefined],
+        ] as Array<[string, string | undefined]>)
+      : []),
+    ...(heeftEuro
+      ? ([
+          [op("gevolgklasse"), gegevens.CC ? `CC${gegevens.CC}` : undefined],
+          [op("betrouwbaarheidsklasse"), gegevens.RC ? `RC${gegevens.RC}` : undefined],
+          [op("levensduur"), gegevens.DesignLife ? op("jaar", { n: projectWaarde(gegevens, "DesignLife") }) : undefined],
+        ] as Array<[string, string | undefined]>)
+      : []),
     // Op de splitspunten tussen de referentie-uitwerking en de norm rekent elk blad allebei en
     // kiest er één. Welke, moet op de afdruk staan: zonder die regel zijn twee
     // rapporten uit hetzelfde project niet met elkaar te vergelijken, en weet
     // een controleur niet welke lezing hij voor zich heeft.
-    [
-      op("rekenwijze"),
-      gegevens.rekenwijze === "0" ? op("rekenwijzeNorm") : op("rekenwijzeReferentie"),
-    ],
+    ...(heeftEuro
+      ? ([[op("rekenwijze"), gegevens.rekenwijze === "0" ? op("rekenwijzeNorm") : op("rekenwijzeReferentie")]] as Array<[string, string | undefined]>)
+      : []),
   ];
 
   return {

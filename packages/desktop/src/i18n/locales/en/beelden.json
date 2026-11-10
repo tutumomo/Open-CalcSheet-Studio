@@ -464,7 +464,12 @@
     "project": "Project {{nummer}}",
     "opgesteldDoor": "Prepared by {{naam}}",
     "paginaWoord": "Page",
-    "vanWoord": "of"
+    "vanWoord": "of",
+    "twKlasse": "Building use category",
+    "twKlasseWaarde": "Category {{n}}",
+    "twTerrein": "Terrain category",
+    "twTerreinWaarde": "Terrain {{n}}",
+    "twLevensduur": "Design working life (information)"
   },
   "twRcBeam": {
     "titel": "Parametric view — RC rectangular beam",

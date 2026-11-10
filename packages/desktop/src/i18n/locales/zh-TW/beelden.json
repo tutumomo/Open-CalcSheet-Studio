@@ -464,7 +464,12 @@
     "project": "專案{{nummer}}",
     "opgesteldDoor": "編製者：{{naam}}",
     "paginaWoord": "頁",
-    "vanWoord": "／"
+    "vanWoord": "／",
+    "twKlasse": "建築物用途分類",
+    "twKlasseWaarde": "第{{n}}類",
+    "twTerrein": "地況",
+    "twTerreinWaarde": "地況 {{n}}",
+    "twLevensduur": "設計使用年限（資訊）"
   },
   "twRcBeam": {
     "titel": "參數化視圖——RC 矩形梁",

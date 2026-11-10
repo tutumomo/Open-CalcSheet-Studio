@@ -2,12 +2,14 @@
 import { parse, evaluate } from "../packages/core/dist/index.js";
 import { twWindLoad } from "../packages/desktop/src/templates/tw-wind-load.ts";
 import { leesResultaat, leesGetallen } from "../packages/desktop/src/components/calc/bladLezen.ts";
+import { projectScope, legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
+const SCOPE = projectScope(legeGegevens());
 
 let fouten = 0;
 function meld(ok, t, d = "") { console.log(`  ${ok ? "OK    " : "FOUT  "} ${t}${ok || !d ? "" : `  -> ${d}`}`); if (!ok) fouten++; }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {});
-  return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-wind-load") };
+  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {}, SCOPE);
+  return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}, SCOPE), "tw-wind-load") };
 }
 function vervang(tpl, o, n) { if (!tpl.includes(o)) throw new Error(`找不到：${o}`); return tpl.replace(o, n); }
 const near = (a, b) => typeof a === "number" && Math.abs(a - b) <= 1e-6 * Math.max(1, Math.abs(b));
@@ -20,8 +22,8 @@ function ref({ V, I, Kzt, a, zg, G, n, h, B }) {
 }
 const base = { V: 40, I: 1, Kzt: 1, a: 0.15, zg: 300, G: 1.3, n: 8, h: 3.5, B: 20 };
 const set = (p) => [
-  ["V_10 = ?{40.0}", `V_10 = ?{${p.V}}`], ["I_w = 1.0'-", `I_w = ${p.I}'-`], ["K_zt = 1.0'-", `K_zt = ${p.Kzt}'-`],
-  ["alpha_w = 0.15'-", `alpha_w = ${p.a}'-`], ["z_g = 300'm", `z_g = ${p.zg}'m`], ["GCp = 1.3'-", `GCp = ${p.G}'-`],
+  ["V_10 = ?{40.0}", `V_10 = ?{${p.V}}`], ["I_w = tw_Iw'-", `I_w = ${p.I}'-`], ["K_zt = 1.0'-", `K_zt = ${p.Kzt}'-`],
+  ["alpha_w = tw_alpha_w'-", `alpha_w = ${p.a}'-`], ["z_g = tw_zg'm", `z_g = ${p.zg}'m`], ["GCp = 1.3'-", `GCp = ${p.G}'-`],
   ["n_st = 8'-", `n_st = ${p.n}'-`], ["h_st = 3.5'm", `h_st = ${p.h}'m`], ["B_w = 20'm", `B_w = ${p.B}'m`],
 ].reduce((t, [o, n]) => vervang(t, o, n), twWindLoad);
 
@@ -50,7 +52,7 @@ console.log("\n2. 參數掃描");
 console.log("\n3. 無效輸入一律拒算");
 for (const [名, o, n] of [
   ["V10 為零", "V_10 = ?{40.0}", "V_10 = ?{0}"],
-  ["α 超出範圍", "alpha_w = 0.15'-", "alpha_w = 0.8'-"],
+  ["α 超出範圍", "alpha_w = tw_alpha_w'-", "alpha_w = 0.8'-"],
   ["高度超過 z_g", "n_st = 8'-", "n_st = 100'-"],
   ["G·Cp 非正", "GCp = 1.3'-", "GCp = 0'-"],
   ["寬度為零", "B_w = 20'm", "B_w = 0'm"],
@@ -68,7 +70,7 @@ console.log("\n4. 工址行政區建議風速表（B 級：ABRI 開放資料，�
   meld(列.every((v) => Number.isFinite(v) && v >= 30 && v <= 60), "全部建議風速介於 30～60 m/s");
   meld(TW_SITE_WIND["台北市"]["北投區"] === 36 && TW_SITE_WIND["基隆市"]["仁愛區"] === 42 && TW_SITE_WIND["新北市"]["板橋區"] === 36, "抽樣列與來源 CSV 一致");
   // 帶入後的數值確實進入計算：以查表值覆寫 V_10，風壓須隨 V² 變化
-  const q = (v) => leesGetallen(evaluate(parse(twWindLoad), { V_10: String(v) })).q_h;
+  const q = (v) => leesGetallen(evaluate(parse(twWindLoad), { V_10: String(v) }, SCOPE)).q_h;
   const r = q(42) / q(36);
   meld(Math.abs(r - (42 / 36) ** 2) < 1e-9, `V_10 覆寫生效：q(42)/q(36) = ${r.toFixed(6)} = (42/36)²`);
 }

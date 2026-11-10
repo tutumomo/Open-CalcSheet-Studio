@@ -207,7 +207,9 @@
       "rekenwijze": "Calculation method",
       "project": "Project",
       "grondslagen": "Basis of design (NEN-EN 1990 + NB)",
-      "wind": "Wind (NEN-EN 1991-1-4 + NB)"
+      "wind": "Wind (NEN-EN 1991-1-4 + NB)",
+      "twGrondslagen": "Basis of design (Taiwan)",
+      "twLocatie": "Site (Taiwan)"
     },
     "velden": {
       "eenheden": {
@@ -296,6 +298,46 @@
           "2": "II — Undeveloped area (z₀ = 0,2 · z_min = 4)",
           "3": "III — Built-up area (z₀ = 0,5 · z_min = 7)"
         }
+      },
+      "tw_klasse": {
+        "label": "Building use category",
+        "hint": "Seismic importance factor I (building technical regulations, structures, art. 43-1 and seismic code 2.8): category 1 → 1.5 · 2 → 1.5 · 3 → 1.25 · 4 → 1.0. Wind importance factor I (wind code 2.5): categories 1–3 → 1.1 · 4 → 1.0. Every sheet receives tw_I and tw_Iw. The classification lists in the codes decide; the area thresholds for category 3 are in the code text. The wind code's temporary-structure class (I = 0.9) is not offered here.",
+        "opties": {
+          "1": "Category 1 — must stay operational after the event (government emergency offices, fire/police/telecom, evacuation schools, hospitals, power and water plants)",
+          "2": "Category 2 — storage of large quantities of toxic or explosive materials",
+          "3": "Category 3 — places where crowds gather (above the area thresholds of the code)",
+          "4": "Category 4 — other ordinary buildings (default)"
+        }
+      },
+      "tw_DesignLife": {
+        "label": "Design working life (information)",
+        "hint": "Information for the print header only: the Taiwan modules do not calculate with it. The wind code relates importance to the return period (25 / 50 / 100 years); see the building use category for the factor that is actually used.",
+        "opties": {
+          "25": "25 years — temporary or low-importance structures",
+          "50": "50 years — ordinary buildings and structures (default)",
+          "100": "100 years — important or monumental structures"
+        }
+      },
+      "tw_terrein": {
+        "label": "Terrain category (wind code)",
+        "hint": "Terrain categories of the building wind code 2.3. The wind exponent α is derived (A 0.32 · B 0.25 · C 0.15). The gradient height z_g is only recorded for category C (300 m); for A and B it is 0, and the wind-load sheet then refuses to calculate until it is entered in the sheet from table 2.2. Intermediate terrain: use the category that gives the larger wind force.",
+        "opties": {
+          "1": "A — centre of a large city, at least 50% of the buildings higher than 20 m",
+          "2": "B — suburbs, small towns, scattered obstacles of 10–20 m",
+          "3": "C — flat open terrain, grassland, coast or lake shore (default)"
+        }
+      },
+      "tw_V10": {
+        "label": "Basic design wind speed V10(C) (m/s)",
+        "hint": "10-minute mean wind speed, terrain C, 10 m height, 50-year return period (wind code 2.4). Pick a district below for the suggested value, or type the value. A new wind-load sheet starts from this value when you changed it; an existing sheet keeps its own V_10."
+      },
+      "tw_SDS": {
+        "label": "Site short-period design spectral acceleration S_DS",
+        "hint": "Seismic code 2.5 (S_DS = F_a·S_S^D; Taipei basin from 2.7). Depends on district, soil and near-fault distance: use the seismic-load sheet's helper for the exact value. A new seismic-load sheet starts from this value when you changed it."
+      },
+      "tw_SD1": {
+        "label": "Site 1-second design spectral acceleration S_D1",
+        "hint": "Seismic code 2.5 (S_D1 = F_v·S_1^D; Taipei basin from 2.7). Same remarks as S_DS."
       }
     },
     "eenheden": {
@@ -348,7 +390,18 @@
       "erpLeeg": "The field {{veld}} of this project in ERPNext is empty or does not exist. The current location stays in place.",
       "erpNietGevonden": "The location from ERPNext could not be found. The current location stays in place.",
       "erpMislukt": "Taking over from ERPNext failed: {{fout}}. The current location stays in place."
-    }
+    },
+    "euroModules": "Eurocode modules only (Eurocodes + Dutch national annexes)",
+    "euroModulesHint": "The fields below are only read by the four upstream Eurocode sheets (steel/timber beam, timber joist floor, two-pile cap, cross-section stresses). The Taiwan modules (tw-*) do not use them.",
+    "geenGetal": "Not a valid number; sheets calculate with the default {{standaard}} for now.",
+    "twNaarBron": {
+      "aardbeving": "seismic",
+      "wind": "wind"
+    },
+    "twZgOnbekend": "no verified value (0): the wind-load sheet refuses to calculate; enter it in the sheet from table 2.2",
+    "twWindKiezer": "Fill V10 from county and district (suggested values from the open data of the Architecture and Building Research Institute; you can still edit it, and you check it against wind code 2.4 yourself):",
+    "twStad": "County / city",
+    "twGebied": "District"
   },
   "windkaart": {
     "nietGevonden": "Address not found in the Netherlands.",

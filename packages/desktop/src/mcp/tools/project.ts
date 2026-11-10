@@ -3,7 +3,7 @@
  * zichtbaarheid in de projectboom, het rapport en ongedaan maken.
  */
 import type { McpContext, McpToolDef } from "../contracts.ts";
-import { PROJECT_VELDEN, geldendeWaarde, type VeldDef } from "../../store/projectGegevens.ts";
+import { PROJECT_VELDEN, geldendeWaarde, getalWaarde, type VeldDef } from "../../store/projectGegevens.ts";
 import { leesPad } from "../../rapport/pad.ts";
 import { LEZEN, NIEUW, WEG, WIJZIGEN, alsTekst, fout, objectSchema, ok, tekstOfGetal, zoekBlad } from "./hulp.ts";
 import { lijstVan } from "./bladen.ts";
@@ -12,7 +12,7 @@ import { base64Bytes } from "../../store/pdfBijlage.ts";
 // ── Projectgegevens ─────────────────────────────────────────────────────────
 
 function veldJson(v: VeldDef, ruw: string): Record<string, unknown> {
-  const uit: Record<string, unknown> = { name: v.naam, label: v.label, group: v.groep, type: v.type === "keuze" ? "choice" : "text", value: ruw };
+  const uit: Record<string, unknown> = { name: v.naam, label: v.label, group: v.groep, type: v.type === "keuze" ? "choice" : v.type === "getal" ? "number" : "text", value: ruw };
   const geldend = geldendeWaarde(v, ruw);
   if (geldend !== ruw) uit.effectiveValue = geldend;
   if (v.opties) uit.options = v.opties.map((o) => ({ value: o.waarde, label: o.label }));
@@ -270,7 +270,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     name: "project_set_data",
     kind: "mutate",
     description:
-      "Set project data fields (see projectData in project_get). Project data applies to every sheet, e.g. CC (consequence class), windgebied (wind region), terreincategorie (terrain category), DesignLife, project_nummer. " +
+      "Set project data fields (see projectData in project_get). Project data applies to every sheet, e.g. tw_klasse (Taiwan building use category 1-4), tw_terrein (terrain A/B/C = 1/2/3), tw_V10, tw_SDS, tw_SD1, project_nummer; and for the Eurocode sheets CC (consequence class), windgebied (wind region), terreincategorie (terrain category), DesignLife. " +
       "Pass name and value, or values {name: value} for several. For a choice field pass one of its option values (a label or the part of the label before ' — ' is also accepted). Only existing fields can be set; nothing is written if one value is invalid.",
     inputSchema: objectSchema({
       name: { type: "string", enum: PROJECT_VELDEN.map((v) => v.naam), description: "Field name." },
@@ -307,6 +307,10 @@ export const PROJECTTOOLS: McpToolDef[] = [
             });
           }
           waarde = gekozen;
+        } else if (veld.type === "getal") {
+          const n = getalWaarde(invoer);
+          if (n === undefined) return fout("VALIDATION", `"${invoer}" is not a number (field ${veld.naam}).`);
+          waarde = String(n);
         }
         zetten.push([veld.naam, waarde]);
       }

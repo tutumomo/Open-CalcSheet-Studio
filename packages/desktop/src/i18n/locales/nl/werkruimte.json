@@ -207,7 +207,9 @@
       "rekenwijze": "Rekenwijze",
       "project": "Project",
       "grondslagen": "Grondslagen (NEN-EN 1990 + NB)",
-      "wind": "Wind (NEN-EN 1991-1-4 + NB)"
+      "wind": "Wind (NEN-EN 1991-1-4 + NB)",
+      "twGrondslagen": "Grondslagen (Taiwan)",
+      "twLocatie": "Locatie (Taiwan)"
     },
     "velden": {
       "eenheden": {
@@ -296,6 +298,46 @@
           "2": "II — Onbebouwd gebied (z₀ = 0,2 · z_min = 4)",
           "3": "III — Bebouwd gebied (z₀ = 0,5 · z_min = 7)"
         }
+      },
+      "tw_klasse": {
+        "label": "Gebruikscategorie van het gebouw",
+        "hint": "Bepaalt de belangrijkheidsfactor I voor aardbeving (bouwtechnische regels, constructies, art. 43-1 en aardbevingsnorm 2.8): categorie 1 → 1,5 · 2 → 1,5 · 3 → 1,25 · 4 → 1,0. Voor wind (windnorm 2.5): categorieën 1–3 → 1,1 · 4 → 1,0. Elk blad krijgt tw_I en tw_Iw. De indelingen in de normen gelden; de vloeroppervlakte-drempels voor categorie 3 staan in de normtekst. De tijdelijke klasse van de windnorm (I = 0,9) wordt hier niet aangeboden.",
+        "opties": {
+          "1": "Categorie 1 — moet na de gebeurtenis blijven functioneren (overheidsdiensten voor noodhulp, brandweer/politie/telecom, evacuatiescholen, ziekenhuizen, elektriciteits- en waterbedrijven)",
+          "2": "Categorie 2 — opslag van grote hoeveelheden giftige of explosieve stoffen",
+          "3": "Categorie 3 — plaatsen waar veel mensen samenkomen (boven de oppervlaktedrempels van de norm)",
+          "4": "Categorie 4 — overige gewone gebouwen (standaard)"
+        }
+      },
+      "tw_DesignLife": {
+        "label": "Ontwerplevensduur (ter informatie)",
+        "hint": "Alleen ter informatie voor de afdrukkop: de Taiwanese modules rekenen er niet mee. De windnorm koppelt belangrijkheid aan de terugkeerperiode (25 / 50 / 100 jaar); de factor die echt wordt gebruikt volgt uit de gebruikscategorie.",
+        "opties": {
+          "25": "25 jaar — tijdelijke of minder belangrijke constructies",
+          "50": "50 jaar — gewone gebouwen en constructies (standaard)",
+          "100": "100 jaar — belangrijke of monumentale constructies"
+        }
+      },
+      "tw_terrein": {
+        "label": "Terreincategorie (windnorm)",
+        "hint": "Terreincategorieën van windnorm 2.3. De windexponent α wordt afgeleid (A 0,32 · B 0,25 · C 0,15). De gradiënthoogte z_g is alleen voor categorie C (300 m) vastgelegd; voor A en B is hij 0 en weigert het windbelastingblad te rekenen totdat hij in het blad uit tabel 2.2 is ingevuld. Overgangsterrein: kies de categorie met de grootste windkracht.",
+        "opties": {
+          "1": "A — centrum van een grote stad, minstens 50% van de gebouwen hoger dan 20 m",
+          "2": "B — buitenwijken, kleine steden, verspreide obstakels van 10–20 m",
+          "3": "C — vlak open terrein, grasland, kust of meeroever (standaard)"
+        }
+      },
+      "tw_V10": {
+        "label": "Basiswindsnelheid V10(C) (m/s)",
+        "hint": "10-minutengemiddelde windsnelheid, terrein C, 10 m hoogte, terugkeerperiode 50 jaar (windnorm 2.4). Kies hieronder een district voor de voorgestelde waarde, of typ de waarde. Een nieuw windbelastingblad begint met deze waarde als je hem wijzigde; een bestaand blad houdt zijn eigen V_10."
+      },
+      "tw_SDS": {
+        "label": "Kortperiodieke ontwerpspectrale versnelling van de locatie S_DS",
+        "hint": "Aardbevingsnorm 2.5 (S_DS = F_a·S_S^D; Taipei-bekken vanaf 2.7). Hangt af van district, bodem en afstand tot de breuk: gebruik de hulp in het aardbevingsblad voor de exacte waarde. Een nieuw aardbevingsblad begint met deze waarde als je hem wijzigde."
+      },
+      "tw_SD1": {
+        "label": "Ontwerpspectrale versnelling van de locatie bij 1 s S_D1",
+        "hint": "Aardbevingsnorm 2.5 (S_D1 = F_v·S_1^D; Taipei-bekken vanaf 2.7). Zelfde opmerkingen als S_DS."
       }
     },
     "eenheden": {
@@ -348,7 +390,18 @@
       "erpLeeg": "Het veld {{veld}} van dit project in ERPNext is leeg of bestaat niet. De huidige locatie blijft staan.",
       "erpNietGevonden": "De locatie uit ERPNext is niet gevonden. De huidige locatie blijft staan.",
       "erpMislukt": "Overnemen uit ERPNext is mislukt: {{fout}}. De huidige locatie blijft staan."
-    }
+    },
+    "euroModules": "Alleen voor Eurocode-modules (Eurocodes + Nederlandse nationale bijlagen)",
+    "euroModulesHint": "De velden hieronder worden alleen gelezen door de Eurocode-bladen van upstream (ligger, balklaag, tweepaalspoer, doorsnede). De Taiwanese modules (tw-*) gebruiken ze niet.",
+    "geenGetal": "Geen geldig getal; bladen rekenen voorlopig met de standaardwaarde {{standaard}}.",
+    "twNaarBron": {
+      "aardbeving": "aardbeving",
+      "wind": "wind"
+    },
+    "twZgOnbekend": "geen geverifieerde waarde (0): het windbelastingblad weigert te rekenen; vul hem in het blad in uit tabel 2.2",
+    "twWindKiezer": "V10 invullen uit provincie en district (voorgestelde waarden uit de open data van het Architecture and Building Research Institute; je kunt hem nog aanpassen en controleert hem zelf met windnorm 2.4):",
+    "twStad": "Provincie / stad",
+    "twGebied": "District"
   },
   "windkaart": {
     "nietGevonden": "Adres niet gevonden in Nederland.",

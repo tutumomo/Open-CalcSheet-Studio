@@ -464,7 +464,12 @@
     "project": "Project {{nummer}}",
     "opgesteldDoor": "Opgesteld door {{naam}}",
     "paginaWoord": "Pagina",
-    "vanWoord": "van"
+    "vanWoord": "van",
+    "twKlasse": "Gebruikscategorie gebouw",
+    "twKlasseWaarde": "Categorie {{n}}",
+    "twTerrein": "Terreincategorie",
+    "twTerreinWaarde": "Terrein {{n}}",
+    "twLevensduur": "Ontwerplevensduur (ter informatie)"
   },
   "twRcBeam": {
     "titel": "Parametrisch beeld — rechthoekige betonbalk",

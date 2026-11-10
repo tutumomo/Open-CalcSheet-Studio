@@ -67,31 +67,16 @@ function templatesUit(mod, bestand) {
  * `store/projectGegevens.ts`, zodat de snapshot meebeweegt als daar een veld
  * bijkomt.
  */
-function projectScopeUitBron() {
-  const bron = readFileSync(
-    join(hier, "../packages/desktop/src/store/projectGegevens.ts"),
-    "utf8",
+async function projectScopeUitBron() {
+  // De echte projectScope (ook de afgeleide waarden: K_FI, tw_I, tw_Iw, tw_alpha_w, tw_zg),
+  // zodat de snapshot meebeweegt met elk veld dat in projectGegevens.ts bijkomt.
+  const { projectScope, legeGegevens } = await import(
+    join(hier, "../packages/desktop/src/store/projectGegevens.ts")
   );
-  const scope = {};
-  const namen = [...bron.matchAll(/naam:\s*"([^"]+)"/g)].map((m) => m[1]);
-  const standaarden = [...bron.matchAll(/standaard:\s*"([^"]*)"/g)].map((m) => m[1]);
-  if (namen.length !== standaarden.length) {
-    throw new Error(
-      `projectGegevens.ts: ${namen.length} namen maar ${standaarden.length} standaarden — ` +
-        "de snapshot kan de projectwaarden niet betrouwbaar afleiden.",
-    );
-  }
-  namen.forEach((naam, i) => {
-    const ruw = standaarden[i];
-    const n = parseFloat(ruw);
-    scope[naam] = ruw !== "" && Number.isFinite(n) ? n : ruw;
-  });
-  const cc = typeof scope.CC === "number" ? scope.CC : 2;
-  scope.K_FI = cc <= 1 ? 0.9 : cc >= 3 ? 1.1 : 1.0;
-  return scope;
+  return projectScope(legeGegevens());
 }
 
-const PROJECT_SCOPE = projectScopeUitBron();
+const PROJECT_SCOPE = await projectScopeUitBron();
 
 /** Getallen en tekst van één rekenblad. */
 function verwerk(bron) {

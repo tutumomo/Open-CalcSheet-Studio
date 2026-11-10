@@ -3,7 +3,7 @@ import { zetProjectEenheden, type ElementRef, type VastgelegdeToets } from "@ifc
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
 import { getSetting, setSetting } from "../store";
-import { legeGegevens, type ProjectGegevens } from "./projectGegevens";
+import { legeGegevens, startWaarden, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
 import { leesTaal, normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
 import { leesPad } from "../rapport/pad";
@@ -407,7 +407,7 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
           source,
           // De tekst is die van de module: zijn rekenversie is de bron.
           bronVersie: rekenversie(source),
-          waarden: {},
+          waarden: startWaarden(templateId, s.gegevens),
         },
       ],
       activeId: id,

@@ -7,14 +7,16 @@ import { parse, evaluate } from "../packages/core/dist/index.js";
 import { twSeismicLoad } from "../packages/desktop/src/templates/tw-seismic-load.ts";
 import { leesResultaat, leesGetallen } from "../packages/desktop/src/components/calc/bladLezen.ts";
 
+import { projectScope, legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
+const SCOPE = projectScope(legeGegevens());
 let fouten = 0;
 function meld(ok, tekst, detail = "") {
   console.log(`  ${ok ? "OK    " : "FOUT  "} ${tekst}${ok || !detail ? "" : `  -> ${detail}`}`);
   if (!ok) fouten++;
 }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {});
-  return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-seismic-load") };
+  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {}, SCOPE);
+  return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}, SCOPE), "tw-seismic-load") };
 }
 function vervang(tpl, oud, nieuw) {
   if (!tpl.includes(oud)) throw new Error(`找不到要取代的字串：${oud}`);
@@ -55,7 +57,7 @@ const set = (tpl, p) =>
   [
     ["S_DS = ?{0.80}", `S_DS = ?{${p.SDS}}`],
     ["S_D1 = ?{0.45}", `S_D1 = ?{${p.SD1}}`],
-    ["I_eq = 1.0'-", `I_eq = ${p.I}'-`],
+    ["I_eq = tw_I'-", `I_eq = ${p.I}'-`],
     ["sys = 2'-", `sys = ${p.sys}'-`],
     ["R_duct = 4.8'-", `R_duct = ${p.R}'-`],
     ["alpha_y = 1.5'-", `alpha_y = ${p.ay}'-`],
@@ -116,7 +118,7 @@ for (const [名, 舊, 新] of [
   ["臺北盆地", "taipei = 0'-", "taipei = 1'-"],
   ["S_DS 小於 S_D1/2.5", "S_DS = ?{0.80}", "S_DS = ?{0.10}"],
   ["R 超出 6", "R_duct = 4.8'-", "R_duct = 7'-"],
-  ["I 非 1.0/1.25/1.5", "I_eq = 1.0'-", "I_eq = 1.1'-"],
+  ["I 非 1.0/1.25/1.5", "I_eq = tw_I'-", "I_eq = 1.1'-"],
   ["重量為零", "W_st = 450'tf", "W_st = 0'tf"],
 ]) {
   const { uit, res } = draai(vervang(twSeismicLoad, 舊, 新));
@@ -162,7 +164,7 @@ console.log("\n5. 工址行政區震區參數與近斷層修正資料庫（seis1
   meld(Math.abs(zbSpec.SsD - 0.86) < 1e-9 && Math.abs(zbSpec.S1D - 0.51) < 1e-9 && Math.abs(zbSpec.SDS - 0.86) < 1e-9 && Math.abs(zbSpec.SD1 - 0.561) < 1e-9, "竹北市新城斷層 r=2 km 第二類地盤 SDS=0.86, SD1=0.561");
 
   // 確認一鍵帶入覆寫生效：將計算出的 SDS、SD1 寫入範本並驗證基底剪力 V 隨之更新
-  const nOverride = evaluate(parse(twSeismicLoad), { S_DS: String(zbSpec.SDS), S_D1: String(zbSpec.SD1) });
+  const nOverride = evaluate(parse(twSeismicLoad), { S_DS: String(zbSpec.SDS), S_D1: String(zbSpec.SD1) }, SCOPE);
   const uOverride = leesGetallen(nOverride);
   const eOverride = ref({ ...base, SDS: zbSpec.SDS, SD1: zbSpec.SD1 });
   meld(near(uOverride.V, eOverride.V), `S_DS、S_D1 覆寫生效：V = ${uOverride.V.toFixed(3)} tf（預期 ${eOverride.V.toFixed(3)} tf）`);

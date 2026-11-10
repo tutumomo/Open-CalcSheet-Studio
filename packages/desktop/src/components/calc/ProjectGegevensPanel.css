@@ -141,6 +141,42 @@
   border-radius: var(--oa-radius-small);
 }
 
+.pg-fout {
+  color: var(--theme-danger, #c0392b);
+}
+
+.pg-veld input[aria-invalid="true"] {
+  border-color: var(--theme-danger, #c0392b);
+}
+
+/* ── Uitklapbaar blok met de Eurocode-velden (台灣版：歐規模組專用) ─────── */
+
+.pg-euro {
+  margin-top: var(--oa-space-xl);
+  border-top: 1px solid var(--theme-border);
+  padding-top: var(--oa-space-md);
+}
+
+.pg-euro > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--theme-text-secondary);
+  padding: 4px 0;
+}
+
+/* ── Stad/district-keuze voor V10 ────────────────────────────────── */
+
+.pg-kiezer-rij {
+  display: flex;
+  gap: var(--oa-space-sm, 8px);
+  margin-top: 4px;
+}
+
+.pg-kiezer-rij select {
+  flex: 1;
+  min-width: 0;
+}
+
 /* ── Windgebied-kaart onder het windgebied-veld ───────────────────── */
 
 .pg-windkaart {

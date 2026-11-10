@@ -38,22 +38,17 @@ const TPL_DIR = join(hier, "../packages/desktop/src/templates");
 /** Bestanden in de templatemap die geen rekenblad bevatten. */
 const GEEN_BLAD = new Set([
   "index.ts",            // register
-  "rekentaal-includes.ts", // hulpbestanden voor #include  "nl-windgebieden.ts",  // kaartgegevens
+  "rekentaal-includes.ts", // hulpbestanden voor #include
+  "nl-windgebieden.ts",  // kaartgegevens
 ]);
 
-/** Projectgegevens zoals de app ze vóór de eerste regel in de scope zet. */
-function projectScope() {
-  const src = readFileSync(join(hier, "../packages/desktop/src/store/projectGegevens.ts"), "utf8");
-  const scope = {};
-  const veld = /naam:\s*"([^"]+)"[\s\S]*?type:\s*"(keuze|tekst)"[\s\S]*?standaard:\s*"([^"]*)"/g;
-  for (const m of src.matchAll(veld)) {
-    const [, naam, type, standaard] = m;
-    const n = parseFloat(standaard);
-    scope[naam] = type === "keuze" && Number.isFinite(n) ? n : standaard;
-  }
-  const cc = typeof scope.CC === "number" ? scope.CC : 2;
-  scope.K_FI = cc === 1 ? 0.9 : cc === 3 ? 1.1 : 1.0;
-  return scope;
+/**
+ * Projectgegevens zoals de app ze vóór de eerste regel in de scope zet: de echte
+ * projectScope, met de afgeleide waarden (K_FI, tw_I, tw_Iw, tw_alpha_w, tw_zg).
+ */
+async function projectScope() {
+  const m = await import(join(hier, "../packages/desktop/src/store/projectGegevens.ts"));
+  return m.projectScope(m.legeGegevens());
 }
 
 /** Elk @select-blok met zijn keuzes, in de volgorde van het blad. */
@@ -163,7 +158,7 @@ function onderzoek(html, overslaan = null) {
   return problemen;
 }
 
-const scope = projectScope();
+const scope = await projectScope();
 const bladen = [];
 for (const bestand of readdirSync(TPL_DIR).filter((f) => f.endsWith(".ts") && !GEEN_BLAD.has(f)).sort()) {
   const src = readFileSync(join(TPL_DIR, bestand), "utf8");
