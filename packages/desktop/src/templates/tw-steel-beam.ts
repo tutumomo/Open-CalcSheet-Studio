@@ -25,12 +25,19 @@
  * Cw = tf·b³·(h−tf)²/24），並在 scripts/check-tw-steel-beam.mjs 以獨立程式核對。
  * 腹板淨高 hw 取 h − 2tf（略去角隅半徑，使 h/tw 偏大，偏安全）。
  *
+ * 6. 容許應力設計法（ASD，第（一）篇；選單 design_method = 2）：
+ *    Fb = 0.66Fy（7.2.1，已驗證 steel99_Fb_compact），限結實斷面且 Lb ≤ Lc；
+ *    Lc = min(20·bf/√Fy, 1400/((d/Af)·Fy))（cm，已驗證 steel99_Lc）。Lb > Lc 之 7.2.3 式未入已驗證庫，ASD 下一律拒算。
+ *    Fv（7.5，已驗證 steel99_web_shear_Fv_75）：(h/tw)√Fy ≤ 100 時 Fv = 0.40Fy、Aw = d·tw；
+ *    否則 Fv = Fy·Cv/2.89 ≤ 0.40Fy、Aw = h·tw，未加勁 Kv = 5.34（a/h → ∞）。
+ *    需求以服務載重組合（2.2，已驗證 steel99_load_combos_ASD）輸入；fb = M/Sx、fv = V/Aw。
+ *
  * 結尾行：「控制 UC = … → 鋼梁檢核合格／不合格」；無效輸入標「總結：無效輸入，未檢核」。
  */
 
-export const twSteelBeam = `"鋼結構熱軋 H 型鋼梁設計與檢核（steel99 LRFD）
+export const twSteelBeam = `"鋼結構熱軋 H 型鋼梁設計與檢核（steel99 LRFD／ASD）
 
-'<i>依據內政部《鋼構造建築物鋼結構設計技術規範》（99年9月16日版）第（二）篇極限設計法（LRFD）進行受強軸彎曲與剪力之熱軋 H 型鋼梁局部挫屈、側向扭轉挫屈（LTB）、剪力強度與服務載重撓度檢核。</i><span class="alleen-scherm"></span>
+'<i>依據內政部《鋼構造建築物鋼結構設計技術規範》（99年9月16日版）第（二）篇極限設計法（LRFD）或第（一）篇容許應力設計法（ASD）進行受強軸彎曲與剪力之熱軋 H 型鋼梁局部挫屈、側向扭轉挫屈（LTB）、剪力強度與服務載重撓度檢核。ASD 僅適用結實斷面且 Lb ≤ Lc（Fb = 0.66Fy）。</i><span class="alleen-scherm"></span>
 
 #hide
 kleur(u) = if(u > 1; "#b91c1c"; if(u > 0.9; "#b45309"; "#047857"))
@@ -39,6 +46,11 @@ ru(u) = ceil(u*100)/100
 #show
 
 # 1. 設計條件與鋼材性質
+
+@select design_method "設計法（全案擇一，不可混用）"
+  極限設計法 LRFD（steel99 第（二）篇） = 1
+  容許應力設計法 ASD（steel99 第（一）篇） = 2
+@end
 
 '<h6>鋼材規定降伏強度</h6>
 f_y_in = ?{325}*(MPa)', 鋼材標稱降伏強度 Fy（依鋼種與板厚取 CNS 規定值或鋼廠證明書，例：SN490B 板厚 12～40 mm 取 325 MPa）<span class="kolom-3"></span>'
@@ -66,9 +78,9 @@ L_b = ?{3.0}*(m)', 受壓翼板側向無支撐長度 Lb<span class="kolom-3"></s
 C_b = ?{1.0}', 側向扭轉挫屈彎矩梯度修正因數 Cb（均勻彎矩取 1.0，上限 2.3，依 7.2.2 計算後填入）<span class="kolom-3"></span>'
 n_delta = ?{360}', 服務載重容許活載撓度比限值分母 n_delta（L/360）<span class="kolom-3"></span>'
 
-'<h6>因數化設計載重與服務載重</h6>
-M_u = ?{220}*(kN*m)', 因數化設計彎矩需求 Mu<span class="kolom-3"></span>'
-V_u = ?{150}*(kN)', 因數化設計剪力需求 Vu<span class="kolom-3"></span>'
+'<h6>設計載重（LRFD 取因數化載重；ASD 取服務載重組合，steel99 2.2）</h6>
+M_u = ?{220}*(kN*m)', 設計彎矩需求 Mu（ASD 時為服務載重彎矩 M）<span class="kolom-3"></span>'
+V_u = ?{150}*(kN)', 設計剪力需求 Vu（ASD 時為服務載重剪力 V）<span class="kolom-3"></span>'
 w_L = ?{15}*(kN/m)', 服務載重均布活載重 wL（供撓度檢核）<span class="kolom-3"></span>'
 
 # 2. 熱軋 H 型鋼斷面選取與幾何力學性質
@@ -129,7 +141,13 @@ ok_span = L_span > 0 m
 ok_lb = bool(L_b ≥ 0 m) * bool(L_b ≤ L_span)
 ok_cb = bool(C_b ≥ 1.0) * bool(C_b ≤ 2.3)
 ok_htw = bool(h_w / t_w ≤ 260)
-ok_geom = bool(ok_fy)*bool(ok_h)*bool(ok_b)*bool(ok_tw)*bool(ok_tf)*bool(ok_span)*bool(ok_lb)*bool(ok_cb)*bool(ok_htw)
+Lc_a = 20 * (bmm / 10) / sqrt(Fy_t)
+Lc_b = 1400 / (((hmm / 10) / ((bmm / 10) * (tfmm / 10))) * Fy_t)
+Lc_cm = min(Lc_a; Lc_b)
+L_c = Lc_cm * cm to m
+ok_asd = if(design_method ≡ 2; bool(L_b ≤ L_c); 1)
+ok_meth = bool(design_method ≡ 1) + bool(design_method ≡ 2)
+ok_geom = bool(ok_fy)*bool(ok_h)*bool(ok_b)*bool(ok_tw)*bool(ok_tf)*bool(ok_span)*bool(ok_lb)*bool(ok_cb)*bool(ok_htw)*bool(ok_asd)*bool(ok_meth)
 #show
 
 h', 斷面高度 h<span class="kolom-2"></span>'
@@ -185,6 +203,7 @@ w', 單位長度質量<span class="kolom-2"></span>'
         '斷面分類判定：<b>非結實斷面</b>，超出本模組適用範圍（半結實及細長肢材須依附錄 3 另行檢核），本檢核判為不合格。<span class="alleen-scherm"></span>
     #end if
 
+    #if design_method ≡ 1
     # 4. 側向扭轉挫屈（LTB）與強軸抗彎強度檢核（steel99 7.2.2、7.2.3）
 
     #hide
@@ -269,6 +288,52 @@ w', 單位長度質量<span class="kolom-2"></span>'
     UC_V = V_u / phiV_n', 強軸剪力強度檢核比 UC_V = Vu / (ϕv·Vn)<span class="kolom-2"></span>'
     '強軸剪力檢核：UC = <b>'ru(UC_V)'</b> <b>'oordeel(UC_V)'</b>（'V_u' ≤ 'phiV_n'）<span class="alleen-scherm"></span>
 
+    #else
+    # 4. 容許撓曲應力檢核（steel99 第（一）篇 7.2.1，ASD）
+
+    #hide
+    Sx_c = W_x / (1 cm^3)
+    Fb_t = 0.66 * Fy_t
+    F_b = Fb_t * tf_cm2
+    f_b = M_u / W_x to MPa
+    phiM_n = Fb_t * Sx_c * (0.0980665 kN*m)
+    UC_M = f_b / F_b
+    #show
+
+    L_c', 側向未支撐間距上限 Lc = min(20·bf/√Fy, 1400/((d/Af)·Fy))（7.2.1(3)，Lb ≤ Lc 方得 Fb = 0.66Fy）<span class="kolom-2"></span>'
+    L_b', 受壓翼板側向無支撐長度 Lb<span class="kolom-2"></span>'
+    F_b', 容許撓曲應力 Fb = 0.66Fy（7.2.1，結實斷面）<span class="kolom-2"></span>'
+    f_b', 計算撓曲應力 fb = M / Sx<span class="kolom-2"></span>'
+    phiM_n', 容許彎矩 Mallow = Fb·Sx<span class="kolom-2"></span>'
+    UC_M = f_b / F_b', 撓曲應力檢核比 UC_M = fb / Fb<span class="kolom-2"></span>'
+    '強軸撓曲應力檢核（ASD）：UC = <b>'ru(UC_M)'</b> <b>'oordeel(UC_M)'</b>（'f_b' ≤ 'F_b'）<span class="alleen-scherm"></span>
+
+    # 5. 容許剪應力檢核（steel99 第（一）篇 7.5，ASD）
+
+    #hide
+    htw_ratio = h_w / t_w
+    Kv_a = 5.34
+    Cv_e = 3100 * Kv_a / (Fy_t * htw_ratio^2)
+    Cv_a = if(Cv_e ≤ 0.8; Cv_e; 50 * sqrt(Kv_a / Fy_t) / htw_ratio)
+    is_v1 = bool(htw_ratio * sqrt(Fy_t) ≤ 100)
+    Fv_t = if(is_v1 ≡ 1; 0.40 * Fy_t; min(Fy_t * Cv_a / 2.89; 0.40 * Fy_t))
+    F_v = Fv_t * tf_cm2
+    A_w = if(is_v1 ≡ 1; h * t_w; h_w * t_w) to cm^2
+    f_v = V_u / A_w to MPa
+    phiV_n = Fv_t * (A_w / (1 cm^2)) * (9.80665 kN)
+    UC_V = f_v / F_v
+    #show
+
+    htw_ratio', 腹板深厚比 h / tw（h 略去角隅半徑，偏安全）<span class="kolom-2"></span>'
+    A_w', 受剪面積 Aw（(h/tw)√Fy ≤ 100 取 d·tw，否則取 h·tw；7.5）<span class="kolom-2"></span>'
+    F_v', 容許剪應力 Fv（式 7.5-1／7.5-2，未加勁 Kv = 5.34）<span class="kolom-2"></span>'
+    f_v', 計算剪應力 fv = V / Aw<span class="kolom-2"></span>'
+    phiV_n', 容許剪力 Vallow = Fv·Aw<span class="kolom-2"></span>'
+    UC_V = f_v / F_v', 剪應力檢核比 UC_V = fv / Fv<span class="kolom-2"></span>'
+    '強軸剪應力檢核（ASD）：UC = <b>'ru(UC_V)'</b> <b>'oordeel(UC_V)'</b>（'f_v' ≤ 'F_v'）<span class="alleen-scherm"></span>
+
+    #end if
+
     # 6. 服務載重撓度檢核
 
     #hide
@@ -300,8 +365,8 @@ w', 單位長度質量<span class="kolom-2"></span>'
     '<tr style="border-bottom:2px solid #374151;"><th style="text-align:left; padding:2px 8px;">檢核項目</th><th style="text-align:left; padding:2px 8px;">規範依據</th><th style="text-align:right; padding:2px 8px;">需求值 / 計算值</th><th style="text-align:right; padding:2px 8px;">設計限值</th><th style="text-align:right; padding:2px 8px;">UC</th><th style="text-align:left; padding:2px 8px;">判定</th></tr>
     '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">翼板寬厚比結實限值 (λf ≤ λp)</td><td style="padding:2px 8px;">steel99 表 4.5-1</td><td style="padding:2px 8px; text-align:right;">'ru(lambda_f)'</td><td style="padding:2px 8px; text-align:right;">'ru(lambda_pf)'</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_lambda_f)'">'ru(UC_lambda_f)'</td><td style="padding:2px 8px; color:'kleur(UC_lambda_f)'">'oordeel(UC_lambda_f)'</td></tr>
     '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">腹板深厚比結實限值 (λw ≤ λp)</td><td style="padding:2px 8px;">steel99 表 4.5-1</td><td style="padding:2px 8px; text-align:right;">'ru(lambda_w)'</td><td style="padding:2px 8px; text-align:right;">'ru(lambda_pw)'</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_lambda_w)'">'ru(UC_lambda_w)'</td><td style="padding:2px 8px; color:'kleur(UC_lambda_w)'">'oordeel(UC_lambda_w)'</td></tr>
-    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">強軸抗彎強度 (Mu ≤ ϕb·Mn)</td><td style="padding:2px 8px;">steel99 7.2.2／7.2.3</td><td style="padding:2px 8px; text-align:right;">'M_u'</td><td style="padding:2px 8px; text-align:right;">'phiM_n'</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_M)'">'ru(UC_M)'</td><td style="padding:2px 8px; color:'kleur(UC_M)'">'oordeel(UC_M)'</td></tr>
-    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">強軸抗剪強度 (Vu ≤ ϕv·Vn)</td><td style="padding:2px 8px;">steel99 7.3.2</td><td style="padding:2px 8px; text-align:right;">'V_u'</td><td style="padding:2px 8px; text-align:right;">'phiV_n'</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_V)'">'ru(UC_V)'</td><td style="padding:2px 8px; color:'kleur(UC_V)'">'oordeel(UC_V)'</td></tr>
+    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">強軸撓曲 (需求 ≤ 設計／容許彎矩)</td><td style="padding:2px 8px;">steel99 7.2</td><td style="padding:2px 8px; text-align:right;">'M_u'</td><td style="padding:2px 8px; text-align:right;">'phiM_n'</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_M)'">'ru(UC_M)'</td><td style="padding:2px 8px; color:'kleur(UC_M)'">'oordeel(UC_M)'</td></tr>
+    '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">強軸剪力 (需求 ≤ 設計／容許剪力)</td><td style="padding:2px 8px;">steel99 7.3／7.5</td><td style="padding:2px 8px; text-align:right;">'V_u'</td><td style="padding:2px 8px; text-align:right;">'phiV_n'</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_V)'">'ru(UC_V)'</td><td style="padding:2px 8px; color:'kleur(UC_V)'">'oordeel(UC_V)'</td></tr>
     '<tr style="border-bottom:1px solid #e5e7eb;"><td style="padding:2px 8px;">服務活載撓度 (Δ ≤ Δallow)</td><td style="padding:2px 8px;">使用者設定撓度比</td><td style="padding:2px 8px; text-align:right;">'ru(Delta)' mm</td><td style="padding:2px 8px; text-align:right;">'ru(Delta_lim)' mm</td><td style="padding:2px 8px; text-align:right; font-weight:700; color:'kleur(UC_delta)'">'ru(UC_delta)'</td><td style="padding:2px 8px; color:'kleur(UC_delta)'">'oordeel(UC_delta)'</td></tr>
     '</table>
 
@@ -312,7 +377,7 @@ w', 單位長度質量<span class="kolom-2"></span>'
         '<b>控制 UC = 'UC_max'</b> > 1.0 → <b>鋼梁檢核不合格</b>
     #end if
 #else
-    '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、斷面幾何、跨度或側撐條件無效或超出範圍。
+    '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、斷面幾何、跨度或側撐條件無效或超出範圍；ASD 須 Lb ≤ Lc（Lb > Lc 之 7.2.3 式未入已驗證庫）。
 #end if
 `;
 

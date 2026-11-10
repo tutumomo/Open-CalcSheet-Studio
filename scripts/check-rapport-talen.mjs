@@ -48,6 +48,9 @@ import { GRAAF_BLAD } from "../packages/desktop/src/store/graafBlad.ts";
 import { TEKEN_BLAD } from "../packages/desktop/src/store/tekenBlad.ts";
 import { JUPYTER_BLAD } from "../packages/desktop/src/store/jupyterBlad.ts";
 import { MARIMO_BLAD } from "../packages/desktop/src/store/marimoBlad.ts";
+import { twRcBeam } from "../packages/desktop/src/templates/tw-rc-beam.ts";
+import { twRetainingWall } from "../packages/desktop/src/templates/tw-retaining-wall.ts";
+import { twDrainageChannel } from "../packages/desktop/src/templates/tw-drainage-channel.ts";
 
 const hier = dirname(fileURLToPath(import.meta.url));
 const lees = (pad) => readFileSync(join(hier, pad), "utf8").replace(/\r\n/g, "\n");
@@ -380,11 +383,11 @@ kop("5. De afdruk als html");
   const taal = (t) => m.i18next.changeLanguage(t);
 
   /** Vergelijkt met het gouden bestand en noemt de eerste regel die verschilt. */
-  const naastGoud = async (naam, bestand, rapport, appTaal) => {
+  const naastGoud = async (naam, bestand, rapport, appTaal, extra = {}) => {
     await taal(appTaal);
-    zet(rapport);
+    zet(rapport, extra);
     const html = perRegel(m.teken());
-    if (BEWAAR && appTaal === "nl") writeFileSync(join(hier, bestand), `${html}\n`);
+    if (BEWAAR && (appTaal === "nl" || appTaal === "zh-TW")) writeFileSync(join(hier, bestand), `${html}\n`);
     const goud = lees(bestand).trimEnd();
     const a = html.split("\n");
     const b = goud.split("\n");
@@ -475,6 +478,72 @@ kop("5. De afdruk als html");
   const nlHtml = m.teken();
   gelijk("de ankers in de afdruk veranderen niet met de taal", ankersVan(nlHtml), ankersEn);
   toets("hetzelfde rapport in het Nederlands, app op Engels", /Timber joists/.test(nlHtml) && /Balklaag —|Houten balklaag/.test(nlHtml) && /Inhoud/.test(nlHtml));
+
+  // Een compleet traditioneel Chinees rapport (zh-TW, zeven hoofdstukken):
+  // elk onderdeel gevuld, Taiwanese rekenmodules, en controle op afwezigheid van restanten Nederlands en Engels.
+  const zh = kloon(standaardRapport(VANDAAG, {}, "zh-TW"));
+  for (const [id, varianten] of Object.entries(STANDAARD_TEKSTEN)) {
+    if (varianten[0]?.tekst?.["zh-TW"]) zh.teksten[id] = varianten[0].tekst["zh-TW"];
+  }
+  zh.kenmerk = "2026-TW-001";
+  zh.fase = "細部設計";
+  zh.opdrachtgeverAdres = "台北市中正區重慶南路一段 1 號";
+  zh.verantwoordelijk = "王大明 技師";
+  zh.uitvoerend = "李小華 工程師";
+  zh.revisies = [
+    { code: "A", datum: "12-03-2026", omschrijving: "初版發行", status: "concept" },
+    { code: "B", datum: "02-04-2026", omschrijving: "依審查意見修正", status: "ter goedkeuring" },
+    { code: "C", datum: "14-05-2026", omschrijving: "定稿出版", status: "definitief" },
+  ];
+  zh.bureau = {
+    ...zh.bureau,
+    naam: "示範結構技師事務所",
+    constructeurs: [{ naam: "王大明", telefoon: "02-23456789", email: "wang@example.com.tw" }],
+  };
+  zh.bijlagen = ["結構總配置圖", "地質鑽探報告書"];
+  zh.toelichting = { "ex-beam": "主梁撓曲與剪力檢核計算說明" };
+  zh.inHoofdstuk = { "ex-beam": true, "ex-wall": true, "ex-drain": true };
+
+  const twExemplaren = [
+    { id: "ex-beam", naam: "大梁檢核", templateId: "tw-rc-beam", source: twRcBeam, waarden: {}, elementen: [] },
+    { id: "ex-wall", naam: "擋土牆檢核", templateId: "tw-retaining-wall", source: twRetainingWall, waarden: {}, elementen: [] },
+    { id: "ex-drain", naam: "排水溝水理", templateId: "tw-drainage-channel", source: twDrainageChannel, waarden: {}, elementen: [] },
+  ];
+  const twGegevens = {
+    ...project.gegevens,
+    project_naam: "台北商業大樓新建工程",
+    opdrachtgever: "台灣建設股份有限公司",
+    locatie: "台北市中正區",
+  };
+
+  await naastGoud("繁中報告（七章架構），app 在繁中：與黃金檔一致", "fixtures/rapport-zh-TW.html", zh, "zh-TW", { exemplaren: twExemplaren, gegevens: twGegevens, projectNaam: "台北商業大樓新建工程" });
+  await naastGoud("繁中報告，app 在英文：報告內容維持繁中不變", "fixtures/rapport-zh-TW.html", zh, "en", { exemplaren: twExemplaren, gegevens: twGegevens, projectNaam: "台北商業大樓新建工程" });
+
+  // Geen Nederlands of Engels in het traditioneel Chinese rapport
+  await taal("zh-TW");
+  zet(zh, { exemplaren: twExemplaren, gegevens: twGegevens, projectNaam: "台北商業大樓新建工程" });
+  const zhHtml = m.teken();
+  const zhRegels = zichtbareRegels(zhHtml);
+
+  const zhNl = zhRegels.filter((r) => NL_WOORD.test(r));
+  toets(`繁中報告：${zhRegels.length} 行，無殘留荷蘭文`, zhNl.length === 0, zhNl.slice(0, 10).join(" | "));
+
+  const EN_RAPPORT_WOORD = new RegExp(`\\b(?:${[
+    "the", "and", "for", "with", "from", "into", "during", "including", "without", "between",
+    "Contents", "Introduction", "Design basis", "Loads", "Calculations", "Consequence class",
+    "Design working life", "Applied standards", "Document details", "Structural advice",
+    "Responsible engineer", "Design engineer", "Appendix", "First issue", "Final report",
+    "Material data", "Existing calculation", "Terrain category", "Building height",
+  ].join("|")})\\b`, "i");
+
+  const zhEn = zhRegels.filter((r) => EN_RAPPORT_WOORD.test(r));
+  toets(`繁中報告非公式文字：無殘留英文`, zhEn.length === 0, zhEn.slice(0, 10).join(" | "));
+
+  // Zeven hoofdstukken van de Taiwanese structuur staan op papier
+  const twKoppen = ["設計概要", "設計規範", "材料強度", "載重", "分析", "檢核", "附錄"];
+  toets("台灣報告七章標題完整呈現", twKoppen.every((k) => zhRegels.some((r) => r.includes(k))),
+    twKoppen.filter((k) => !zhRegels.some((r) => r.includes(k))).join(", "));
+  toets("台灣固定詞彙完整呈現", ["目錄", "適用規範", "負責工程師", "設計工程師", "文件資料", "計算書狀態"].every((w) => zhRegels.some((r) => r.includes(w))));
 }
 
 console.log(fouten === 0 ? "\nRapport in andere talen: alles in orde." : `\n${fouten} controle(s) gezakt.`);

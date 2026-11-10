@@ -472,6 +472,59 @@ console.log("\n5. 第二套獨立求解器全面掃描（20 斷面 × 多種工�
   waar(`獨立求解器全掃描（${scanGetest} 組案例）：完全吻合`, scanFouten === 0, `失敗組數: ${scanFouten}`);
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASD（容許應力設計法，steel99 第（一）篇 6.3；design_method = 2，僅純軸壓）
+// 釘死值（regs_formula steel99_Fa_asd，E = 2040、Fy = 3.31406 tf/cm²）：
+//   KL/r = 53.2623 → Fa = 1.59627 tf/cm²（式 6.3-1，Cc = 110.230）；KL/r = 150 → Fa = 0.466875 tf/cm²（式 6.3-2）
+// 獨立求解器：以 MPa 直接計算 Cc = π√(2E/Fy)（與模板 √(2π²E/Fy) 寫法不同）。
+// ─────────────────────────────────────────────────────────────────────────────
+console.log("\nASD（容許應力設計法，純軸壓）");
+function faRef(fyMPa, klr) {
+  const E = 2040 * 98.0665;
+  const Cc = Math.PI * Math.sqrt((2 * E) / fyMPa);
+  const x = klr / Cc;
+  return klr < Cc ? ((1 - (x * x) / 2) * fyMPa) / (5 / 3 + (3 / 8) * x - (x ** 3) / 8) : (12 * Math.PI ** 2 * E) / (23 * klr * klr);
+}
+waar("獨立 Fa(53.2623) 對已驗證值 1.59627 tf/cm²", Math.abs(faRef(325, 53.26231691) / 98.0665 - 1.59627) < 1e-5);
+waar("獨立 Fa(150) 對已驗證值 0.466875 tf/cm²", Math.abs(faRef(325, 150) / 98.0665 - 0.466875) < 1e-6);
+{
+  const r = doorreken({ design_method: "2", M_ux: "0", M_uy: "0" });
+  geenFouten(r, "ASD 純軸壓預設");
+  toets(r, { F_a: 1.59627 * 98.0665, f_a: (700e3) / (119.8e2) }, 1e-5);
+  waar("ASD 結尾行註明柱腳未檢核", r.r.voldoet === true && r.tekst.includes("柱腳未檢核"));
+}
+{
+  let n = 0, bad = 0, pass = 0, fail = 0;
+  for (const p of TW_PROFIELEN) {
+    if (!p.naam.startsWith("RH")) continue;
+    for (const fy of [235, 325])
+      for (const L of [2, 4, 8])
+        for (const P of [300, 1500]) {
+          const klr = Math.max((L * 1000) / (p.ix * 10), (L * 1000) / (p.iy * 10));
+          const Fy = fy / 98.0665;
+          const ns = p.b / 2 / p.tf <= 25 / Math.sqrt(Fy) && (p.h - 2 * p.tf) / p.tw <= 100 / Math.sqrt(Fy);
+          const uc = (P * 1e3) / (p.A * 100) / faRef(fy, klr);
+          const want = ns && klr <= 200 && uc <= 1;
+          const r = doorreken({ design_method: "2", section_id: String(p.id), f_y_in: String(fy), L_col: String(L), L_b: String(L), P_u: String(P), M_ux: "0", M_uy: "0" });
+          n++;
+          if (r.r.voldoet !== want || Math.abs(r.uit.UC_P - uc) > 1e-6 * Math.max(1, uc)) bad++;
+          want ? pass++ : fail++;
+        }
+  }
+  waar(`ASD 掃描 ${n} 組與獨立求解器一致（合格 ${pass}、不合格 ${fail}）`, bad === 0 && pass > 10 && fail > 10, `${bad} 組不符`);
+}
+{
+  const r = doorreken({ design_method: "2", M_ux: "0", M_uy: "0", P_u: "3000" });
+  waar("ASD 軸力過大 → 不合格", r.r.voldoet === false && r.r.uc > 1 && !r.tekst.includes("檢核合格"));
+  const r2 = doorreken({ design_method: "2", M_ux: "0", M_uy: "0", L_col: "16", L_b: "16" });
+  waar("ASD KL/r > 200 → 不合格", r2.r.voldoet === false && r2.r.uc > 1);
+  for (const [名, w] of [["ASD 有彎矩（互制式未入庫）", { design_method: "2" }], ["設計法代碼無效", { design_method: "0" }]]) {
+    const q = doorreken(w);
+    waar(`${名} → 拒算`, nietGetoetst(q) && q.uit.UC_max === undefined);
+  }
+}
+
 console.log(`\n=== 檢核總結：共 ${getest} 項檢查，失敗 ${fouten} 項 ===`);
 if (fouten > 0) {
   process.exit(1);

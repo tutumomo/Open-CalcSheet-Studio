@@ -84,13 +84,14 @@
       "cat-tw-rc": "台灣規範 — 混凝土",
       "cat-tw-steel": "台灣規範 — 鋼結構",
       "cat-tw-civil": "台灣規範 — 土木大地",
+      "cat-tw-load": "台灣規範 — 載重",
       "rekentaal-samples": "範例"
     },
     "modules": {
-      "ligger": "梁（木材或鋼材，Eurocode）",
-      "balklaag": "木造梁式樓板（Eurocode）",
-      "tweepaalspoer": "雙樁樁帽（鋼筋混凝土，Eurocode）",
-      "doorsnede-spanningen": "斷面應力（Eurocode）",
+      "ligger": "梁（木材或鋼材；Eurocode，非台灣規範）",
+      "balklaag": "木造梁式樓板（Eurocode，非台灣規範）",
+      "tweepaalspoer": "雙樁樁帽（鋼筋混凝土；Eurocode，非台灣規範）",
+      "doorsnede-spanningen": "斷面應力（Eurocode，非台灣規範）",
       "rekentaal-demo": "Open CalcSheet Studio示範",
       "tw-rc-beam": "鋼筋混凝土矩形梁（rc112）",
       "tw-rc-column": "鋼筋混凝土矩形柱（rc112）",
@@ -99,7 +100,16 @@
       "tw-steel-column": "鋼結構 H 型鋼柱與柱腳（steel99 LRFD）",
       "tw-retaining-wall": "鋼筋混凝土懸臂式擋土牆（found112 / swc_tech）",
       "tw-drainage-channel": "鋼筋混凝土排水溝與明渠水理（swc_tech / rc112）",
-      "tw-detention-basin": "滯洪池設計與檢核（swc_tech）"
+      "tw-detention-basin": "滯洪池設計與檢核（swc_tech）",
+      "tw-box-culvert": "鋼筋混凝土箱涵設計與檢核（hwbridge / rc112）",
+      "tw-sediment-basin": "沉砂池設計與檢核（swc_tech 第 35、92、93 條）",
+      "tw-seismic-load": "建築物靜力分析法地震力計算（seis113）",
+      "tw-wind-load": "建築物風速壓與各層風力（wind103full）",
+      "tw-dead-live-loads": "樓版與屋頂靜載重與活載重彙整（btr_struct）",
+      "tw-rc-slab": "鋼筋混凝土單向板（rc112）",
+      "tw-pile-cap": "三樁／四樁樁帽壓拉桿模型（rc112）",
+      "tw-gravity-retaining-wall": "重力式擋土牆（無筋混凝土／砌石；found112 / swc_tech）",
+      "tw-backwater-profile": "明渠水面線標準步進法（swc_tech）"
     }
   },
   "kiezer": {

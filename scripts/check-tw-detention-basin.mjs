@@ -139,31 +139,31 @@ console.log("\n3. 負向測試與安全防護");
 
 // 3.1 池體太小，蓄洪容積不足
 {
-  const { uit, res } = draai(vervang(twDetentionBasin, "H_w = 2.4'm", "H_w = 1.8'm"));
+  const { uit, res } = draai(vervang(twDetentionBasin, "H_w = ?{2.4}", "H_w = ?{1.8}"));
   meld(uit.UC_vol > 1 && res.voldoet === false, `蓄洪容積不足：UC_vol = ${uit.UC_vol.toFixed(3)}，判定不合格`);
 }
 
 // 3.2 孔口過大，出流超過容許洪峰
 {
-  const { uit, res } = draai(vervang(twDetentionBasin, "D_orf = 0.45'm", "D_orf = 0.60'm"));
+  const { uit, res } = draai(vervang(twDetentionBasin, "D_orf = ?{0.45}", "D_orf = ?{0.60}"));
   meld(uit.UC_out > 1 && res.voldoet === false, `孔口過大：Q_orf = ${uit.Q_orf.toFixed(4)} > Q_out,cap：UC_out = ${uit.UC_out.toFixed(3)}，判定不合格`);
 }
 
 // 3.3 溢洪口過窄
 {
-  const { uit, res } = draai(vervang(twDetentionBasin, "L_spill = 8.0'm", "L_spill = 4.0'm"));
+  const { uit, res } = draai(vervang(twDetentionBasin, "L_spill = ?{8.0}", "L_spill = ?{4.0}"));
   meld(uit.UC_spill > 1 && res.voldoet === false, `溢洪口過窄：UC_spill = ${uit.UC_spill.toFixed(3)}，判定不合格`);
 }
 
 // 3.4 堤頂出水高不足
 {
-  const { uit, res } = draai(vervang(twDetentionBasin, "H_crest = 3.4'm", "H_crest = 2.9'm"));
+  const { uit, res } = draai(vervang(twDetentionBasin, "H_crest = ?{3.4}", "H_crest = ?{2.9}"));
   meld(uit.UC_fb > 1 && res.voldoet === false, `堤頂出水高不足：UC_fb = ${uit.UC_fb.toFixed(3)}，判定不合格`);
 }
 
 // 3.5 堤頂低於設計水位加溢流水深（出水高為負值）：不可誤判合格
 {
-  const { uit, res } = draai(vervang(twDetentionBasin, "H_crest = 3.4'm", "H_crest = 2.5'm"));
+  const { uit, res } = draai(vervang(twDetentionBasin, "H_crest = ?{3.4}", "H_crest = ?{2.5}"));
   meld(uit.fb_act < 0 && uit.UC_fb >= 99 && res.voldoet === false, `出水高為負（${uit.fb_act.toFixed(2)} m）：UC_fb = ${uit.UC_fb}，判定不合格（原式 fb_min/fb_act 會得負值而誤判合格）`);
 }
 
@@ -175,7 +175,7 @@ console.log("\n3. 負向測試與安全防護");
 
 // 3.7 孔口中心高於設計水位：孔口無作用水頭
 {
-  const { uit, res } = draai(vervang(twDetentionBasin, "z_inv = 0.10'm", "z_inv = 2.50'm"));
+  const { uit, res } = draai(vervang(twDetentionBasin, "z_inv = ?{0.10}", "z_inv = ?{2.50}"));
   meld(res.voldoet === false && uit.UC_max >= 99, `孔口位於設計水位以上：拒絕通過（UC_max = ${uit.UC_max}）`);
 }
 
@@ -194,7 +194,7 @@ console.log("\n3. 負向測試與安全防護");
 // 3.10 孔口底緣抬高使死水量增加，有效蓄洪容積減少
 {
   const { uit: a } = draai(twDetentionBasin);
-  const { uit: b } = draai(vervang(twDetentionBasin, "z_inv = 0.10'm", "z_inv = 0.50'm"));
+  const { uit: b } = draai(vervang(twDetentionBasin, "z_inv = ?{0.10}", "z_inv = ?{0.50}"));
   meld(b.V_eff < a.V_eff && b.V_dead > a.V_dead, `孔口抬高：V_eff ${a.V_eff.toFixed(1)} → ${b.V_eff.toFixed(1)}，死水量 ${a.V_dead.toFixed(1)} → ${b.V_dead.toFixed(1)}`);
 }
 
@@ -242,10 +242,10 @@ function solveIndep({ A, Ipre, Ipost, Cpre, Cmid, Cpost, tb, perm, Qdown, B0, L0
     const p = { ...base, A, Hw, D, Ls, perm, Hcrest: Hw + 1.0 };
     let t = twDetentionBasin;
     t = vervang(t, "A_catch = 5.0'ha", `A_catch = ${A}'ha`);
-    t = vervang(t, "H_w = 2.4'm", `H_w = ${Hw}'m`);
-    t = vervang(t, "D_orf = 0.45'm", `D_orf = ${D}'m`);
-    t = vervang(t, "L_spill = 8.0'm", `L_spill = ${Ls}'m`);
-    t = vervang(t, "H_crest = 3.4'm", `H_crest = ${(Hw + 1.0).toFixed(2)}'m`);
+    t = vervang(t, "H_w = ?{2.4}", `H_w = ?{${Hw}}`);
+    t = vervang(t, "D_orf = ?{0.45}", `D_orf = ?{${D}}`);
+    t = vervang(t, "L_spill = ?{8.0}", `L_spill = ?{${Ls}}`);
+    t = vervang(t, "H_crest = ?{3.4}", `H_crest = ?{${(Hw + 1.0).toFixed(2)}}`);
     t = vervang(t, "is_perm = 1'-", `is_perm = ${perm ? 1 : 0}'-`);
     const { uit, res } = draai(t);
     const ref = solveIndep(p);

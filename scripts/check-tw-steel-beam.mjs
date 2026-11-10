@@ -428,6 +428,78 @@ console.log("\n10. 第二套獨立求解器掃描（SI 單位、Mcr 兩種算法
   console.log(`   掃描本身新增失敗：${fouten - 舊} 項`);
 }
 
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASD（容許應力設計法，steel99 第（一）篇；design_method = 2）
+// 釘死值（regs_formula，A 級）：
+//   steel99_Fb_compact：Fb = 0.66Fy；steel99_Lc：Lc = min(20bf/√Fy, 1400/((d/Af)Fy))
+//   steel99_web_shear_Fv_75(Fy=3.31406, hw=70, a_h=1000) = 1.03974 tf/cm²（式 7.5-2，Cv = 0.906698）
+// 手算（RH400×200×8×13、Fy = 325 MPa = 3.31406 tf/cm²）：Lc = min(219.72, 274.6) cm = 2.1972 m；
+//   fb = 220e6/1190e3 = 184.874 MPa，Fb = 214.5 MPa；(h/tw)√Fy = 46.75·1.8205 = 85.1 ≤ 100 → Fv = 130 MPa，
+//   fv = 150e3/(400·8) = 46.875 MPa。
+// 獨立求解器：SI（N、mm、MPa）重寫，Lc 改以 mm 與 MPa 換算常數表示。
+// ─────────────────────────────────────────────────────────────────────────────
+console.log("\nASD（容許應力設計法）");
+function asdRef(p, fyMPa, Lb_m, M = 220, V = 150) {
+  const Fy = fyMPa / 98.0665; // tf/cm²
+  const Lc_mm = Math.min((20 * p.b) / Math.sqrt(Fy), (1400 * 10 * (p.b * p.tf)) / (p.h * Fy)); // 20bf/√Fy（cm→mm 互消），1400·Af/(d·Fy)·10
+  const hw = (p.h - 2 * p.tf) / p.tw;
+  const compact = p.b / (2 * p.tf) <= 17 / Math.sqrt(Fy) && hw <= 170 / Math.sqrt(Fy);
+  const Fb = 0.66 * fyMPa;
+  const fb = (M * 1e6) / (p.Wx * 1e3);
+  const Kv = 5.34;
+  let Cv = (3100 * Kv) / (Fy * hw * hw);
+  if (Cv > 0.8) Cv = (50 * Math.sqrt(Kv / Fy)) / hw;
+  const v1 = hw * Math.sqrt(Fy) <= 100;
+  const Fv = v1 ? 0.4 * fyMPa : Math.min((fyMPa * Cv) / 2.89, 0.4 * fyMPa);
+  const fv = (V * 1e3) / ((v1 ? p.h : p.h - 2 * p.tf) * p.tw);
+  return { Lc: Lc_mm / 1000, valid: Lb_m <= Lc_mm / 1000 && hw <= 260, compact, ucM: fb / Fb, ucV: fv / Fv, Fb, fb, Fv, fv };
+}
+{
+  const r = doorreken({ design_method: "2", L_b: "2.0" });
+  geenFouten(r, "ASD 預設");
+  toets(r, { L_c: 2.1972458, F_b: 214.5, f_b: 184.8739496, F_v: 130, f_v: 46.875 }, 1e-6);
+  waar("ASD 預設 → 合格且 UC 與 fb/Fb 一致", r.r.voldoet === true && Math.abs(r.r.uc - Math.ceil(Math.max(r.uit.UC_M, r.uit.UC_V, r.uit.UC_delta) * 100) / 100) < 1e-9);
+  // 釘死 Fv 式 7.5-2（regs_formula：1.03974 tf/cm² at Fy=3.31406, h/tw=70）
+  const Fy = 325 / 98.0665, hw = 70;
+  let Cv = (3100 * 5.34) / (Fy * hw * hw); if (Cv > 0.8) Cv = (50 * Math.sqrt(5.34 / Fy)) / hw;
+  waar("獨立式 7.5-2 對已驗證值 1.03974 tf/cm²", Math.abs((Fy * Cv) / 2.89 - 1.03974) < 1e-4, String((Fy * Cv) / 2.89));
+}
+{
+  let n = 0, bad = 0, pass = 0, fail = 0, rej = 0;
+  for (const p of TW_PROFIELEN) {
+    if (!p.naam.startsWith("RH")) continue;
+    for (const fy of [235, 325, 345])
+      for (const Lb of [0.5, 1.5, 2.5])
+        for (const [M, V] of [[40, 30], [220, 150], [600, 400]]) {
+          const e = asdRef(p, fy, Lb, M, V);
+          const r = doorreken({ design_method: "2", section_id: String(p.id), f_y_in: String(fy), L_b: String(Lb), M_u: String(M), V_u: String(V) });
+          n++;
+          if (!e.valid) { rej++; if (!(r.r.nietGetoetst === true && r.r.voldoet !== true)) bad++; continue; }
+          const ok = Math.abs(r.uit.UC_M - e.ucM) < 1e-6 * Math.max(1, e.ucM) && Math.abs(r.uit.UC_V - e.ucV) < 1e-6 * Math.max(1, e.ucV);
+          const want = e.compact && Math.max(e.ucM, e.ucV, r.uit.UC_delta) <= 1;
+          if (!ok || r.r.voldoet !== want) bad++;
+          want ? pass++ : fail++;
+        }
+  }
+  waar(`ASD 掃描 ${n} 組與獨立求解器一致（合格 ${pass}、不合格 ${fail}、拒算 ${rej}）`, bad === 0 && pass > 10 && fail > 10 && rej > 10, `${bad} 組不符`);
+}
+for (const [名, w] of [
+  ["ASD 彎矩過大", { design_method: "2", L_b: "2.0", M_u: "300" }],
+  ["ASD 剪力過大", { design_method: "2", L_b: "2.0", V_u: "500" }],
+  ["ASD 非結實翼板（RH 400x400、Fy 440）不得誤判", { design_method: "2", section_id: "9", f_y_in: "440", L_b: "1.0", M_u: "50" }],
+]) {
+  const r = doorreken(w);
+  waar(`${名} → 不合格`, r.r.voldoet === false && r.r.uc > 1, JSON.stringify(r.r));
+}
+for (const [名, w] of [
+  ["ASD Lb > Lc（7.2.3 未入庫）", { design_method: "2", L_b: "3.0" }],
+  ["設計法代碼無效", { design_method: "3" }],
+]) {
+  const r = doorreken(w);
+  waar(`${名} → 拒算`, r.r.nietGetoetst === true && r.r.voldoet !== true && r.uit.UC_max === undefined);
+}
+
 console.log("--------------------------------------------------------------------------------");
 console.log(`檢核結果：共 ${getest} 項檢查，${fouten} 項失敗。`);
 console.log("--------------------------------------------------------------------------------");

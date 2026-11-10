@@ -433,6 +433,7 @@
     "voldoet": "OK",
     "voldoetNiet": "not OK",
     "rekenversieKlein": "calculation version",
+    "eurocodeKlein": "Eurocode, not a Taiwan code",
     "rekenversie": "Calculation version",
     "nietDoorgerekend": "This sheet could not be calculated:",
     "projectnummer": "Project number",
@@ -464,5 +465,97 @@
     "opgesteldDoor": "Prepared by {{naam}}",
     "paginaWoord": "Page",
     "vanWoord": "of"
+  },
+  "twRcBeam": {
+    "titel": "Parametric view — RC rectangular beam",
+    "kop": "Section reinforcement",
+    "velden": {
+      "cc": "Clear cover cc",
+      "barT": "Tension bar size",
+      "nT": "Tension bars",
+      "lagen": "Bar layers",
+      "hasTop": "Compression steel",
+      "barC": "Compression bar size",
+      "nC": "Compression bars",
+      "barV": "Stirrup size",
+      "legs": "Stirrup legs"
+    },
+    "keuzes": {
+      "enkel": "Single layer",
+      "dubbel": "Two layers",
+      "geenDruk": "Singly reinforced",
+      "metDruk": "Doubly reinforced"
+    },
+    "noot": "Loads, materials and checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Cross-section and stirrup spacing (elevation)",
+    "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
+  },
+  "twRetainingWall": {
+    "titel": "Parametric view — cantilever retaining wall",
+    "kop": "Soil and loads",
+    "velden": {
+      "gamma": "Backfill unit weight γs",
+      "phi": "Friction angle φ",
+      "q": "Surcharge q",
+      "qa": "Allowable bearing qa",
+      "mu": "Base friction μ",
+      "dsoil": "Toe soil depth Df"
+    },
+    "noot": "The sheet has no groundwater input, so no water line is drawn; the dashed line is the Rankine wedge (45° + φ/2).",
+    "doorsnede": "Section: stem, toe, heel and active wedge",
+    "glijvlak": "Failure plane angle 45° + φ/2",
+    "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
+  },
+  "twDetentionBasin": {
+    "titel": "Parametric view — detention basin",
+    "kop": "Basin",
+    "velden": {
+      "b0": "Bottom width B0",
+      "z": "Side slope 1:z",
+      "n": "Number of orifices"
+    },
+    "noot": "Below the orifice invert is dead storage; the dashed line is the emergency spillway level (design level + overflow depth).",
+    "doorsnede": "Section: floor, slopes, design level, orifice and spillway",
+    "talud": "Side slope",
+    "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
+  },
+  "twWindLoad": {
+    "titel": "Parametric view — wind pressure (site wind speed)",
+    "kop": "Site basic design wind speed",
+    "kies": "Select",
+    "velden": {
+      "county": "County / city",
+      "district": "District",
+      "aanbevolen": "Recommended V10",
+      "huidig": "Current V10 in sheet"
+    },
+    "neem": "Apply to sheet",
+    "noot": "Recommended values come from ABRI open data ({{aantal}} districts, year 114) and are for reference only; confirm they match V10(C) of code clause 2.4.",
+    "klik": "Pick a district and press Apply; V10 is written back to the sheet."
+  },
+  "twSeismicLoad": {
+    "titel": "Parametric view — seismic load (site zone & near-fault parameters)",
+    "kop": "Site seismic zone & near-fault factors",
+    "kies": "Select",
+    "velden": {
+      "county": "County / city",
+      "town": "Township / district",
+      "soil": "Site class (Table 2-4)",
+      "fault": "Nearby active fault (Table 2-3)",
+      "rKm": "Fault distance r (km)",
+      "zone": "Zone coeffs SsD / S1D",
+      "fafv": "Site factors Fa / Fv",
+      "aanbevolen": "Computed SDS / SD1",
+      "huidig": "Current SDS / SD1 in sheet"
+    },
+    "keuzes": {
+      "soil1": "Type 1 (Stiff soil Vs30 ≥ 270)",
+      "soil2": "Type 2 (Medium soil 180 ≤ Vs30 < 270)",
+      "soil3": "Type 3 (Soft soil Vs30 < 180)",
+      "geenFault": "No near-fault (r ≥ 14 km)"
+    },
+    "neem": "Apply to sheet",
+    "noot": "Based on Taiwan Seismic Code (seis113) Tables 2-1, 2-3-1, 2-3-2, 2-4(a)/(b) and 2-6(b) ({{aantal}} general-zone districts). Taipei Basin microzones are excluded.",
+    "klik": "Pick a district, site class and fault distance, then press Apply; S_DS and S_D1 are written back to the sheet."
   }
 }

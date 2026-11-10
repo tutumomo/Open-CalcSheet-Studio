@@ -45,8 +45,15 @@ const detailOplegging = `<svg viewBox="0 0 480 250" xmlns="http://www.w3.org/200
   <text x="470" y="244" text-anchor="end" style="fill:#64748b; font-size:10px">detail oplegging, schematisch</text>
 </svg>`;
 
+import { twLoadCombosRc112, twLoadCombosSteelAsd } from "./tw-load-combos.ts";
+
 export const rekentaalIncludes: ReadonlyMap<string, string> = new Map([
   ["detail-oplegging.svg", detailOplegging],
+  // 台灣載重組合共用片段（階段 2b／3；A 級已驗證庫，見 docs/tw/規範來源.md §5.12）
+  ["tw-load-combos-rc112.cpd", twLoadCombosRc112],
+  ["tw-load-combos-rc112", twLoadCombosRc112],
+  ["tw-load-combos-steel-asd.cpd", twLoadCombosSteelAsd],
+  ["tw-load-combos-steel-asd", twLoadCombosSteelAsd],
 ]);
 
 /**
