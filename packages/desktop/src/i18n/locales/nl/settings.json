@@ -204,7 +204,7 @@
     "veldUitleg": "Het veld bij het Project in ERPNext met een adres of coördinaten (zoals 52.09, 5.12). Het bestaat niet standaard: de beheerder van ERPNext maakt het aan, bijvoorbeeld als custom_location."
   },
   "about": {
-    "appName": "Open CalcSheet Studio",
+    "appName": "Open CalcSheet Studio TW",
     "version": "Versie",
     "framework": "Framework",
     "license": "Licentie",

@@ -12,7 +12,7 @@
   "exit": "Afsluiten",
   "aboutPanel": {
     "title": "Over",
-    "appName": "OpenAEC Desktop",
+    "appName": "Open CalcSheet Studio TW",
     "version": "Versie",
     "tagline": "Build free. Build together.",
     "description": "Een open-source desktopapplicatie voor de bouw — gemaakt met Tauri, React en TypeScript. Onderdeel van de OpenAEC Foundation: vrije gereedschappen voor architectuur, engineering en constructie.",

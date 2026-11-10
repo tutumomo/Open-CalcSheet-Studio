@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（獨立安裝識別）：`productName` 改為「Open CalcSheet Studio TW」、`identifier` 改為 `tw.opencalcsheet.studio`，安裝目錄、開始選單、控制台卸載項目與 WebView2 資料夾全部獨立，可與上游原版並存安裝，不再因安裝上游新版而被覆蓋；視窗標題、`.ifccalculation` 檔案關聯名稱與中英荷三語介面 `appName` 同步。另修正 `scripts/check-renders.mjs` 在 Windows 以絕對路徑動態匯入 `.ts` 失敗（改用 `pathToFileURL`）。
+
 - 台灣版（開源協同與獨立發佈打包）：自 `upstream/main` 切出兩個零耦合上游回饋分支 `upstream-pr/mks-units`（MKS 單位制 `tf`/`kgf`）與 `upstream-pr/multilang-closing-lines`（`leesResultaat` 多語結尾行解析與安全防護），補齊 `check-uitvoer-taal.mjs` 多語結尾行回歸測試；建立台灣版專屬自動發佈工作流程 `.github/workflows/release-tw.yml`（強制驗證 `STANDAARD_TAAL = "zh-TW"` 與全部 91 支檢查腳本、跨平台打包 Windows NSIS `.exe`、macOS `.dmg`、Linux `.deb` 並產生 `SHA256SUMS.txt` 校驗碼）；新增 `docs/tw/上游PR規劃.md` 與 `docs/tw/發佈流程.md`。
 - 台灣版（本土工址地理參數聯動）：建立 `normen/twSiteWind.ts`（內政部建築研究所開放資料 355 個行政區建議 V10）與 `normen/twSiteSeismic.ts`（行政院公報耐震規範表 2-1 全國 20 縣市 327 區＋表 2-6(b) 雙北一般震區 29 區之 SsD/S1D、表 2-3-1/2-3-2 共 13 組活動斷層近斷層修正曲線、表 2-4(a)/(b) 地盤放大係數 Fa/Fv）；新增 `TwWindLoadDesigner` 與 `TwSeismicLoadDesigner` 支援一鍵計算並帶入 `V_10`、`S_DS`、`S_D1` 至計算表。
 - 台灣版（參數化繪圖介面）：新增 `TwRcBeamDesigner`（梁斷面、保護層、主筋排數、箍筋間距）、`TwRetainingWallDesigner`（立壁、牆趾、牆踵、Rankine 滑動楔形、超載）、`TwDetentionBasinDesigner`（池體斷面、設計水位、孔口、溢洪口）；`tw-retaining-wall`、`tw-detention-basin` 輸入改為 `?{}` 形式以便視圖寫回，計算結果不變。

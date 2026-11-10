@@ -29,7 +29,7 @@
  */
 import { process as rekenblad } from "../packages/core/dist/index.js";
 import { readFileSync, readdirSync } from "node:fs";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import { dirname, join } from "node:path";
 
 const hier = dirname(fileURLToPath(import.meta.url));
@@ -47,7 +47,8 @@ const GEEN_BLAD = new Set([
  * projectScope, met de afgeleide waarden (K_FI, tw_I, tw_Iw, tw_alpha_w, tw_zg).
  */
 async function projectScope() {
-  const m = await import(join(hier, "../packages/desktop/src/store/projectGegevens.ts"));
+  // Op Windows is een absoluut pad geen geldige ESM-URL; pathToFileURL maakt er file:// van.
+  const m = await import(pathToFileURL(join(hier, "../packages/desktop/src/store/projectGegevens.ts")).href);
   return m.projectScope(m.legeGegevens());
 }
 

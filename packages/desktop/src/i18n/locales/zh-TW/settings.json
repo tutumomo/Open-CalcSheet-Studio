@@ -204,7 +204,7 @@
     "veldUitleg": "ERPNext中專案（Project）上用來存放位址或座標（例如52.09, 5.12）的欄位。預設並不存在：由ERPNext管理員建立，例如custom_location。"
   },
   "about": {
-    "appName": "Open CalcSheet Studio",
+    "appName": "Open CalcSheet Studio TW",
     "version": "版本",
     "framework": "框架",
     "license": "授權",

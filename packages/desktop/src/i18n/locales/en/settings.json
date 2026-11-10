@@ -204,7 +204,7 @@
     "veldUitleg": "The field on the Project in ERPNext that holds an address or coordinates (such as 52.09, 5.12). It does not exist by default: the ERPNext administrator creates it, for example as custom_location."
   },
   "about": {
-    "appName": "Open CalcSheet Studio",
+    "appName": "Open CalcSheet Studio TW",
     "version": "Version",
     "framework": "Framework",
     "license": "License",

@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "Open CalcSheet Studio",
+  "productName": "Open CalcSheet Studio TW",
   "version": "2026.45.2",
-  "identifier": "studio.openstructuralcalculation.app",
+  "identifier": "tw.opencalcsheet.studio",
   "build": {
     "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:3021",
@@ -13,7 +13,7 @@
     "withGlobalTauri": true,
     "windows": [
       {
-        "title": "Open CalcSheet Studio",
+        "title": "Open CalcSheet Studio TW",
         "width": 1280,
         "height": 800,
         "minWidth": 900,
@@ -42,8 +42,8 @@
     "fileAssociations": [
       {
         "ext": ["ifccalculation"],
-        "name": "Open CalcSheet Studio-project",
-        "description": "Open CalcSheet Studio-project",
+        "name": "Open CalcSheet Studio TW-project",
+        "description": "Open CalcSheet Studio TW-project",
         "mimeType": "application/json",
         "role": "Editor"
       }
