@@ -197,6 +197,7 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       soort: keuze('rekenblad', 'pdf', 'spreadsheet', 'markdown', 'graaf', 'tekenblad', 'jupyter', 'marimo'),
       module: opt(TEKST),
       bronVersie: opt(TEKST),
+      ref: opt(TEKST),
     }),
   },
   [ATTR.rekentekst]: { value: TEKST },

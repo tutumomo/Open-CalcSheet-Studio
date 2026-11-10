@@ -22,6 +22,7 @@ import { legeGraaf, type Graaf } from "../graaf/model";
 import { TEKEN_BLAD, type TekenVel } from "./tekenBlad";
 import { JUPYTER_BLAD, type JupyterWerkmap } from "./jupyterBlad";
 import { MARIMO_BLAD, type MarimoNotebook } from "./marimoBlad";
+import { metBladRefs } from "./bladRefs";
 
 const STORE_KEY = "projectState";
 
@@ -52,6 +53,13 @@ export const RAPPORT_ID = "__rapport__";
  */
 export interface Exemplaar {
   id: string;
+  /**
+   * Het kenmerk waarmee een ander blad naar dit blad verwijst: `#1.R_paal` neemt
+   * de waarde R_paal uit het blad met ref "1" over (rekenen/verwijzingen.ts). Een
+   * nummer dat de app geeft bij het toevoegen; het blijft gelijk bij verplaatsen
+   * en verwijderen van andere bladen, en wordt niet opnieuw uitgedeeld.
+   */
+  ref?: string;
   naam: string;
   templateId: string;
   source: string;
@@ -352,7 +360,17 @@ function rapportUit(x: unknown): Rapport {
   return x ? normaliseerRapport(x, datumTekst(new Date()), standaardTeksten, appTaal()) : nieuwRapport();
 }
 
-export const useProjectStore = create<ProjectState>((set, get) => ({
+export const useProjectStore = create<ProjectState>((zet, get) => {
+  // Elke wijziging van de bladen loopt hierlangs: zo krijgt een nieuw blad zijn
+  // kenmerk, waar het ook wordt toegevoegd (metBladRefs).
+  const set = ((deel: Parameters<typeof zet>[0]) =>
+    zet((s) => {
+      const uit = typeof deel === "function" ? deel(s) : deel;
+      return uit && "exemplaren" in uit && uit.exemplaren && uit.exemplaren.some((e) => !e.ref)
+        ? { ...uit, exemplaren: metBladRefs(uit.exemplaren) }
+        : uit;
+    })) as typeof zet;
+  return {
   projectNaam: nieuweProjectNaam(),
   bestandspad: null,
   gegevens: legeGegevens(),
@@ -837,7 +855,8 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
   },
 
   markeerOpgeslagen: (bestandspad) => set({ bestandspad, dirty: false }),
-}));
+  };
+});
 
 /** Is dit de naam die de app zelf aan een nieuw project gaf, in welke taal dan ook? */
 const isStandaardNaam = (naam: string) =>

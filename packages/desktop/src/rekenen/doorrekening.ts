@@ -20,6 +20,7 @@ import { evalOptiesVan } from "../store/projectEenheden";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
+import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
 import { metToetsingen } from "./toetsCache";
 import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 
@@ -38,6 +39,8 @@ export interface RekenVerzoek {
   evalOpties?: EvalOpties;
   includes: [string, string][];
   imageUrls: [string, string][];
+  /** De bladen waarnaar dit blad verwijst (#1.R_paal), om eerst door te rekenen (verwijzingen.ts). */
+  verwijzingen?: VerwijsBlad[];
 }
 
 export interface RekenAntwoord {
@@ -162,7 +165,12 @@ export function useDoorrekening(
   const toetsV = useToetsVersie();
   const evalOpties = useMemo(() => metToetsingen(basisOpties, "vragen", taal), [basisOpties, toetsV, taal]);
   const optiesSleutel = JSON.stringify(basisOpties) + "|t" + toetsV;
-  const sleutel = [hoekmodus, taal, optiesSleutel, naam, JSON.stringify(scope), JSON.stringify(waarden), source].join("\u0000");
+  // De bladen waarnaar dit blad verwijst gaan mee, en horen in de sleutel: verandert
+  // de invoer van blad 1, dan rekent een blad met #1.R_paal opnieuw.
+  const exemplaren = useProjectStore((s) => s.exemplaren);
+  const verwijzingen = useMemo(() => verwezenBladen(source, waarden, exemplaren), [source, waarden, exemplaren]);
+  const verwijsSleutel = verwijzingen.length ? JSON.stringify(verwijzingen) : "";
+  const sleutel = [hoekmodus, taal, optiesSleutel, naam, JSON.stringify(scope), JSON.stringify(waarden), source, verwijsSleutel].join("\u0000");
   const hier = useSyncExternalStore(abonneer, () => uitkomsten.get(sleutel) ?? null);
 
   useEffect(() => {
@@ -170,7 +178,10 @@ export function useDoorrekening(
     vraag({
       sleutel, blad, source, waarden, scope, naam, hoekmodus, taal, evalOpties,
       includes: [...rekentaalIncludes], imageUrls: [...rekentaalImageUrls],
+      ...(verwijzingen.length ? { verwijzingen } : {}),
     });
+    // verwijzingen zit in de sleutel
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sleutel, blad, source, waarden, scope, naam, taal, evalOpties]);
 
   const resultaat = hier?.uitkomst?.resultaat;

@@ -29,7 +29,7 @@ import { readFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import {
-  parse, evaluate, render, naarSchema, toetsHash, leesAntwoord, rekenUitdrukking,
+  parse, evaluate, render, defaultStyles, naarSchema, toetsHash, leesAntwoord, rekenUitdrukking,
   alsAntwoord, schemaHash, leesVastgelegdeToetsingen,
 } from "../packages/core/dist/index.js";
 
@@ -173,6 +173,8 @@ console.log("\nDe weergave");
   meld(/<tr class="maatgevend">[^]*?6\.62/.test(html), "de maatgevende rij gemarkeerd");
   meld(html.includes("n.v.t.") && html.includes("voldoet"), "niet van toepassing en voldoet");
   meld(html.includes("alleen-scherm") && html.includes("Afleiding"), "de afleiding alleen op het scherm");
+  meld(/\.calc-toets-tabel th:nth-child\(n\+3\), \.calc-toets-tabel td:nth-child\(n\+3\) \{ white-space: nowrap; \}/.test(defaultStyles), "UC en oordeel breken niet af in een smal paneel");
+  meld(html.includes("<td>art. 6.3.2.3 (tabel 6.3/<wbr>6.5) + NB.NB.2/<wbr>NB.4/<wbr>NB.7/<wbr>NB.11/<wbr>NB.13</td>"), "een lange verwijzing breekt na elke schuine streep");
   const nietGetoetst = render(evaluate(parse(blad()), {}, {}, {}));
   meld(nietGetoetst.includes("NIET GETOETST"), "zonder antwoord: NIET GETOETST");
   const en = render(evaluate(parse(blad()), {}, {}, { toetsingen, taal: "en" }));

@@ -441,6 +441,12 @@ function esc(t: string): string {
   return t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+/**
+ * Een artikel met een breekpunt na elke schuine streep: een verwijzing als
+ * "NB.NB.2/NB.4/NB.7/NB.11/NB.13" heeft geen spaties en hield een smal paneel anders breed.
+ */
+const artikelTekst = (t: string) => esc(t).replace(/\//g, '/<wbr>');
+
 const ucTekst = (uc: number | null, taal: string) => (uc === null ? '–' : taal === 'nl' ? uc.toFixed(2).replace('.', ',') : uc.toFixed(2));
 
 function oordeel(status: string, w: (typeof WOORDEN)['nl' | 'en'], geheel: boolean): string {
@@ -492,12 +498,12 @@ export function renderToets(node: EvaluatedToets, metVersie = true): string {
   const u = node.uitkomst;
   const rijen = u.staven
     ? u.staven.map((s) => `<tr class="${s.uc_max === u.uc_max ? 'maatgevend' : ''}"><td>${esc(w.staaf)} ${esc(s.id)}</td><td>${esc(s.maatgevend ?? '')}</td><td class="uc">${ucTekst(s.uc_max, node.taal)}</td><td>${esc(oordeel(s.status, w, true))}</td></tr>`)
-    : u.toetsen.map((t) => `<tr class="${t.id === u.maatgevend ? 'maatgevend' : t.status === 'NotApplicable' ? 'nvt' : ''}"><td>${esc(t.artikel)}</td><td>${esc(t.titel)}</td><td class="uc">${ucTekst(t.status === 'NotApplicable' ? null : t.uc, node.taal)}</td><td>${esc(oordeel(t.status, w, false))}</td></tr>`);
+    : u.toetsen.map((t) => `<tr class="${t.id === u.maatgevend ? 'maatgevend' : t.status === 'NotApplicable' ? 'nvt' : ''}"><td>${artikelTekst(t.artikel)}</td><td>${esc(t.titel)}</td><td class="uc">${ucTekst(t.status === 'NotApplicable' ? null : t.uc, node.taal)}</td><td>${esc(oordeel(t.status, w, false))}</td></tr>`);
   const maat = u.toetsen.find((t) => t.id === u.maatgevend);
-  const slot = `<p class="calc-toets-slot">${maat ? `${esc(w.maatgevend)}: ${esc(maat.titel)} (${esc(maat.artikel)}) — ` : ''}UC = ${ucTekst(u.uc_max, node.taal)} — <strong>${esc(oordeel(u.status, w, true))}</strong></p>`;
+  const slot = `<p class="calc-toets-slot">${maat ? `${esc(w.maatgevend)}: ${esc(maat.titel)} (${artikelTekst(maat.artikel)}) — ` : ''}UC = ${ucTekst(u.uc_max, node.taal)} — <strong>${esc(oordeel(u.status, w, true))}</strong></p>`;
   const afleiding = u.toetsen.length
     ? `<details class="calc-toets-afleiding alleen-scherm"><summary>${esc(w.afleiding)}</summary>${u.toetsen
-      .map((t) => `<div class="calc-toets-stap"><p><strong>${esc(t.titel)}</strong> (${esc(t.artikel)})${t.formule ? ` <code>${esc(t.formule)}</code>` : ''}</p>${t.variabelen?.length ? `<p>${t.variabelen.map((v) => `${esc(String(v.symbol ?? ''))} = ${esc(waardeTekst(v))}`).join('; ')}</p>` : ''}${(t.notities ?? []).map((n) => `<p class="calc-toets-notitie">${esc(n)}</p>`).join('')}</div>`)
+      .map((t) => `<div class="calc-toets-stap"><p><strong>${esc(t.titel)}</strong> (${artikelTekst(t.artikel)})${t.formule ? ` <code>${esc(t.formule)}</code>` : ''}</p>${t.variabelen?.length ? `<p>${t.variabelen.map((v) => `${esc(String(v.symbol ?? ''))} = ${esc(waardeTekst(v))}`).join('; ')}</p>` : ''}${(t.notities ?? []).map((n) => `<p class="calc-toets-notitie">${esc(n)}</p>`).join('')}</div>`)
       .join('')}</details>`
     : '';
   return `<div class="calc-toets${scherm}" data-toets="${esc(node.hash ?? '')}">${kop}${verouderd}<table class="calc-toets-tabel"><thead><tr><th>${esc(u.staven ? w.staaf : w.artikel)}</th><th>${esc(u.staven ? w.maatgevend : w.toets)}</th><th>UC</th><th>${esc(w.oordeel)}</th></tr></thead><tbody>${rijen.join('')}</tbody></table>${slot}${afleiding}</div>`;
@@ -510,6 +516,9 @@ export const TOETS_CSS = `
 .calc-toets-tabel { border-collapse: collapse; font-size: 0.95em; }
 .calc-toets-tabel th, .calc-toets-tabel td { border-bottom: 1px solid #e5e7eb; padding: 1px 10px 1px 0; text-align: left; }
 .calc-toets-tabel td.uc { text-align: right; font-variant-numeric: tabular-nums; }
+/* In een smal paneel breken UC en oordeel niet af; artikel en titel wel (een lange
+   verwijzing als NB.NB.2/NB.4/… na elke schuine streep, zie artikelTekst). */
+.calc-toets-tabel th:nth-child(n+3), .calc-toets-tabel td:nth-child(n+3) { white-space: nowrap; }
 .calc-toets-tabel tr.maatgevend td { font-weight: 600; }
 .calc-toets-tabel tr.nvt td { color: #6b7280; }
 .calc-toets-slot { margin: 4px 0 0; }

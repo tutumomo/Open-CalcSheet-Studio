@@ -117,6 +117,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       source: ex.source,
       waarden: ex.waarden,
       bronVersie: ex.bronVersie,
+      ref: ex.ref,
       elementen: ex.elementen,
       pdf: ex.pdf,
       xlsx: ex.xlsx,
@@ -221,6 +222,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   // Alleen als hij er is: een blad zonder bronversie schrijft ook geen leeg veld weg.
   const bronVersie = leesRekenversie(e.bronVersie);
   if (bronVersie) ex.bronVersie = bronVersie;
+  // Het kenmerk voor verwijzingen (#1.R_paal); ontbreekt het, dan geeft de store een nummer.
+  if (typeof e.ref === 'string' && /^[A-Za-z0-9_]+$/.test(e.ref)) ex.ref = e.ref;
   // Idem het PDF-bestand: alleen een PDF-blad met een bruikbaar bestand krijgt het veld.
   const pdf = isPdfBlad(ex) ? leesPdfBijlage(e.pdf) : undefined;
   if (pdf) ex.pdf = pdf;

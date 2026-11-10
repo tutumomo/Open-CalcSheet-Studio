@@ -38,6 +38,44 @@ zijn in deze taal geschreven.
   eenheid van het blad, de omgerekende vorm staat in `inStelsel`. Zie
   [het ontwerp](superpowers/specs/2026-11-06-eenheden-design.md).
 
+## Waarden uit een ander blad
+
+- **Het kenmerk:** elk blad in een project heeft een kort, vast kenmerk, een nummer dat
+  de app geeft bij het toevoegen. Het staat in de projectboom naast de naam (`#2`) en
+  verandert niet als je bladen verplaatst of verwijdert.
+- **Verwijzen:** `#2.R_paal` in een formule neemt de waarde `R_paal` uit blad 2 over, met
+  zijn eenheid: `V_Ed = 1.1*#2.R_paal`. Een naam met een komma-index mag ook
+  (`#2.V_b,0`). In beeld en op papier staat de verwijzing als `#2.R_paal`.
+- **In een invoerveld:** typ `#2.R_paal` in plaats van een getal. Het veld rekent de
+  waarde om naar zijn eigen eenheid; past die niet, of bestaat blad 2 of de naam daarin
+  niet, dan rekent het veld met zijn standaardwaarde en staat er een melding onder.
+- **Doorrekenen:** de app rekent het blad waarnaar verwezen wordt eerst door, met zijn
+  eigen invoer, ook via via (blad 3 vraagt iets van 2, en 2 van 1). Verandert de invoer
+  van blad 2, dan rekent het blad dat ernaar verwijst vanzelf opnieuw. Een kring (1 vraagt
+  iets van 2, en 2 van 1) rekent niet rond en geeft een foutmelding.
+- **Waar:** de kern zet `#2.R_paal` bij het inlezen om in de naam `ref__2__R_paal`
+  (`packages/core/src/verwijzing.ts`); de app zet de waarde onder die naam in de scope
+  (`packages/desktop/src/rekenen/verwijzingen.ts`). Een losse module verwijst nooit naar
+  een ander blad: dat doet de constructeur in zijn eigen project.
+
+## Plaat op palen
+
+- **Model:** een vlakke plaat op verende palen in een regelmatig raster, `n_x × n_y` velden van
+  `L_x × L_y`, met een paal op elk snijpunt; de rand van het model is vrij. De plaat rekent met
+  driehoekige DKT-elementen (Batoz, Bathe & Ho, 1980), de veer van een paal is verdeeld over
+  de knopen binnen de paalkop. Elk veld heeft een eigen belasting, dus volle belasting en
+  schaakbord zijn dezelfde som (`packages/core/src/plaat.ts`).
+- **Invoer:** `geo = [L_x; L_y; n_x; n_y; t; E; ν; k; d_kop; n_el]` (een maat met eenheid wordt
+  omgerekend; kaal in m, kN/m² en kN/m) en `last`, een matrix met per veld de belasting in
+  kN/m², een rij per veld in y (de onderste eerst).
+- **Functies:** `plaat_palen(geo; last)` geeft [m<sub>x,veld</sub>; m<sub>y,veld</sub>; m<sub>x,steun</sub>; m<sub>y,steun</sub>;
+  m<sub>x,ks</sub>; m<sub>y,ks</sub>; w<sub>max</sub>; R<sub>max</sub>; R<sub>midden</sub>] in kNm/m, mm en kN, met de
+  momenten uit de binnenste velden en m<sub>ks</sub> gemiddeld over de kolomstrook;
+  `plaat_R` de reactie per paal, `plaat_w(geo; last; x; y)` de doorbuiging op een punt en
+  `plaat_svg(geo; last; grootheid; x0; y0; schaal)` een kleurenbeeld (1 = w, 2 = m<sub>x</sub>,
+  3 = m<sub>y</sub>) om in een `<svg>` te zetten.
+- **Controle:** `scripts/check-plaat.mjs` (Navier, evenwicht, symmetrie en een binnenveld).
+
 ## Syntax
 
 - `"Title`, `'tekst`, `// commentaar`

@@ -36,6 +36,7 @@
     "geenBladen": "No sheets yet. Add one with <b>Add sheet</b> below, or from the ribbon.",
     "moduleToevoegenUitleg": "Add a module or a reference sheet to this project",
     "dubbelklik": "Double-click to rename",
+    "ref": "Values from this sheet in another sheet: #{{ref}}.name, for example #{{ref}}.M_Ed",
     "omhoog": "Move up",
     "omlaag": "Move down",
     "hernoemen": "Rename",

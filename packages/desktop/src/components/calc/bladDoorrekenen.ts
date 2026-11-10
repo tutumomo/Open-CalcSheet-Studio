@@ -9,6 +9,7 @@ import { rekenUitwerking, type CanvasUitwerking } from "./canvasRekenen";
 import { isJupyterBlad } from "../../store/jupyterBlad";
 import { werkmapHtml } from "./jupyterPapier";
 import { papier } from "./pdfBlad";
+import { scopeMetVerwijzingen, verwezenBladen } from "../../rekenen/verwijzingen";
 
 /*
  * Een rekenblad doorrekenen voor op papier.
@@ -51,6 +52,8 @@ export function rekenBladDoor(
   scope: Record<string, unknown>,
   taal: string = i18next.language,
   evalOpties: EvalOpties = {},
+  /** Alle bladen van het project, voor waarden uit een ander blad (#1.R_paal). */
+  alle: readonly Exemplaar[] = [],
 ): DoorgerekendBlad {
   // Een aangemelde soort rekent niets: geen uitwerking, geen UC. De naam van de soort
   // staat in de kolom grondslag van het overzicht; de inhoud tekent de soort zelf.
@@ -77,7 +80,8 @@ export function rekenBladDoor(
     // De eigen eenheden van het project gelden al bij het lezen (ParseOptions.eenheden).
     const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls, eenheden: (evalOpties.eigenEenheden ?? []).map((e) => e.naam) };
     const uitvoer = bronVoorUitvoer(ex.source, taal);
-    const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, scope, opties, uitvoer.namen, evalOpties);
+    const metRefs = scopeMetVerwijzingen(ex.source, ex.waarden, scope, verwezenBladen(ex.source, ex.waarden, alle), opties, evalOpties);
+    const uitwerking = rekenUitwerking(uitvoer.bron, ex.waarden, metRefs, opties, uitvoer.namen, evalOpties);
     html = uitwerking.html;
     eenheden = uitwerking.eenheden;
     resultaat = leesResultaat(uitwerking.nodes, ex.naam);

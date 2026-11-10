@@ -68,6 +68,8 @@ export interface IfcCalcSheet {
   /** De naam van de module, ter informatie voor een andere lezer. */
   module?: string;
   bronVersie?: string;
+  /** Het kenmerk voor verwijzingen uit andere bladen (#1.R_paal). */
+  ref?: string;
   /** De rekentekst. */
   source?: string;
   /** De invoer, per variabelenaam. */

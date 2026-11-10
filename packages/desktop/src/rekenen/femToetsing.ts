@@ -25,14 +25,17 @@ import {
   nieuwVastTeLeggen,
   toetsHashes,
   toetsVersie,
+  metToetsingen,
   verzamelVerzoeken,
   zetFem,
   zetOpnieuw,
   zetToetsAntwoord,
 } from "./toetsCache";
+import { scopeMetVerwijzingen, verwezenBladen } from "./verwijzingen";
 import { useProjectStore } from "../store/projectStore";
 import { projectScope } from "../store/projectGegevens";
 import { rekenDoor } from "../mcp/rekenen";
+import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 
 interface FemNu {
   versie?: string;
@@ -178,7 +181,13 @@ export async function werkToetsingenBij(ids: readonly string[] | null, maxMs = 1
     for (const ex of exemplaren) {
       if ((ids && !ids.includes(ex.id)) || !/^\s*@toets\b/m.test(ex.source)) continue;
       try {
-        const { nodes } = rekenDoor(ex.source, ex.waarden, scope, ex.naam, "vragen");
+        // Met de waarden uit andere bladen (#1.R_paal), net als in de werkruimte en op papier:
+        // anders geeft een veld dat er een gebruikt een fout, en gaat er geen verzoek uit.
+        const metRefs = scopeMetVerwijzingen(
+          ex.source, ex.waarden, scope, verwezenBladen(ex.source, ex.waarden, exemplaren),
+          { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls }, metToetsingen({}, "lezen"),
+        );
+        const { nodes } = rekenDoor(ex.source, ex.waarden, metRefs, ex.naam, "vragen");
         legToetsingenVast(ex.id, toetsHashes(nodes));
         verzoeken.push(...verzamelVerzoeken(nodes));
       } catch {

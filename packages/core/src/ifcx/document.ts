@@ -68,6 +68,8 @@ export interface IfcxGelezenBlad {
   waarden: Record<string, string>;
   elementen: ElementRef[];
   bronVersie?: string;
+  /** Het kenmerk voor verwijzingen uit andere bladen (#1.R_paal, verwijzing.ts). */
+  ref?: string;
   /** `aantekeningen` en `opPapier` beheert de app (store/pdfAantekeningen.ts); hier gaan ze ongezien door. */
   pdf?: { bestandsnaam: string; data: string; aantekeningen?: unknown[]; opPapier?: boolean };
   xlsx?: { bestandsnaam: string; data: string };
@@ -257,6 +259,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
         soort: isPdf ? 'pdf' : isSpreadsheet ? 'spreadsheet' : isMarkdown ? 'markdown' : isGraaf ? 'graaf' : isTekenblad ? 'tekenblad' : isJupyter ? 'jupyter' : isMarimo ? 'marimo' : 'rekenblad',
         ...(blad.module ? { module: blad.module } : {}),
         ...(blad.bronVersie ? { bronVersie: blad.bronVersie } : {}),
+        ...(blad.ref ? { ref: blad.ref } : {}),
       },
     };
     if (uitkomst.norm) attributes[ATTR.omschrijving] = uitkomst.norm;
@@ -600,7 +603,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
 
   const exemplaren = bladKnopen.map((k): IfcxGelezenBlad => {
     const a = k.attributes!;
-    const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown };
+    const b = a[ATTR.blad] as { id?: unknown; templateId?: unknown; bronVersie?: unknown; ref?: unknown };
     const pdf = a[ATTR.pdf] as { bestandsnaam?: unknown; data?: unknown; aantekeningen?: unknown; opPapier?: unknown } | undefined;
     const xlsx = a[ATTR.xlsx] as { bestandsnaam?: unknown; data?: unknown } | undefined;
     const md = a[ATTR.markdown] as { bestandsnaam?: unknown; tekst?: unknown; beelden?: unknown; koppenUit?: unknown } | undefined;
@@ -617,6 +620,7 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
       elementen: Array.isArray(a[ATTR.elementen]) ? (a[ATTR.elementen] as ElementRef[]) : [],
     };
     if (typeof b.bronVersie === 'string') blad.bronVersie = b.bronVersie;
+    if (typeof b.ref === 'string' && /^[A-Za-z0-9_]+$/.test(b.ref)) blad.ref = b.ref;
     if (pdf && typeof pdf.data === 'string') {
       blad.pdf = {
         bestandsnaam: tekstVan(pdf.bestandsnaam),

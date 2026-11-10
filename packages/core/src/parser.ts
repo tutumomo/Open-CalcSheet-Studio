@@ -3,6 +3,7 @@ import { math } from './eenheden.js';
 const { Unit } = math;
 import type { AstNode, ConditionalNode, OpdrachtNode, PlotNode, TextNode } from './types.js';
 import { DRIE_D_START_RE, leesDrieD } from './drieD.js';
+import { vervangVerwijzingen } from './verwijzing.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
@@ -223,6 +224,19 @@ function foldSubscriptCommas(source: string): string {
  * commentaar. Koppen (`# …`) zijn geheel tekst, net als de keuzes binnen een
  * `@select`-blok; van de `@select`-regel zelf telt alleen de naam als code.
  */
+/**
+ * De rekendelen van een blad, zonder tekst, commentaar en koppen, onder elkaar.
+ * Zo telt een `#1.R_paal` in een uitlegregel niet als verwijzing (verwijzing.ts).
+ */
+export function rekendelen(source: string): string {
+  const delen: string[] = [];
+  alleenInCode(source, (code) => {
+    delen.push(code);
+    return code;
+  });
+  return delen.join('\n');
+}
+
 function alleenInCode(source: string, fn: (code: string) => string): string {
   let inSelect = false;
   let in3d = false;
@@ -321,7 +335,7 @@ function stripDollarSuffix(source: string): string {
  */
 function normaliseer3d(expr: string): string {
   return normalizeExpression(
-    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(expr)))).trim(),
+    rewriteMatrixLiterals(stripDollarSuffix(foldIdentifierDots(foldSubscriptCommas(vervangVerwijzingen(expr))))).trim(),
   );
 }
 
@@ -900,6 +914,10 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
   // `x1\$` and substitute them across the body. After expansion we strip \$
   // from any remaining identifiers.
   source = expandMacros(source);
+  // Een verwijzing naar een ander blad (`#1.R_paal`) wordt een gewone naam, vóór de
+  // andere herschrijvingen van namen (verwijzing.ts). Alleen in rekendelen: een kop
+  // of tekst met een # blijft staan.
+  source = alleenInCode(source, vervangVerwijzingen);
   source = rewriteMatrixLiterals(
     stripDollarSuffix(
       foldIdentifierDots(stripFormatSpecs(foldSubscriptCommas(source))),

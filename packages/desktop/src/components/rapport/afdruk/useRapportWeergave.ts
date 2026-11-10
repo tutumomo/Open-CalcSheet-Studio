@@ -113,7 +113,7 @@ export function useRapportWeergave(): RapportWeergave {
     // In het eenhedenstelsel van het project, net als op het scherm.
     // Lezen: een @toets-blok zonder antwoord staat in het rapport als niet getoetst.
     const evalOpties = metToetsingen(evalOptiesVan(gegevens), "lezen", taal);
-    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal, evalOpties) }));
+    return exemplaren.map((ex) => ({ ex, ...rekenBladDoor(ex, scope, taal, evalOpties, exemplaren) }));
     // De versie van de antwoorden van FEM Studio hoort erbij.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplaren, gegevens, taal, toetsV]);

@@ -18,6 +18,7 @@ een project voorkomen als je wilt. Elke invoeging maakt een **exemplaar**
 ```ts
 interface Exemplaar {
   id: string;
+  ref?: string;                        // kenmerk voor #ref.naam uit een ander blad
   naam: string;                        // "Balklaag 1", te hernoemen
   templateId: string;                  // herkomst, alleen ter informatie
   source: string;                      // eigen kopie van de rekentekst
@@ -103,7 +104,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | Projectgegevens, verborgen onderdelen | `ocss::project` | bron |
 | Constructierapport | `ocss::rapport` | bron |
 | Naam van een blad | `bsi::ifc::prop::Name` op het blad | bron |
-| Id, volgorde, `templateId`, `bronVersie` | `ocss::blad` | bron |
+| Id, volgorde, `templateId`, `bronVersie`, `ref` | `ocss::blad` | bron |
 | Rekentekst | `ocss::blad::rekentekst` | bron |
 | Invoer | `ocss::blad::invoer` | bron |
 | Elementen uit een bronmodel | `ocss::blad::elementen` | bron |

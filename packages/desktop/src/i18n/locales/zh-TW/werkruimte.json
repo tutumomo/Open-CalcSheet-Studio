@@ -36,6 +36,7 @@
     "geenBladen": "尚無計算表。請按下方的<b>新增計算表</b>，或從功能區新增。",
     "moduleToevoegenUitleg": "在此專案中新增模組或參考用計算表",
     "dubbelklik": "按兩下即可重新命名",
+    "ref": "在其他計算表中引用本表數值：#{{ref}}.名稱，例如 #{{ref}}.M_Ed",
     "omhoog": "上移",
     "omlaag": "下移",
     "hernoemen": "重新命名",

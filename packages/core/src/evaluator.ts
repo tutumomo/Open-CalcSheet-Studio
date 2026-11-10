@@ -8,6 +8,8 @@ import { bouwIframe } from './iframeBlok.js';
 import { bouwIfcxBlok } from './ifcxBlok.js';
 import { bouwToets } from './toetsBlok.js';
 import { bouwJsBlok } from './jsBlok.js';
+import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
+import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
 import {
   liggerOplossing, liggerReacties, liggerOmhullende, liggerOmhullendeReacties, liggerExtremen,
   liggerInterpoleer, liggerNulpunt, liggerStatus, liggerDelen, liggerVelden, liggerSvgPunten, liggerSamen,
@@ -755,6 +757,55 @@ math.import(
     /** raamwerk_min(R1; R2; …) → per punt en per kolom de kleinste waarde (zelfde raster). */
     raamwerk_min: function (...ms: unknown[]) {
       return liggerMatrix(liggerSamen(-1, ...ms.map(liggerRijen)));
+    },
+  },
+  { override: true },
+);
+
+// ── Plaat op palen (packages/core/src/plaat.ts) ─────────────────────────────
+// Een vlakke plaat op verende palen in een regelmatig raster, met DKT-elementen.
+// geo = [L_x; L_y; n_x; n_y; t; E; ν; k; d_kop; n_el]: paalafstanden, aantal velden,
+// dikte, E-modulus, dwarscontractie, veer per paal, diameter paalkop en elementen
+// per veld. last = per veld de belasting (kN/m²), een rij per veld in y (de
+// onderste eerst), een kolom per veld in x. Een maat met eenheid wordt omgerekend
+// naar m, kN/m², kN/m en kN/m²; een kaal getal telt in die eenheden.
+
+const PLAAT_EENHEDEN = ['m', 'm', '', '', 'm', 'kN/m^2', '', 'kN/m', 'm', ''];
+
+function plaatGetal(v: unknown, eenheid: string): number {
+  if (isUnit(v)) {
+    if (!eenheid) return v.value;
+    try { return v.toNumber(eenheid); } catch { throw new Error(`plaat: ${String(v)} past niet bij ${eenheid}`); }
+  }
+  return liggerGetal(v);
+}
+
+function plaatInvoer(geo: unknown, last: unknown): PlaatInvoer {
+  const a = toArrayLike(geo);
+  const g = (a ?? [geo]).flatMap((r) => toArrayLike(r) ?? [r]);
+  if (g.length < 10) throw new Error('plaat: geo heeft 10 waarden: [L_x; L_y; n_x; n_y; t; E; ν; k; d_kop; n_el]');
+  const v = PLAAT_EENHEDEN.map((e, i) => plaatGetal(g[i], e));
+  const q = invoerTabel(last, (x) => plaatGetal(x, 'kN/m^2'));
+  return { lx: v[0], ly: v[1], nbx: Math.round(v[2]), nby: Math.round(v[3]), t: v[4], E: v[5], nu: v[6], k: v[7], dKop: v[8], nEl: Math.round(v[9]), q };
+}
+
+math.import(
+  {
+    /** plaat_palen(geo; last) → [m_x,veld; m_y,veld; m_x,steun; m_y,steun; m_x,ks; m_y,ks; w_max; R_max; R_midden] (kNm/m, mm, kN). */
+    plaat_palen: function (geo: unknown, last: unknown) {
+      return math.matrix(plaatSamenvatting(plaatOplossing(plaatInvoer(geo, last))));
+    },
+    /** plaat_R(geo; last) → [i, j, x, y, R] per paal (m, kN). */
+    plaat_R: function (geo: unknown, last: unknown) {
+      return math.matrix(plaatOplossing(plaatInvoer(geo, last)).palen.map((p) => [p.i, p.j, p.x, p.y, p.R]));
+    },
+    /** plaat_w(geo; last; x; y) → de doorbuiging (mm) op (x, y) in m. */
+    plaat_w: function (geo: unknown, last: unknown, x: unknown, y: unknown) {
+      return plaatDoorbuiging(plaatOplossing(plaatInvoer(geo, last)), plaatGetal(x, 'm'), plaatGetal(y, 'm'));
+    },
+    /** plaat_svg(geo; last; grootheid; x0; y0; schaal) → SVG-elementen: 1 = w, 2 = m_x, 3 = m_y. */
+    plaat_svg: function (geo: unknown, last: unknown, grootheid: unknown, x0: unknown, y0: unknown, schaal: unknown) {
+      return plaatSvg(plaatOplossing(plaatInvoer(geo, last)), liggerGetal(grootheid), liggerGetal(x0), liggerGetal(y0), liggerGetal(schaal));
     },
   },
   { override: true },
@@ -1671,8 +1722,28 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // 1 kN rekende of verderop NaN en "unit with undefined value" gaf;
         // zonder eenheid bleef de naam ongedefinieerd. Het veld zelf blijft
         // leeg (currentValue) en toont de standaardwaarde als placeholder.
-        const raw = invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
-        try {
+        // Een waarde uit een ander blad (`#1.R_paal`, verwijzing.ts): de app zet die
+        // vooraf in de scope. In een veld met eenheid wordt hij daarnaar omgerekend;
+        // past de eenheid niet of is het blad of de naam onbekend, dan rekent het
+        // veld met zijn standaardwaarde en staat er een fout onder.
+        const ref = leesVerwijzing(invoer);
+        let refFout: string | null = null;
+        if (ref) {
+          const gevonden = scope[verwijzingNaam(ref.ref, ref.naam)];
+          if (gevonden === undefined) {
+            refFout = `#${ref.ref}.${ref.naam} niet gevonden: geen blad #${ref.ref} of geen waarde ${ref.naam} daarin`;
+          } else if (node.unit && math.isUnit(gevonden)) {
+            try {
+              scope[node.name] = (gevonden as { to: (eenheid: string) => unknown }).to(node.unit);
+            } catch {
+              refFout = `#${ref.ref}.${ref.naam} (${math.format(gevonden, { precision: 4 })}) past niet bij de eenheid ${node.unit} van dit veld`;
+            }
+          } else {
+            scope[node.name] = gevonden;
+          }
+        }
+        const raw = ref ? standaard.trim().replace(',', '.') || '0' : invoer.trim().replace(',', '.') || standaard.trim().replace(',', '.') || '0';
+        if (!ref || refFout) try {
           // Wat geen getal oplevert (alleen een eenheid of een teken, zoals
           // "kN" of "-"), gaat naar de afhandeling van een halve invoer. Dat
           // geldt voor de invoer zelf, zonder de eenheid erachter: een eenheid
@@ -1727,6 +1798,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             ...(toon ? { toonEenheid: toon } : {}),
           });
         }
+        if (refFout) result.push({ type: 'text', text: `Error evaluating ${refFout}` });
         break;
       }
 
@@ -2085,7 +2157,8 @@ function evaluateAssignment(
       name: index === undefined ? name : `${name}.(${index.replace(/,/g, ';')})`,
       expression,
       substitution: '',
-      result: `Error: ${(err as Error).message}`,
+      // "Undefined symbol ref__1__R_paal" leest als "Undefined symbol #1.R_paal".
+      result: `Error: ${verwijzingenInMelding((err as Error).message)}`,
       unit: '',
     };
   }

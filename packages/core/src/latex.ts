@@ -1,5 +1,6 @@
 import type { MathNode } from 'mathjs';
 import { math, isEenheidNaam } from './eenheden.js';
+import { verwijzingVanNaam } from './verwijzing.js';
 
 const parse = (expr: string): MathNode => math.parse(expr);
 import type { MatrixUitkomst } from './types.js';
@@ -100,6 +101,9 @@ export function weergaveNaam(naam: string): string {
 }
 
 function symbolToLatex(codeNaam: string): string {
+  // Een waarde uit een ander blad (verwijzing.ts): `ref__1__R_paal` staat er als #1.R_paal.
+  const ref = verwijzingVanNaam(codeNaam);
+  if (ref) return `\\#\\text{${escapeText(ref.ref)}.}${symbolToLatex(ref.naam)}`;
   const name = weergaveNaam(codeNaam);
   const underscoreIdx = name.indexOf('_');
   if (underscoreIdx > 0) {

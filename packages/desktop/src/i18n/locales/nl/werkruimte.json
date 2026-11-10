@@ -36,6 +36,7 @@
     "geenBladen": "Nog geen bladen. Voeg er een toe met <b>Blad toevoegen</b> hieronder, of vanuit het lint.",
     "moduleToevoegenUitleg": "Een module of een naslagblad aan dit project toevoegen",
     "dubbelklik": "Dubbelklik om te hernoemen",
+    "ref": "Waarden uit dit blad in een ander blad: #{{ref}}.naam, bijvoorbeeld #{{ref}}.M_Ed",
     "omhoog": "Omhoog",
     "omlaag": "Omlaag",
     "hernoemen": "Hernoemen",

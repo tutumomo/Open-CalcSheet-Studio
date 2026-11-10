@@ -390,6 +390,19 @@
   box-shadow: inset 0 0 0 1.5px var(--theme-text-muted);
 }
 
+/* Het kenmerk van een blad voor verwijzingen (#1.R_paal); wijkt bij hover net als de UC. */
+.pb-ref {
+  flex-shrink: 0;
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-label);
+  line-height: 16px;
+  color: var(--theme-text-muted);
+}
+
+.pb-rij.pb-blad:hover .pb-ref {
+  display: none;
+}
+
 /* Maatgevende UC, zodra het blad is doorgerekend. */
 .pb-uc {
   flex-shrink: 0;

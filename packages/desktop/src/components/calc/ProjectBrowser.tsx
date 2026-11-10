@@ -194,6 +194,8 @@ function ExemplaarRij({
         {stip}
         <span className="pb-naam">{ex.naam}</span>
         {verouderd && <span className="bv-rij-vlag" aria-label={t("bladVersie.melding")}>↻</span>}
+        {/* Het kenmerk voor verwijzingen: #1.R_paal in een ander blad (rekenen/verwijzingen.ts). */}
+        {ex.ref && <span className="pb-ref" title={tw("browser.ref", { ref: ex.ref })}>#{ex.ref}</span>}
         <UcLabel id={ex.id} />
       </button>
       <span className="pb-acties">
