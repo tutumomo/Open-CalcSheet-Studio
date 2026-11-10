@@ -145,7 +145,7 @@ jobs:
       - name: Generate SHA256SUMS.txt
         working-directory: dist-assets
         run: |
-          sha256sum * > SHA256SUMS.txt
+          sha256sum ./* > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
       - name: Create GitHub Release
@@ -179,11 +179,13 @@ jobs:
             DRAFT_FLAG="--draft"
           fi
 
-          RELEASE_NOTES="## Open CalcSheet Studio 台灣版 $TAG
-
-- **來源 Commit**：\`$TARGET_SHA\`（由 main 分支經 91 項自動化測試通過後建置）
-- **功能摘要**：預設繁體中文（zh-TW）介面、台灣 MKS 單位制（tf, kgf/cm²）與 15 組本土結構／大地／水保／載重計算模組。
-- **發佈性質**：本產物為社群預覽測試版本（無商業 Authenticode / Apple Developer 數位簽名）。隨附 SHA256SUMS.txt 僅供核對檔案下載傳輸完整性，不提供代碼簽名擔保。正式生產環境請於信任主機自行編譯或等待官方簽名版本。"
+          RELEASE_NOTES=$(printf '%s\n' \
+            "## Open CalcSheet Studio 台灣版 $TAG" \
+            "" \
+            "- **來源 Commit**：\`$TARGET_SHA\`（由 main 分支經 91 項自動化測試通過後建置）" \
+            "- **平台**：Windows x64、macOS、Linux x64、Linux arm64（aarch64，Ubuntu 26.04）" \
+            "- **功能摘要**：預設繁體中文（zh-TW）介面、台灣 MKS 單位制（tf, kgf/cm²）與 15 組本土結構／大地／水保／載重計算模組。" \
+            "- **發佈性質**：本產物為社群預覽測試版本（無商業 Authenticode / Apple Developer 數位簽名）。隨附 SHA256SUMS.txt 僅供核對檔案下載傳輸完整性，不提供代碼簽名擔保。")
 
           # 3. 建立 Release 並關聯至已錨定之 tag
           gh release create "$TAG" dist-assets/* \
