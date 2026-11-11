@@ -62,7 +62,7 @@ leesbare tekst: deel ze niet.
 
 ## Tools
 
-43 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
+49 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
 De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 [api.md](api.md#routes). In het kort:
 

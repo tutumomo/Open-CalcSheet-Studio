@@ -154,7 +154,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## MCP 與 AI 助手
 
-應用程式內建 MCP 伺服器與 REST API，提供相同的 43 項工具：開啟與儲存專案、新增計算表、填入輸入參數、執行計算、匯出與列印。僅於本機電腦（`127.0.0.1`）監聽並受安全權杖保護。可在**設定 › API 與 AI 助手**中關閉、設為唯讀或暫停。詳見 [MCP 說明文件](docs/mcp.md)與 [REST API 文件](docs/api.md)。
+應用程式內建 MCP 伺服器與 REST API，提供相同的 49 項工具：開啟與儲存專案、新增計算表、填入輸入參數、執行計算、匯出與列印。僅於本機電腦（`127.0.0.1`）監聽並受安全權杖保護。可在**設定 › API 與 AI 助手**中關閉、設為唯讀或暫停。詳見 [MCP 說明文件](docs/mcp.md)與 [REST API 文件](docs/api.md)。
 
 ## 測試與可靠性
 

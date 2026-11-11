@@ -116,7 +116,7 @@ Elk blad staat met tekst, invoer en uitkomsten in het IFCX-bestand. Tekeningen d
 
 ## MCP
 
-De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 43 tools: projecten openen en opslaan, bladen toevoegen, invoer zetten, doorrekenen, exporteren en afdrukken. Hij luistert alleen op je eigen computer (`127.0.0.1`), achter een token. Je kunt hem uitzetten, op alleen lezen zetten of pauzeren onder **Settings › API and AI assistant**. Zie [de MCP-documentatie](docs/mcp.md) en [de REST-API](docs/api.md).
+De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 49 tools: projecten openen en opslaan, bladen toevoegen, invoer zetten, doorrekenen, exporteren en afdrukken. Hij luistert alleen op je eigen computer (`127.0.0.1`), achter een token. Je kunt hem uitzetten, op alleen lezen zetten of pauzeren onder **Settings › API and AI assistant**. Zie [de MCP-documentatie](docs/mcp.md) en [de REST-API](docs/api.md).
 
 ## Testen en betrouwbaarheid
 
