@@ -73,7 +73,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Rapport | `report_get`, `report_set` |
 | Geschiedenis | `undo`, `redo` |
 | Modules | `modules_list`, `library_list`, `library_install`, `library_remove` |
-| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
+| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate` |
 | Formules | `formulas_list`, `formula_get` |
 | Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
@@ -85,6 +85,14 @@ geschiedenis (Ctrl+Z, of `undo`) en zet het project op "niet opgeslagen".
 Opslaan blijft een aparte stap (`project_save`). Waar de app een vraag stelt
 (wijzigingen weggooien bij nieuw of openen) weigert de tool met `CONFLICT`,
 tenzij `force: true`.
+
+`sheet_add` maakt elke soort blad: `kind` kiest `calculation` (standaard),
+`markdown` (`text`), `graph` (`graph`), `drawing` (`paper`, `orientation`),
+`spreadsheet` (XLSX als `path` of `base64`), `jupyter` (ZIP-werkmap) of
+`marimo` (`code`, een `.py` met `marimo.App()`). `sheet_get` geeft van elke
+soort de inhoud; `full: true` geeft bij een tekenblad het hele vel met de
+vormen en bij Marimo de bewaarde uitvoer per cel. De `sheet_set_*`-tools
+vervangen die inhoud en lopen net als de rest via de geschiedenis.
 
 Doorrekenen gaat synchroon via dezelfde route als de afdruk (inlezen met de
 includes, `evaluate` met de invoer van het blad en de projectgegevens als

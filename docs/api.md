@@ -99,12 +99,18 @@ de alleen-lezenstand.
 | `POST /redo` | `redo` | wijzigen | — |
 | `GET /modules` | `modules_list` | lezen | — |
 | `GET /sheets` | `sheets_list` | lezen | evaluate |
-| `POST /sheets` | `sheet_add` | wijzigen | templateId, name, source |
+| `POST /sheets` | `sheet_add` | wijzigen | kind, templateId, name, source, text, code, graph, drawing, paper, orientation, path, base64, fileName, withCode, automatic |
 | `POST /sheets/pdf` | `sheet_add_pdf` | wijzigen | path, base64, fileName, force, name |
-| `GET /sheets/{id}` | `sheet_get` | lezen | id, evaluate |
+| `GET /sheets/{id}` | `sheet_get` | lezen | id, evaluate, full |
 | `PUT /sheets/{id}/source` | `sheet_set_source` | wijzigen | **id**, **source** |
 | `PATCH /sheets/{id}/inputs` | `sheet_set_input` | wijzigen | **id**, name, value, values |
 | `PUT /sheets/{id}/pdf` | `sheet_set_pdf` | wijzigen | **id**, path, base64, fileName, force |
+| `PUT /sheets/{id}/markdown` | `sheet_set_markdown` | wijzigen | **id**, **text**, fileName, headingsInToc |
+| `PUT /sheets/{id}/graph` | `sheet_set_graph` | wijzigen | **id**, **graph** |
+| `PUT /sheets/{id}/drawing` | `sheet_set_drawing` | wijzigen | **id**, drawing, paper, orientation |
+| `PUT /sheets/{id}/spreadsheet` | `sheet_set_spreadsheet` | wijzigen | **id**, path, base64, fileName |
+| `PUT /sheets/{id}/jupyter` | `sheet_set_jupyter` | wijzigen | **id**, path, base64, fileName, withCode, automatic |
+| `PUT /sheets/{id}/marimo` | `sheet_set_marimo` | wijzigen | **id**, **code**, fileName, withCode, clearOutput |
 | `PATCH /sheets/{id}` | `sheet_rename` | wijzigen | **id**, **name** |
 | `POST /sheets/{id}/duplicate` | `sheet_duplicate` | wijzigen | **id**, name |
 | `POST /sheets/{id}/move` | `sheet_move` | wijzigen | **id**, **direction**, steps |

@@ -110,6 +110,68 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
         return id;
       },
       zetPdf: (id, pdf) => wijzig("zetPdf", () => opBlad(id, (e) => ({ ...e, pdf }))),
+      voegSpreadsheetToe(naam, xlsx) {
+        const id = `ex-${++teller}`;
+        wijzig("voegSpreadsheetToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "spreadsheet", source: "", waarden: {}, xlsx }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      zetSpreadsheet: (id, xlsx) => wijzig("zetSpreadsheet", () => opBlad(id, (e) => ({ ...e, xlsx }))),
+      voegMarkdownToe(naam, md) {
+        const id = `ex-${++teller}`;
+        wijzig("voegMarkdownToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "markdown", source: "", waarden: {}, md }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      zetMarkdown: (id, md) => wijzig("zetMarkdown", () => opBlad(id, (e) => ({ ...e, md }))),
+      voegCanvasToe(naam) {
+        const id = `ex-${++teller}`;
+        wijzig("voegCanvasToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "canvas", source: "", waarden: {} }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      voegGraafToe(naam) {
+        const id = `ex-${++teller}`;
+        wijzig("voegGraafToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "graaf", source: "", waarden: {}, graaf: { versie: 1, nodes: [], verbindingen: [] } }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      zetGraaf: (id, graaf) => wijzig("zetGraaf", () => opBlad(id, (e) => ({ ...e, graaf }))),
+      voegTekenbladToe(naam, tekenvel) {
+        const id = `ex-${++teller}`;
+        wijzig("voegTekenbladToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "tekenblad", source: "", waarden: {}, tekenvel }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      zetTekenVel: (id, tekenvel) => wijzig("zetTekenVel", () => opBlad(id, (e) => ({ ...e, tekenvel }))),
+      voegJupyterToe(naam, jupyter) {
+        const id = `ex-${++teller}`;
+        wijzig("voegJupyterToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "jupyter", source: "", waarden: {}, jupyter }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      zetJupyter: (id, jupyter) => wijzig("zetJupyter", () => opBlad(id, (e) => ({ ...e, jupyter }))),
+      voegMarimoToe(naam, marimo) {
+        const id = `ex-${++teller}`;
+        wijzig("voegMarimoToe", () => {
+          s.exemplaren = [...s.exemplaren, { id, naam: vrij(naam, false), templateId: "marimo", source: "", waarden: {}, marimo: { ...marimo, uitvoer: marimo.uitvoer ?? [] } }];
+          s.activeId = id;
+        });
+        return id;
+      },
+      zetMarimo: (id, marimo) => wijzig("zetMarimo", () => opBlad(id, (e) => ({ ...e, marimo: { ...marimo, uitvoer: marimo.uitvoer ?? [] } }))),
       dupliceer(id) {
         const bron = s.exemplaren.find((e) => e.id === id);
         if (!bron) return null;

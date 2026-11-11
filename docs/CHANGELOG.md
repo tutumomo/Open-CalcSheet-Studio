@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- MCP／REST 補齊所有表單種類：`sheet_add` 可用 `kind` 建立 markdown、graph、drawing、spreadsheet、jupyter 與 marimo 表（calculation 仍為預設），`sheet_get` 對每種表回傳內容（`full: true` 時繪圖表回整份視圖、Marimo 回每格輸出），新增 `sheet_set_markdown`、`sheet_set_graph`、`sheet_set_drawing`、`sheet_set_spreadsheet`、`sheet_set_jupyter`、`sheet_set_marimo` 六個寫入工具；全部經專案 store 動作，可復原（undo）。`scripts/check-mcp.mjs` 補上各類表的新增、讀取、寫入與負向測試（118 項）。
+
 - 台灣版（獨立安裝識別）：`productName` 改為「Open CalcSheet Studio TW」、`identifier` 改為 `tw.opencalcsheet.studio`，安裝目錄、開始選單、控制台卸載項目與 WebView2 資料夾全部獨立，可與上游原版並存安裝，不再因安裝上游新版而被覆蓋；視窗標題、`.ifccalculation` 檔案關聯名稱與中英荷三語介面 `appName` 同步。另修正 `scripts/check-renders.mjs` 在 Windows 以絕對路徑動態匯入 `.ts` 失敗（改用 `pathToFileURL`）。
 
 - 台灣版（開源協同與獨立發佈打包）：自 `upstream/main` 切出兩個零耦合上游回饋分支 `upstream-pr/mks-units`（MKS 單位制 `tf`/`kgf`）與 `upstream-pr/multilang-closing-lines`（`leesResultaat` 多語結尾行解析與安全防護），補齊 `check-uitvoer-taal.mjs` 多語結尾行回歸測試；建立台灣版專屬自動發佈工作流程 `.github/workflows/release-tw.yml`（強制驗證 `STANDAARD_TAAL = "zh-TW"` 與全部 91 支檢查腳本、跨平台打包 Windows NSIS `.exe`、macOS `.dmg`、Linux `.deb` 並產生 `SHA256SUMS.txt` 校驗碼）；新增 `docs/tw/上游PR規劃.md` 與 `docs/tw/發佈流程.md`。

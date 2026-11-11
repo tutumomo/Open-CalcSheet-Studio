@@ -37,6 +37,8 @@ import {
   mcpAdres,
   nieuwToken,
 } from "../packages/desktop/src/mcp/koppeling.ts";
+import { LEGE_WERKMAP } from "../packages/desktop/src/store/spreadsheetBlad.ts";
+import { pakWerkmapIn, startNotebook } from "../packages/desktop/src/store/jupyterBlad.ts";
 import { maakApp, maakContext, PROJECT_ID, RAPPORT_ID } from "./lib/mcpproef.mjs";
 
 let fouten = 0;
@@ -225,8 +227,72 @@ let liggerId = null;
   const weg = await roep("sheet_remove", { id: eigenId });
   meld(!weg.isError && app.s.exemplaren.length === 1 && weg.data.remainingSheets === 1, "sheet_remove");
 
-  const toegestaan = new Set(["voegToe", "hernoem", "verwijder", "selecteer", "zetBron", "zetWaarde", "zetGegeven", "zetProjectNaam"]);
+  const toegestaan = new Set([
+    "voegToe", "hernoem", "verwijder", "selecteer", "zetBron", "zetWaarde", "zetGegeven", "zetProjectNaam",
+    "voegSpreadsheetToe", "zetSpreadsheet", "voegMarkdownToe", "zetMarkdown", "voegCanvasToe",
+    "voegGraafToe", "zetGraaf", "voegTekenbladToe", "zetTekenVel", "voegJupyterToe", "zetJupyter",
+    "voegMarimoToe", "zetMarimo",
+  ]);
   meld(app.acties.length > 0 && app.acties.every((a) => toegestaan.has(a)), "elke mutatie liep via een store-actie", app.acties.join());
+}
+
+// ── 4b. 其他表單種類 ─────────────────────────────────────────────────────────
+console.log("其他表單種類:");
+{
+  // Markdown
+  const md = await roep("sheet_add", { kind: "markdown", name: "說明", text: "# 標題\n\n內文" });
+  meld(!md.isError && md.data.kind === "markdown" && md.data.name === "說明", "sheet_add: markdown", JSON.stringify(md.data));
+  const mdGet = await roep("sheet_get", { id: md.data.id, evaluate: false });
+  meld(mdGet.data.markdown?.text === "# 標題\n\n內文" && mdGet.data.kind === "markdown", "sheet_get: markdown 全文", JSON.stringify(mdGet.data.markdown));
+  const mdSet = await roep("sheet_set_markdown", { id: md.data.id, text: "## 新標題", headingsInToc: true });
+  meld(!mdSet.isError && mdSet.data.characters === 6 && mdSet.data.headingsInToc === true, "sheet_set_markdown: 換文並保留目錄設定", JSON.stringify(mdSet.data));
+  meld((await roep("sheet_set_markdown", { id: md.data.id })).data.code === "VALIDATION", "sheet_set_markdown: 缺 text 被拒");
+  meld((await roep("sheet_set_markdown", { id: liggerId, text: "x" })).data.code === "VALIDATION", "sheet_set_markdown: 非 markdown 表被拒");
+
+  // 圖表
+  const gr = await roep("sheet_add", { kind: "graph", name: "節點圖" });
+  meld(!gr.isError && gr.data.kind === "graph", "sheet_add: graph", JSON.stringify(gr.data));
+  const grSet = await roep("sheet_set_graph", { id: gr.data.id, graph: { versie: 1, nodes: [{ id: "n1", soort: "getal", x: 10, y: 20, invoer: { waarde: "2" } }], verbindingen: [] } });
+  meld(!grSet.isError && grSet.data.nodes === 1, "sheet_set_graph: 寫入節點", JSON.stringify(grSet.data));
+  meld((await roep("sheet_set_graph", { id: gr.data.id, graph: { nodes: "x" } })).data.code === "VALIDATION", "sheet_set_graph: 形狀錯誤被拒");
+
+  // 繪圖
+  const dr = await roep("sheet_add", { kind: "drawing", name: "繪圖", paper: "A4", orientation: "staand" });
+  meld(!dr.isError && dr.data.kind === "drawing" && dr.data.paper === "A4" && dr.data.orientation === "staand", "sheet_add: drawing 與紙張", JSON.stringify(dr.data));
+  const drGet = await roep("sheet_get", { id: dr.data.id, evaluate: false });
+  meld(drGet.data.drawing?.paper === "A4" && Array.isArray(drGet.data.drawing.views), "sheet_get: drawing 摘要", JSON.stringify(drGet.data.drawing));
+  const drSet = await roep("sheet_set_drawing", { id: dr.data.id, paper: "A3" });
+  meld(!drSet.isError && drSet.data.paper === "A3" && drSet.data.orientation === "staand", "sheet_set_drawing: 只改紙張", JSON.stringify(drSet.data));
+  meld((await roep("sheet_set_drawing", { id: dr.data.id, paper: "A9" })).data.code === "VALIDATION", "sheet_set_drawing: 未知紙張被拒");
+  meld((await roep("sheet_set_drawing", { id: dr.data.id })).data.code === "VALIDATION", "sheet_set_drawing: 沒給任何變更被拒");
+
+  // 試算表
+  const ss = await roep("sheet_add", { kind: "spreadsheet", name: "工作簿", base64: LEGE_WERKMAP, fileName: "leeg.xlsx" });
+  meld(!ss.isError && ss.data.kind === "spreadsheet" && ss.data.bytes > 0, "sheet_add: spreadsheet（空活頁簿）", JSON.stringify(ss.data));
+  const ssGet = await roep("sheet_get", { id: ss.data.id, evaluate: false });
+  meld(ssGet.data.spreadsheet?.fileName === "leeg.xlsx" && ssGet.data.spreadsheet.bytes > 0, "sheet_get: spreadsheet 檔名與大小", JSON.stringify(ssGet.data.spreadsheet));
+  meld((await roep("sheet_set_spreadsheet", { id: ss.data.id, base64: Buffer.from("geen zip").toString("base64") })).data.code === "VALIDATION", "sheet_set_spreadsheet: 非 XLSX 被拒");
+  meld((await roep("sheet_set_spreadsheet", { id: ss.data.id, base64: LEGE_WERKMAP })).data.fileName === "leeg.xlsx", "sheet_set_spreadsheet: 沒有檔名時保留原名");
+
+  // Jupyter
+  const werkmap = pakWerkmapIn([{ pad: "notebook.ipynb", bytes: startNotebook({ kop: "Proef", uitleg: "x", titel: "Proef" }) }]);
+  const jp = await roep("sheet_add", { kind: "jupyter", name: "筆記本", base64: Buffer.from(werkmap).toString("base64"), fileName: "proef.zip", withCode: false });
+  meld(!jp.isError && jp.data.kind === "jupyter" && jp.data.files === 1, "sheet_add: jupyter（ZIP 工作資料夾）", JSON.stringify(jp.data));
+  const jpGet = await roep("sheet_get", { id: jp.data.id, evaluate: false });
+  meld(jpGet.data.jupyter?.fileName === "proef.zip" && jpGet.data.jupyter.files.includes("notebook.ipynb") && jpGet.data.jupyter.withCode === false, "sheet_get: jupyter 檔名、檔案清單與設定", JSON.stringify(jpGet.data.jupyter));
+  meld((await roep("sheet_set_jupyter", { id: jp.data.id, base64: Buffer.from("geen zip").toString("base64") })).data.code === "VALIDATION", "sheet_set_jupyter: 非 ZIP 被拒");
+
+  // Marimo
+  const code = "import marimo\n\napp = marimo.App()\n\n@app.cell\ndef _():\n    import marimo as mo\n    return mo,\n";
+  const mr = await roep("sheet_add", { kind: "marimo", name: "反應式筆記本", code, fileName: "proef.py" });
+  meld(!mr.isError && mr.data.kind === "marimo" && mr.data.cells >= 1, "sheet_add: marimo 與儲存格數", JSON.stringify(mr.data));
+  const mrGet = await roep("sheet_get", { id: mr.data.id, evaluate: false, full: true });
+  meld(mrGet.data.marimo?.fileName === "proef.py" && mrGet.data.marimo.code === code && Array.isArray(mrGet.data.marimo.output), "sheet_get full: marimo 程式碼與輸出", JSON.stringify(mrGet.data.marimo?.cells));
+  meld((await roep("sheet_set_marimo", { id: mr.data.id, code: "# geen notebook" })).data.code === "VALIDATION", "sheet_set_marimo: 非 Marimo 程式碼被拒");
+  meld((await roep("sheet_set_marimo", { id: mr.data.id, code: code, withCode: false })).data.outputCleared === true, "sheet_set_marimo: 舊輸出被清掉");
+
+  // 收尾
+  for (const id of [md.data.id, gr.data.id, dr.data.id, ss.data.id, jp.data.id, mr.data.id]) await roep("sheet_remove", { id });
 }
 
 // ── 5. calc_evaluate ─────────────────────────────────────────────────────────

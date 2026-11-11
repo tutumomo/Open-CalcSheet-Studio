@@ -26,6 +26,21 @@ export interface McpPdf {
   data: string;
 }
 
+/** Een Markdown-blad zoals de tools het doorgeven (zie store/markdownBlad.ts). */
+export interface McpMarkdown {
+  bestandsnaam: string;
+  tekst: string;
+  koppenUit?: boolean;
+}
+
+/** Een Marimo-notebook zonder de bewaarde uitvoer; die vult de app zelf. */
+export interface McpMarimo {
+  bestandsnaam: string;
+  code: string;
+  metCode: boolean;
+  uitvoer?: string[];
+}
+
 /** Eén blad zoals de tools het zien; een uittreksel van `Exemplaar`. */
 export interface McpBlad {
   id: string;
@@ -35,7 +50,7 @@ export interface McpBlad {
   waarden: Record<string, string>;
   pdf?: McpPdf;
   xlsx?: McpPdf;
-  md?: { bestandsnaam: string; tekst: string };
+  md?: McpMarkdown;
   graaf?: Graaf;
   tekenvel?: TekenVel;
   jupyter?: McpPdf & { metCode: boolean; automatisch?: boolean };
@@ -117,6 +132,22 @@ export interface McpOmgeving {
     voegToe(templateId: string, basisNaam: string, source: string): string;
     voegPdfToe(naam: string, pdf: McpPdf): string;
     zetPdf(id: string, pdf: McpPdf): void;
+    /** Een spreadsheet-blad (XLSX als base64) achteraan; geeft de nieuwe id. */
+    voegSpreadsheetToe(naam: string, xlsx: McpPdf): string;
+    zetSpreadsheet(id: string, xlsx: McpPdf): void;
+    voegMarkdownToe(naam: string, md: McpMarkdown): string;
+    zetMarkdown(id: string, md: McpMarkdown): void;
+    /** Een leeg canvas-blad achteraan; geeft de nieuwe id. */
+    voegCanvasToe(naam: string): string;
+    /** Een leeg grafblad achteraan; geeft de nieuwe id. */
+    voegGraafToe(naam: string): string;
+    zetGraaf(id: string, graaf: Graaf): void;
+    voegTekenbladToe(naam: string, tekenvel: TekenVel): string;
+    zetTekenVel(id: string, tekenvel: TekenVel): void;
+    voegJupyterToe(naam: string, jupyter: McpPdf & { metCode: boolean; automatisch?: boolean }): string;
+    zetJupyter(id: string, jupyter: McpPdf & { metCode: boolean; automatisch?: boolean }): void;
+    voegMarimoToe(naam: string, marimo: McpMarimo): string;
+    zetMarimo(id: string, marimo: McpMarimo): void;
     dupliceer(id: string): string | null;
     verplaats(id: string, richting: -1 | 1): void;
     hernoem(id: string, naam: string): void;
