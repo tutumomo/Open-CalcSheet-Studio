@@ -4,7 +4,7 @@
  *
  * Elke soort staat er twee keer in, een keer in het hoofdstuk en een keer in de
  * bijlage, zodat beide wegen op papier komen:
- *   • een los rekenblad en een module (balklaag, ligger);
+ *   • een los rekenblad met varianten op papier, en een module (balklaag, ligger);
  *   • een PDF met pagina's van verschillende maten en standen (A4 staand, A4
  *     liggend, A3 liggend, A1 staand), en een van één pagina;
  *   • een werkmap die over meerdere vellen loopt, en een korte;
@@ -62,6 +62,8 @@ export const KENMERKEN = {
   tekenblad: "Proefview begane grond",
   jupyter: "Notebookregel van het proefblad",
   marimo: "Marimoregel van het proefblad",
+  // De kop van een variant in de tabel onder het blad (VariantenAfdruk.tsx).
+  rekenblad: "Proefvariant zwaar",
 };
 
 /** Een klein grafblad: twee getallen opgeteld in een codeblok, en de uitkomst bekeken. */
@@ -303,7 +305,16 @@ export async function bouwGemengdProject() {
   const exemplaren = [
     {
       ...b.rekenblad, templateId: "", waarden: {}, elementen: [],
-      source: "\"Kolom K1\n'Eenvoudige toets van de normaalkracht\nF = 120*kN\nA = 6000*mm^2\nfy = 235*N/mm^2\nN_Rd = A*fy\nUC = F/N_Rd\n",
+      source: "\"Kolom K1\n'Eenvoudige toets van de normaalkracht\nF = ?{120}*(kN)\nA = 6000*mm^2\nfy = 235*N/mm^2\nN_Rd = A*fy\nUC = F/N_Rd\n",
+      varianten: {
+        velden: ["F"],
+        uitkomsten: ["N_Rd"],
+        opPapier: true,
+        lijst: [
+          { id: "var-licht", naam: "V1", waarden: { F: "90" } },
+          { id: "var-zwaar", naam: KENMERKEN.rekenblad, waarden: { F: "180" } },
+        ],
+      },
     },
     { ...b.balklaag, templateId: "balklaag", source: balklaag, waarden: {}, elementen: [] },
     { ...b.ligger, templateId: "ligger", source: ligger, waarden: {}, elementen: [] },

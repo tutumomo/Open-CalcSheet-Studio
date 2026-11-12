@@ -16,6 +16,7 @@ import "katex/dist/katex.min.css";
 import "./JupyterBlad.css";
 import { MATEN, type Maten } from "./paginering";
 import { UitwerkingHtml } from "./UitwerkingHtml";
+import VariantenAfdruk from "./varianten/VariantenAfdruk";
 import "./PrintDocument.css";
 
 /*
@@ -157,6 +158,8 @@ export function PrintBlad({ ex, html, nummer, resultaat, projectregel, titelInKo
         </div>
       )}
       {isCanvasBlad(ex) && eenheden ? <CanvasVellen eenheden={eenheden} bladId={ex.id} /> : <UitwerkingHtml html={html} bladId={ex.id} />}
+      {/* De varianten van het blad, als het vinkje aan staat (docs/varianten.md). */}
+      {ex.varianten?.opPapier && <VariantenAfdruk ex={ex} />}
     </section>
   );
 }

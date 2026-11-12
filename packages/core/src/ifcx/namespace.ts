@@ -46,6 +46,7 @@ export const ATTR = {
   jupyter: 'ocss::blad::jupyter',
   marimo: 'ocss::blad::marimo',
   toetsing: 'ocss::blad::toetsing',
+  varianten: 'ocss::blad::varianten',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -276,6 +277,22 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
       verzoek: TEKST,
       uitkomst: TEKST,
     })),
+  },
+  // Varianten van het blad: andere invoer naast die van het blad. Per variant alleen de
+  // eigen waarden, in paren zoals de invoer; de uitkomsten rekent de app opnieuw uit.
+  [ATTR.varianten]: {
+    value: object({
+      velden: lijst(TEKST),
+      uitkomsten: lijst(TEKST),
+      opPapier: opt(JANEE),
+      zoek: opt(VRIJ),
+      lijst: lijst(object({
+        id: TEKST,
+        naam: TEKST,
+        invoer: lijst(PAAR),
+        gezocht: opt(lijst(TEKST)),
+      })),
+    }),
   },
   [ATTR.markdown]: {
     value: object({

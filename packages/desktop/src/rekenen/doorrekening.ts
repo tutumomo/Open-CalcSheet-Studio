@@ -112,6 +112,11 @@ function vraag(v: RekenVerzoek) {
   else stuur(v);
 }
 
+/** De hoekmodus van nu, voor de worker van de varianten (variantRekenen.ts). */
+export function hoekmodusNu(): AngleMode {
+  return hoekmodus;
+}
+
 /**
  * Hoeken in graden, radialen of gon, voor de UI-thread én de worker. Een andere
  * stand maakt alle bewaarde uitkomsten ongeldig.

@@ -182,7 +182,11 @@ export interface SvgNode {
  *   if        `#if …` / `#else if …` / `#else` / `#end if`
  */
 export type DrieDRegel =
-  | { soort: 'element'; regel: number; naam: string; maten: string[]; kleur?: string; optie?: string; tekst?: string }
+  | {
+    soort: 'element'; regel: number; naam: string; maten: string[]; kleur?: string; optie?: string; tekst?: string;
+    /** Bij `fem`: het model, de uitkomst en de grootheid (`fem vloer UGT w`). */
+    woorden?: string[];
+  }
   | { soort: 'for'; regel: number; teller: string; van: string; tot: string; body: DrieDRegel[] }
   | { soort: 'if'; regel: number; takken: { voorwaarde: string; body: DrieDRegel[] }[]; anders: DrieDRegel[] };
 
@@ -347,6 +351,39 @@ export interface ToetsNode {
   scherm?: boolean;
 }
 
+/**
+ * Een regel van een `@fem`-blok (femBlok.ts): een opdracht met zijn argumenten als
+ * uitdrukkingen, of een `#for` of `#if` met regels erin.
+ */
+export type FemRegel =
+  | {
+    soort: 'opdracht';
+    regel: number;
+    /** `materiaal`, `maas`, `analyse`, `plaat`, `veer`, `veren`, `lijnsteun`, `geval`, `vlaklast`, `eigengewicht`, `puntlast` of `combinatie`. */
+    woord: string;
+    /** De argumenten, gescheiden door `;`, als uitdrukkingen. */
+    args: string[];
+    /** De naam van een plaat, geval of combinatie, of het woord na `analyse`. */
+    naam?: string;
+  }
+  | { soort: 'for'; regel: number; teller: string; van: string; tot: string; body: FemRegel[] }
+  | { soort: 'if'; regel: number; takken: { voorwaarde: string; body: FemRegel[] }[]; anders: FemRegel[] };
+
+/**
+ * Een `@fem naam … @end`-blok: een plaatmodel dat Open FEM Studio doorrekent
+ * (`solve_open_fem_3d`), zie femBlok.ts.
+ */
+export interface FemNode {
+  type: 'fem';
+  /** De naam van het model: `vloer` geeft `vloer_UGT_mx_max`, `vloer_R_max`, … */
+  naam: string;
+  regels: FemRegel[];
+  fouten: string[];
+  hidden?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type AstNode =
   | HeadingNode
   | TextNode
@@ -368,7 +405,8 @@ export type AstNode =
   | GefUploadNode
   | OpdrachtNode
   | EenheidDefNode
-  | ToetsNode;
+  | ToetsNode
+  | FemNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -541,7 +579,13 @@ export type DrieDElement =
    * kan niet in een `@3d`-blok staan. `pad` is het pad van het element in het
    * document, `opaciteit` 1 is dekkend.
    */
-  | { soort: 'vlakken'; vlakken: { punten: Punt3D[]; rand: boolean }[]; kleur: string; opaciteit?: number; pad?: string };
+  | { soort: 'vlakken'; vlakken: { punten: Punt3D[]; rand: boolean }[]; kleur: string; opaciteit?: number; pad?: string }
+  /**
+   * Een gekleurd net van vierhoeken, zoals het momentvlak of de doorbuiging van een
+   * `@fem`-model (`fem vloer UGT w` in een `@3d`-blok): de punten, per vlak vier
+   * puntnummers en per vlak een kleur.
+   */
+  | { soort: 'net'; punten: Punt3D[]; vlakken: [number, number, number, number][]; kleuren: string[]; kleur: string };
 
 /**
  * Een doorgerekende `@3d`-scène. Dit staat als JSON in `data-scene` van het
@@ -651,7 +695,11 @@ export interface EvaluatedEenheidDef {
  * `waarschuwing`: opnieuw toetsen lukte niet; dit is het vorige antwoord.
  */
 export type ToetsAntwoord =
-  | { ok: true; uitkomst: unknown; versie?: string; schema?: string; datum?: string; waarschuwing?: string }
+  | {
+    ok: true; uitkomst: unknown; versie?: string; schema?: string; datum?: string; waarschuwing?: string;
+    /** Bij een `@fem`-blok: het bewaarde verzoek (het raster waar het antwoord bij hoort). */
+    verzoek?: FemRekenmodel;
+  }
   | { ok: false; melding: string };
 
 /** Waarmee een antwoord is gemaakt. */
@@ -684,6 +732,64 @@ export interface ToetsVerzoek {
   hash: string;
   tool: string;
   argumenten: Record<string, unknown>;
+  /**
+   * Bij een `@fem`-blok: het rekenmodel van één belastinggeval. De app maakt er de
+   * argumenten van (femArgumenten) en bewaart het met het antwoord compact (femBewaar);
+   * `argumenten` is dan leeg.
+   */
+  bewaar?: FemRekenmodel;
+}
+
+/**
+ * Het rekenmodel van één belastinggeval van een `@fem`-blok, compact (femNet.ts). Hieruit
+ * volgt de JSON voor `solve_open_fem_3d` (femArgumenten), en het wordt zo bij het blad
+ * vastgelegd: het raster hoort bij het antwoord, ook als CalcSheet later anders meshte.
+ * Knopen en elementen tellen vanaf 0; in de JSON vanaf 1.
+ */
+export interface FemRekenmodel {
+  vorm: 'fem-plaat/1';
+  /** Het belastinggeval. */
+  geval: string;
+  /** Elasticiteitsmodulus (MPa) en dwarscontractie. */
+  E: number;
+  nu: number;
+  /** De knopen (m), alle op z = 0. */
+  x: number[];
+  y: number[];
+  /** Per element vier knopen, tegen de klok in. */
+  el: number[];
+  /** Per element de plaat uit het blok die daar ligt (de laatste wint); in de JSON plaat pl + 1. */
+  pl: number[];
+  /** Per plaat uit het blok de dikte (m). */
+  t: number[];
+  /** Per veer de knopen van de kop met hun deel van de veer (kN/m); de middelste eerst. */
+  veren: [number, number][][];
+  /** Per lijnsteun de knopen met hun veer (kN/m), of null als de knoop vast is. */
+  lijnen: [number, number | null][][];
+  /** In het vlak vast: de eerste knoop in x en y, de tweede in y (geen mechanisme). */
+  inVlak: [number, number];
+  /** Per plaat de vlaklast in dit geval (kN/m², omlaag positief): op de hele vloer en het eigen gewicht. */
+  q: number[];
+  /** Knooplasten in dit geval (kN, omlaag positief): puntlasten en vlaklasten op een rechthoek. */
+  F: [number, number][];
+}
+
+/** Het antwoord van FEM Studio op één geval, compact bewaard (femNet.ts, femBewaar). */
+export interface FemUitkomstCompact {
+  vorm: 'fem-plaat/1';
+  /** Per knoop de verplaatsing in Z (m, omhoog positief). */
+  uz: number[];
+  /**
+   * Per paar van knoop en plaat (femParen) vijf getallen: m_xx, m_yy, m_xy (kNm/m) en
+   * v_x, v_y (kN/m), zoals FEM Studio ze per plaat op de knoop geeft.
+   */
+  m: number[];
+  /** Per knoop met een verticale steun (femSteunknopen) de reactie in Z (kN). */
+  R: number[];
+  /** De belasting (uit het model) en de reacties samen (kN, omlaag en omhoog positief). */
+  som: { last: number; reactie: number };
+  /** Het evenwicht volgens FEM Studio. */
+  evenwicht: { ok: boolean; max: number };
 }
 
 /** Eén toets uit het antwoord. */
@@ -748,6 +854,64 @@ export interface EvaluatedToets {
   scherm?: boolean;
 }
 
+/** De uitersten van één belastinggeval of combinatie van een `@fem`-blok. */
+export interface FemUitersten {
+  naam: string;
+  soort: 'geval' | 'combinatie';
+  /** Momenten (kNm/m), positief bij trek onder. */
+  mxMax: number; mxMin: number; myMax: number; myMin: number; mxyMax: number; mxyMin: number;
+  /** Doorbuiging (mm), omlaag positief. */
+  wMax: number; wMin: number;
+  /** De grootste en kleinste veerreactie (kN, omhoog positief); null zonder veren. */
+  RMax: number | null; RMin: number | null;
+}
+
+/** Een doorgerekend `@fem`-blok. */
+export interface EvaluatedFem {
+  type: 'fem';
+  naam: string;
+  /** `nl` of `en`: de vaste woorden. */
+  taal: string;
+  /**
+   * `klaar`: alle gevallen zijn gerekend; `wacht`: de verzoeken zijn onderweg (werkruimte);
+   * `niet-gerekend`: er is geen antwoord en hier wordt niet gevraagd; `fout`: in het model
+   * of van FEM Studio, met de reden in `melding`.
+   */
+  status: 'wacht' | 'klaar' | 'fout' | 'niet-gerekend';
+  melding?: string;
+  /** Het model in het kort, zodra het raster er is. */
+  model?: {
+    knopen: number; elementen: number; maas: number; veren: number; lijnen: number;
+    /** De dikten (m) die in het raster voorkomen. */
+    dikten: number[];
+  };
+  /** Een plattegrond van het model: platen naar dikte, veren en lijnsteunen (SVG). */
+  modelSvg?: string;
+  /** Per belastinggeval: de hash, de belasting en de reacties samen (kN). */
+  gevallen: { naam: string; hash?: string; somLast?: number; somR?: number }[];
+  /** Per geval en combinatie de uitersten, als alles gerekend is. */
+  uitersten?: FemUitersten[];
+  /** De plattegronden in kleur van de regels `beeld UGT mx` (SVG). */
+  beelden?: string[];
+  /** De hashes van alle gevallen. */
+  hashes?: string[];
+  /** Alleen in de modus `vragen`: de gevallen die nog geen antwoord hebben. */
+  verzoeken?: ToetsVerzoek[];
+  /** De versie van FEM Studio waarmee gerekend is, en wanneer. */
+  versie?: string;
+  datum?: string;
+  /** Zie EvaluatedToets.verouderd. */
+  verouderd?: { versie?: string; schema?: boolean };
+  /** Opnieuw rekenen lukte niet; het blok toont het vorige antwoord. */
+  waarschuwing?: string;
+  /** Alleen in de modus `vragen`: de knop "opnieuw rekenen" staat erbij. */
+  opnieuw?: boolean;
+  /** Achter `#hide`: rekent mee, staat niet op het blad. */
+  verborgen?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type EvaluatedNode =
   | EvaluatedEenheidDef
   | EvaluatedHeading
@@ -766,4 +930,5 @@ export type EvaluatedNode =
   | EvaluatedImage
   | EvaluatedSelect
   | EvaluatedGefUpload
-  | EvaluatedToets;
+  | EvaluatedToets
+  | EvaluatedFem;

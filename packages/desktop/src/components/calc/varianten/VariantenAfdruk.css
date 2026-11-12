@@ -1,0 +1,49 @@
+/* De varianten van een blad op papier (VariantenAfdruk.tsx): beknopt, in de letter van de afdruk. */
+
+.print-varianten-kop {
+  font-size: 11pt;
+  margin: 6mm 0 1.5mm;
+}
+
+.print-varianten-tabel {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 8.5pt;
+  margin-bottom: 4mm;
+}
+
+.print-varianten-tabel caption {
+  caption-side: top;
+  text-align: left;
+  color: #555;
+  padding-bottom: 1.5mm;
+}
+
+.print-varianten-tabel th,
+.print-varianten-tabel td {
+  padding: 0.6mm 1.5mm;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.print-varianten-tabel tbody th {
+  text-align: left;
+  font-weight: 400;
+}
+
+.print-varianten-tabel thead th {
+  border-bottom: 0.3mm solid #333;
+  font-weight: 700;
+}
+
+.print-varianten-scheiding > * {
+  border-top: 0.2mm solid #999;
+}
+
+.print-varianten-sterk > * {
+  font-weight: 700;
+}
+
+.print-varianten-oordeel > * {
+  border-top: 0.3mm solid #333;
+}

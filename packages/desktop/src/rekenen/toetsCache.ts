@@ -82,7 +82,9 @@ export function zetOpnieuw(hash: string): void {
 
 /**
  * De vastgelegde antwoorden van alle bladen. Verandert er niets (dezelfde objecten),
- * dan blijft de versie gelijk: typen in een blad rekent zo niets extra.
+ * dan blijft de versie gelijk: typen in een blad rekent zo niets extra. Ook niet als
+ * alleen een antwoord van deze sessie bij een blad is vastgelegd: dat gold al, en een
+ * nieuwe versie zou elke tabel met varianten opnieuw laten rekenen.
  */
 export function zetVastgelegd(lijsten: readonly (Toetsingen | undefined)[]): void {
   const nieuw = lijsten.filter((t): t is Toetsingen => !!t);
@@ -95,8 +97,12 @@ export function zetVastgelegd(lijsten: readonly (Toetsingen | undefined)[]): voi
       if (!al || v.datum > al.datum) kaart.set(hash, v);
     }
   }
+  // Telt het verschil? Niet voor een blok waarvoor de sessie een geldig antwoord heeft:
+  // dat antwoord gaat voor (toetsingenNu).
+  const telt = (hash: string) => kaart.get(hash) !== vastgelegd.get(hash) && !sessie.get(hash)?.ok;
+  const veranderd = [...kaart.keys(), ...vastgelegd.keys()].some(telt);
   vastgelegd = kaart;
-  meld();
+  if (veranderd) meld();
 }
 
 /** Een ander project: de antwoorden van deze sessie gelden daar niet vanzelf. */
@@ -152,9 +158,14 @@ export function metToetsingen(opties: EvalOpties, modus: "vragen" | "lezen", taa
   };
 }
 
-function elkeToets(nodes: readonly EvaluatedNode[], doe: (n: Extract<EvaluatedNode, { type: "toets" }>) => void) {
+/**
+ * Elk blok dat FEM Studio iets vraagt: een `@toets`-blok (één verzoek, één hash) of een
+ * `@fem`-blok (een verzoek en een hash per belastinggeval). Zonder hash: een fout in het blok.
+ */
+function elkeToets(nodes: readonly EvaluatedNode[], doe: (verzoeken: ToetsVerzoek[], hashes: string[]) => void) {
   for (const n of nodes) {
-    if (n.type === "toets") doe(n);
+    if (n.type === "toets") doe(n.verzoek ? [n.verzoek] : [], n.hash ? [n.hash] : []);
+    else if (n.type === "fem") doe(n.verzoeken ?? [], n.hashes ?? []);
     const kinderen = (n as { children?: EvaluatedNode[] }).children;
     if (Array.isArray(kinderen)) elkeToets(kinderen, doe);
   }
@@ -163,8 +174,8 @@ function elkeToets(nodes: readonly EvaluatedNode[], doe: (n: Extract<EvaluatedNo
 /** De verzoeken in een doorgerekend blad, ook in de takken van een `#if`. */
 export function verzamelVerzoeken(nodes: readonly EvaluatedNode[]): ToetsVerzoek[] {
   const uit: ToetsVerzoek[] = [];
-  elkeToets(nodes, (n) => {
-    if (n.verzoek) uit.push(n.verzoek);
+  elkeToets(nodes, (verzoeken) => {
+    uit.push(...verzoeken);
   });
   return uit;
 }
@@ -172,8 +183,8 @@ export function verzamelVerzoeken(nodes: readonly EvaluatedNode[]): ToetsVerzoek
 /** De hashes van alle blokken in een doorgerekend blad, met of zonder antwoord. */
 export function toetsHashes(nodes: readonly EvaluatedNode[]): string[] {
   const uit: string[] = [];
-  elkeToets(nodes, (n) => {
-    if (n.hash) uit.push(n.hash);
+  elkeToets(nodes, (_, hashes) => {
+    uit.push(...hashes);
   });
   return uit;
 }
@@ -182,17 +193,19 @@ export function toetsHashes(nodes: readonly EvaluatedNode[]): string[] {
  * Alleen de vastgelegde antwoorden die het doorgerekende blad nog gebruikt: bij het
  * opslaan valt de rest weg. Een blok zonder hash (een fout in een veld) kan bij elk
  * antwoord horen; dan blijven ze allemaal staan, net als zonder doorgerekend blad.
+ * `ook`: de hashes die de varianten van het blad gebruiken (rekenen/varianten.ts).
  */
 export function gebruikteToetsingen(
   toetsingen: Toetsingen | undefined,
   blad: { nodes: readonly EvaluatedNode[]; fout?: string } | undefined,
+  ook: readonly string[] = [],
 ): Toetsingen | undefined {
   if (!toetsingen || !blad || blad.fout) return toetsingen;
-  const gebruikt = new Set<string>();
+  const gebruikt = new Set<string>(ook);
   let zonderHash = false;
-  elkeToets(blad.nodes, (n) => {
-    if (n.hash) gebruikt.add(n.hash);
-    else zonderHash = true;
+  elkeToets(blad.nodes, (_, hashes) => {
+    for (const h of hashes) gebruikt.add(h);
+    if (!hashes.length) zonderHash = true;
   });
   if (zonderHash) return toetsingen;
   const uit = Object.fromEntries(Object.entries(toetsingen).filter(([hash]) => gebruikt.has(hash)));

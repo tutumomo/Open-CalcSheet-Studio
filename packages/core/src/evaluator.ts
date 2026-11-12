@@ -7,6 +7,8 @@ import { bouwDrieDScene } from './drieD.js';
 import { bouwIframe } from './iframeBlok.js';
 import { bouwIfcxBlok } from './ifcxBlok.js';
 import { bouwToets } from './toetsBlok.js';
+import { bouwFem } from './femBlok.js';
+import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
 import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
 import { plaatOplossing, plaatSamenvatting, plaatDoorbuiging, plaatSvg, type PlaatInvoer } from './plaat.js';
@@ -811,6 +813,57 @@ math.import(
   { override: true },
 );
 
+// ── Een @fem-model (packages/core/src/femBlok.ts, femResultaat.ts) ───────────
+// Het blok zet het doorgerekende model onder zijn naam in de scope. De functies
+// krijgen het model, de naam van een geval of combinatie als tekst, de grootheid
+// ("w", "mx", "my", "mxy", "vx", "vy") en plaatsen in m (een kaal getal telt in m).
+
+function femModelUit(model: unknown, functie: string): FemModel {
+  if (model instanceof FemModel) return model;
+  throw new Error(`${functie}: het eerste argument is een @fem-model, zoals vloer (de naam van het blok)`);
+}
+function femTekst(v: unknown, functie: string, wat: string): string {
+  if (typeof v === 'string') return v;
+  throw new Error(`${functie}: ${wat} staat tussen aanhalingstekens, zoals "UGT"`);
+}
+const femMeter = (v: unknown) => plaatGetal(v, 'm');
+/** Een uitkomst met zijn eenheid: mm, kNm/m of kN/m. */
+function femMetEenheid(v: number, grootheid: string) {
+  const e = FEM_EENHEID[femGrootheid(grootheid)];
+  return math.unit(v, e === 'kNm/m' ? 'kN m / m' : e === 'kN/m' ? 'kN / m' : e);
+}
+
+math.import(
+  {
+    /** fem_waarde(model; "UGT"; "mx"; x; y) → de waarde op (x, y): w in mm, momenten in kNm/m, dwarskrachten in kN/m. */
+    fem_waarde: function (model: unknown, set: unknown, grootheid: unknown, x: unknown, y: unknown) {
+      const g = femTekst(grootheid, 'fem_waarde', 'de grootheid');
+      return femMetEenheid(femWaarde(femModelUit(model, 'fem_waarde'), femTekst(set, 'fem_waarde', 'het geval'), g, femMeter(x), femMeter(y)), g);
+    },
+    /** fem_strook(model; "UGT"; "mx"; x1; y1; x2; y2) → het gemiddelde over de rechthoek, of over de lijn als hij geen breedte heeft. */
+    fem_strook: function (model: unknown, set: unknown, grootheid: unknown, x1: unknown, y1: unknown, x2: unknown, y2: unknown) {
+      const g = femTekst(grootheid, 'fem_strook', 'de grootheid');
+      return femMetEenheid(
+        femStrook(femModelUit(model, 'fem_strook'), femTekst(set, 'fem_strook', 'het geval'), g, femMeter(x1), femMeter(y1), femMeter(x2), femMeter(y2)),
+        g,
+      );
+    },
+    /** fem_svg(model; "UGT"; "mx" [; breedte]) → een plattegrond in kleur met legenda, als <svg> voor een @svg-blok. */
+    fem_svg: function (model: unknown, set: unknown, grootheid: unknown, breedte?: unknown) {
+      const b = breedte === undefined ? 640 : Math.round(liggerGetal(breedte));
+      return femSvg(femModelUit(model, 'fem_svg'), femTekst(set, 'fem_svg', 'het geval'), femTekst(grootheid, 'fem_svg', 'de grootheid'), Math.min(1600, Math.max(240, b)), huidigeTaal);
+    },
+    /** fem_reacties(model; "UGT") → per veer [x; y; R] (m, m, kN), in de volgorde van het blok. */
+    fem_reacties: function (model: unknown, set: unknown) {
+      const m = femModelUit(model, 'fem_reacties');
+      const R = m.verenReactie(m.set(femTekst(set, 'fem_reacties', 'het geval')));
+      const rijen = m.m.veren.map((v, i) => [math.unit(m.m.x[v[0][0]], 'm'), math.unit(m.m.y[v[0][0]], 'm'), math.unit(R[i], 'kN')]);
+      return math.matrix(rijen as unknown as number[][]);
+    },
+  },
+  { override: true },
+);
+
 // ── Doorsnede (packages/core/src/doorsnede.ts) ──────────────────────────────
 // Grootheden van een samengestelde doorsnede: in het blad per `|` een rij
 // [soort; p1 … p5; y; z; n; draai] met per kolom een deel, kale getallen in mm (een lengte met eenheid wordt naar mm
@@ -1411,7 +1464,9 @@ export function evaluate(
 function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T): T {
   const appModus = currentAngleMode;
   const vorigStelsel = huidigStelsel;
+  const vorigeTaal = huidigeTaal;
   huidigStelsel = opties.stelsel;
+  huidigeTaal = opties.taal?.toLowerCase().startsWith('en') ? 'en' : 'nl';
   const stand = nieuweStand();
   stand.opties = opties;
   try {
@@ -1424,6 +1479,7 @@ function metOpties<T>(scope: Scope, opties: EvalOpties, doe: (stand: Stand) => T
   } finally {
     currentAngleMode = appModus;
     huidigStelsel = vorigStelsel;
+    huidigeTaal = vorigeTaal;
     ruimEenhedenOp(stand);
   }
 }
@@ -1453,6 +1509,8 @@ export interface EvalOpties {
 
 /** Het stelsel van het blad dat nu doorgerekend wordt (zie evaluate). */
 let huidigStelsel: Stelsel | undefined;
+/** De taal van de vaste woorden in een beeld (fem_svg), van het blad dat nu doorgerekend wordt. */
+let huidigeTaal = 'nl';
 
 /**
  * Rekent een document door en geeft ook de scope aan het eind terug: de waarden
@@ -1983,6 +2041,26 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // Ook verborgen rekent het blok: zijn variabelen gelden voor wat eronder staat,
         // en een verzoek moet naar FEM Studio, ook als het blok niet op het blad staat.
         result.push(bouwToets(node, { reken: (expr) => reken(expr, scope), scope, opties: stand.opties }));
+        break;
+      }
+
+      case 'fem': {
+        // Net als @toets: ook verborgen rekent het blok. De teller van een #for en de
+        // gevallen in een combinatie staan even in de scope en daarna weer zoals ze waren.
+        result.push(bouwFem(node, {
+          reken: (expr) => reken(expr, scope),
+          zet: (naam, waarde) => {
+            const had = Object.prototype.hasOwnProperty.call(scope, naam);
+            const oud = scope[naam];
+            scope[naam] = waarde;
+            return () => {
+              if (had) scope[naam] = oud;
+              else delete scope[naam];
+            };
+          },
+          scope,
+          opties: stand.opties,
+        }));
         break;
       }
 

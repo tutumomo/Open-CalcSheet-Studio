@@ -320,6 +320,7 @@
     "hoekeenheid": "angle mode",
     "tekenblok": "drawing block",
     "drieDBlok": "3D view",
+    "femBlok": "plate model, calculated by Open FEM Studio",
     "iframeBlok": "external page",
     "jsBlok": "JavaScript",
     "keuzelijst": "dropdown block",

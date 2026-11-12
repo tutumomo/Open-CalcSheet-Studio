@@ -1,6 +1,6 @@
 {
   "name": "@ifc-calc/core",
-  "version": "2026.45.2",
+  "version": "2026.46.0",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

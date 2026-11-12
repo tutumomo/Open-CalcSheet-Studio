@@ -1,7 +1,7 @@
 {
   "name": "@openaec/calcsheet-studio",
   "private": true,
-  "version": "2026.45.2",
+  "version": "2026.46.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

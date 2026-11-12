@@ -34,8 +34,10 @@ import type { Graaf } from "../graaf/model.ts";
 import { tekenVelVoorBestand, type TekenVel } from "./tekenBlad.ts";
 import type { JupyterWerkmap } from "./jupyterBlad.ts";
 import type { MarimoNotebook } from "./marimoBlad.ts";
+import type { Varianten } from "./varianten.ts";
 import { leesBron, rekenDoor } from "../mcp/rekenen.ts";
 import { gebruikteToetsingen, toetsVersie } from "../rekenen/toetsCache.ts";
+import { variantToetsHashes } from "../rekenen/varianten.ts";
 import { maakPoer } from "../components/calc/poerDefinitie.ts";
 import { poerIfcxKnopen } from "../components/calc/poerIfcx.ts";
 
@@ -56,6 +58,7 @@ export interface BladVoorIfc {
   jupyter?: JupyterWerkmap;
   marimo?: MarimoNotebook;
   toetsingen?: Record<string, VastgelegdeToets>;
+  varianten?: Varianten;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -92,6 +95,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
     jupyter: ex.jupyter,
     marimo: ex.marimo,
+    ...(ex.varianten ? { varianten: ex.varianten } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {
@@ -117,7 +121,8 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
       console.error(`Blad "${ex.naam}" kon niet worden doorgerekend:`, err);
     }
   }
-  blad.toetsingen = gebruikteToetsingen(ex.toetsingen, blad);
+  // Ook de antwoorden die de varianten gebruiken: zonder vallen ze bij het opslaan weg.
+  blad.toetsingen = gebruikteToetsingen(ex.toetsingen, blad, isLosBlad(ex) ? [] : variantToetsHashes(ex, projectScope(gegevens)));
   bewaard.set(ex, { gegevens, toetsV, blad });
   return blad;
 }

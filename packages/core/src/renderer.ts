@@ -5,6 +5,7 @@ import { renderDrieD } from './drieD.js';
 import { renderIframe } from './iframeBlok.js';
 import { renderIfcxBlok } from './ifcxBlok.js';
 import { renderToets, TOETS_CSS } from './toetsBlok.js';
+import { renderFem, FEM_CSS } from './femBlok.js';
 import { renderJsBlok } from './jsBlok.js';
 
 // ─── KaTeX rendering ────────────────────────────────────────────────
@@ -305,6 +306,9 @@ function renderNode(node: EvaluatedNode): string {
       if (toetsKop && node.versie && !node.verborgen && !node.scherm) toetsKop.getoond = true;
       return renderToets(node, metVersie);
     }
+
+    case 'fem':
+      return renderFem(node);
 
     case 'js':
       return renderJsBlok(node);
@@ -691,6 +695,7 @@ export const defaultStyles = `
 }
 
 /* @toets: een normtoets door Open FEM Studio (toetsBlok.ts). */${TOETS_CSS}
+/* @fem: een plaatmodel, gerekend door Open FEM Studio (femBlok.ts). */${FEM_CSS}
 /* @iframe: een kader met het adres. De app zet er een iframe in als de gebruiker
    het heeft bevestigd; de maat staat vast, geladen of niet. */
 .calc-iframe {

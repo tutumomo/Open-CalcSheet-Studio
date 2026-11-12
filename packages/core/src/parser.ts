@@ -7,6 +7,7 @@ import { vervangVerwijzingen } from './verwijzing.js';
 import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
+import { FEM_START_RE, leesFemBlok } from './femBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
@@ -62,6 +63,7 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `@iframe url hoogte=120mm` — externe pagina; zie iframeBlok.ts
  *                       `@ifcx balklaag` — 3D-beeld uit een IFCX-document; zie ifcxBlok.ts
  *                       `@toets naam = tool … @end` — normtoets door Open FEM Studio; zie toetsBlok.ts
+ *                       `@fem naam … @end` — plaatmodel, gerekend door Open FEM Studio; zie femBlok.ts
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
@@ -255,7 +257,7 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t)) {
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t)) {
         in3d = true;
         return regel;
       }
@@ -308,7 +310,7 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
  * preceding word char.
  */
 function stripDollarSuffix(source: string): string {
-  if (!/^\s*@(?:3d\s*$|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+  if (!/^\s*@(?:3d\s*$|fem\b|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
   // De teksten in een `@3d`-blok blijven letterlijk (zie alleenInCode).
   let in3d = false;
   return source
@@ -319,7 +321,7 @@ function stripDollarSuffix(source: string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t)) in3d = true;
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t)) in3d = true;
       // Een dollarteken in een adres is geen achtervoegsel van een naam.
       if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
       return regel.replace(/([\p{L}\p{N}_])\$/gu, '$1');
@@ -945,7 +947,7 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
       if (BLOCK_END_RE.test(trimmed)) in3d = false;
       continue;
     }
-    if (DRIE_D_START_RE.test(trimmed)) {
+    if (DRIE_D_START_RE.test(trimmed) || FEM_START_RE.test(trimmed)) {
       in3d = true;
       lines.push(raw);
       continue;
@@ -1271,6 +1273,22 @@ function parseLines(
       const blok = leesToetsBlok(toetsMatch[1], toetsMatch[2], blokRegels, normaliseer3d);
       if (i >= end) blok.fouten.push('toetsblok zonder @end');
       nodes.push(markHidden({ type: 'toets', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // FEM-blok (`@fem naam … @end`): een plaatmodel dat FEM Studio doorrekent (femBlok.ts).
+    const femMatch = trimmed.match(FEM_START_RE);
+    if (femMatch) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesFemBlok(femMatch[1], blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('@fem-blok zonder @end');
+      nodes.push(markHidden({ type: 'fem', ...blok }, state));
       if (i < end) i++;
       continue;
     }

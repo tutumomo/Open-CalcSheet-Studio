@@ -60,6 +60,10 @@ zijn in deze taal geschreven.
 
 ## Plaat op palen
 
+Dit is de eigen kern van CalcSheet, alleen nog als terugval en ter vergelijking. Een
+plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent het blok
+`@fem` hieronder door Open FEM Studio.
+
 - **Model:** een vlakke plaat op verende palen in een regelmatig raster, `n_x × n_y` velden van
   `L_x × L_y`, met een paal op elk snijpunt; de rand van het model is vrij. De plaat rekent met
   driehoekige DKT-elementen (Batoz, Bathe & Ho, 1980), de veer van een paal is verdeeld over
@@ -101,6 +105,35 @@ zijn in deze taal geschreven.
   blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk. Een draaibaar model kan
   met `calc.wereld3d()`, een knop met `addEventListener` (geen `onclick=`)
 
+## Een plaatmodel: `@fem`
+
+Een blad bouwt een plaatmodel op en laat het door Open FEM Studio rekenen
+(`solve_open_fem_3d`): platen van verschillende dikte die tegen elkaar liggen, veren,
+lijnsteunen, belastinggevallen en combinaties. Daarna rekent het blad verder met de
+uitersten per combinatie, de veerreacties en de waarde op een punt of over een strook.
+Alles staat in [fem-model.md](fem-model.md); in het kort:
+
+```text
+@fem vloer
+  materiaal 33 GPa; 0.2
+  maas 0.5 m
+  plaat 0; 0; 10 m; 10 m; 250 mm
+  plaat 4.5 m; 4.5 m; 1 m; 1 m; 450 mm
+  veren 0; 0; 3; 3; 5 m; 5 m; 200 MN/m; 400 mm
+  geval G
+    eigengewicht 25 kN/m^3
+  geval Q
+    vlaklast 5 kN/m^2; 0; 0; 5 m; 10 m
+  combinatie UGT = 1.2*G + 1.5*Q
+  beeld UGT mx
+@end
+m_Ed = vloer.UGT.mx_max
+m_ks = -fem_strook(vloer; "UGT"; "mx"; 5 m; 3.75 m; 5 m; 6.25 m)
+```
+
+Het antwoord wordt opgezocht en vastgelegd zoals bij `@toets` hieronder; zonder antwoord
+staat het blok als NIET GEREKEND, nooit met een uitkomst.
+
 ## Normtoetsen: `@toets`
 
 Een normtoets komt uit één bron: Open FEM Studio, dat headless in CalcSheet zit. Een
@@ -123,8 +156,13 @@ blad schrijft de toets niet zelf, maar laat hem doen:
 UC_max = kolom.uc_max
 ```
 
-- **De velden.** Na `@toets` komen de naam van de uitkomst en een tool van FEM Studio:
-  `check_*`, `list_*`, `compute_*`, `concrete_*`, of `check_fem_model`. Elke regel is
+- **De velden.** Na `@toets` komen de naam van de uitkomst en een tool van FEM Studio. Elke
+  rekentool uit `tools/list` van de server mag, ook een die er later bij komt
+  (`check_*`, `concrete_*`, `compute_*`, `list_*`, `solve_*`, `validate_fem_model`, …). Niet:
+  de tools die de app van FEM Studio sturen of het project en het model in die app
+  bijhouden (`gui_*`, `app_*`, `project_*`, `model3d_*`, `extensions_*`), en de tools die
+  bestanden lezen of schrijven (`load_*`, `generate_*`, de IFC-import en -export). De
+  lijst staat als `TOETS_UITGESLOTEN` in `toetsBlok.ts`, en gelijk in de Rust-kant. Elke regel is
   `veld = uitdrukking`, met de veldnamen uit het schema van die tool. Een uitdrukking
   rekent met het blad: invoer, projectgegevens en `#id`-verwijzingen. Tekst staat tussen
   dubbele aanhalingstekens, ja en nee zijn `true` en `false`, en een object schrijf je als

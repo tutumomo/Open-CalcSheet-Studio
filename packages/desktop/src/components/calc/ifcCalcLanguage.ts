@@ -27,6 +27,7 @@ type FoldRule = { open: RegExp; close: RegExp };
 const FOLD_RULES: FoldRule[] = [
   { open: /^\s*@svg\b/, close: /^\s*@end\b/ },
   { open: /^\s*@3d\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@fem\b/, close: /^\s*@end\b/ },
   { open: /^\s*@js\b/, close: /^\s*@end\s*$/ },
   { open: /^\s*@select\b/, close: /^\s*@end\b/ },
   { open: /^\s*#if\b/, close: /^\s*#end\s+if\b/ },
@@ -230,7 +231,7 @@ const parser: StreamParser<{ inPlot: boolean; inJs: boolean; inJsCommentaar: boo
     }
 
     // Block markers
-    if (stream.match(/^@(svg|3d|end|select|gef|img|iframe|ifcx)\b/)) {
+    if (stream.match(/^@(svg|3d|fem|end|select|gef|img|iframe|ifcx)\b/)) {
       // For @img(), @iframe and @ifcx also consume the rest
       if (/^@(img|iframe|ifcx)$/.test(stream.current())) {
         stream.eatWhile(/[^\n]/);
@@ -340,6 +341,10 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
   // Blocks
   { label: "@svg", type: "namespace", sleutel: "tekenblok", apply: "@svg\n\n@end" },
   { label: "@3d", type: "namespace", sleutel: "drieDBlok", apply: "@3d\neenheid mm\ncamera iso\n\n@end" },
+  {
+    label: "@fem", type: "namespace", sleutel: "femBlok",
+    apply: "@fem vloer\n  materiaal 33 GPa; 0.2\n  maas 0.5 m\n  plaat 0; 0; 10 m; 10 m; 250 mm\n  veren 0; 0; 3; 3; 5 m; 5 m; 200 MN/m; 400 mm\n  geval G\n    eigengewicht 25 kN/m^3\n  geval Q\n    vlaklast 5 kN/m^2\n  combinatie UGT = 1.2*G + 1.5*Q\n@end",
+  },
   { label: "@iframe", type: "namespace", sleutel: "iframeBlok", apply: "@iframe https:// hoogte=120mm" },
   { label: "@js", type: "namespace", sleutel: "jsBlok", apply: "@js hoogte=80mm titel=\"\"\n\n@end" },
   { label: "@select", type: "namespace", sleutel: "keuzelijst", apply: '@select var "label"\n  optie = 1\n@end' },

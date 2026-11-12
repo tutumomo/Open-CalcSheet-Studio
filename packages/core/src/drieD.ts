@@ -2,6 +2,7 @@ import type {
   DrieDElement, DrieDInstellingen, DrieDNode, DrieDRegel, DrieDScene, EvaluatedDrieD, Punt3D,
 } from './types.js';
 import { jsonVoorAttribuut } from './jsAttribuut.js';
+import { FemModel, femVlak3D } from './femResultaat.js';
 
 /**
  * Een ruimtelijk beeld in het blad: het blok `@3d … @end`.
@@ -32,6 +33,11 @@ import { jsonVoorAttribuut } from './jsAttribuut.js';
  *   pijl x1 y1 z1 x2 y2 z2               last: pijl van punt 1 naar punt 2 (de punt)
  *   lijnlast x1 y1 z1 x2 y2 z2 a [n]     verdeelde last: n pijlen van lengte a omlaag op de lijn
  *   oplegging x y z [scharnier|rol|inklemming] [g]   steunpunt onder (x, y, z), grootte g
+ *   fem model uitkomst grootheid [h]     het vlak van een @fem-model (femBlok.ts), bijvoorbeeld
+ *                                        `fem vloer UGT w`: elke knoop op zijn plaats met de
+ *                                        waarde als hoogte (omlaag bij een positief getal),
+ *                                        gekleurd zoals fem_svg; h is de getekende hoogte van
+ *                                        het grootste getal (standaard 12 % van de vloer)
  *
  * Kleuren: hout, staal, beton, metselwerk, glas, grond, last, oplegging,
  * lijn, zwart, grijs, wit, rood, blauw, groen, geel, of `#rrggbb`. Zonder
@@ -295,6 +301,18 @@ export function leesDrieD(
         continue;
       }
 
+      // `fem vloer UGT w [hoogte]`: het vlak van een @fem-model (femResultaat.ts).
+      if (naam === 'fem') {
+        const [model, set, grootheid, ...meer] = rest;
+        const woord = /^[\p{L}_][\p{L}\p{N}_]*$/u;
+        if (!model || !set || !grootheid || !woord.test(model) || !woord.test(set) || meer.length > 1 || (meer.length === 1 && !isMaat(meer[0]))) {
+          meld(nr, 'fem verwacht het model, de uitkomst en de grootheid, en eventueel de hoogte: fem vloer UGT w {{1 m}}');
+          continue;
+        }
+        uit.push({ soort: 'element', regel: nr, naam: 'fem', maten: meer.map(norm), woorden: [model, set, grootheid] });
+        continue;
+      }
+
       const soort = SOORTEN[naam];
       if (!soort) {
         meld(nr, `onbekend element "${delen[0]}" (bekend: ${Object.keys(SOORTEN).join(', ')})`);
@@ -536,7 +554,36 @@ export function bouwDrieDScene(node: DrieDNode, r: DrieDRekenaar): EvaluatedDrie
     });
   }
 
+  /** Het gekleurde vlak van een @fem-model, met het grootste en kleinste getal erbij. */
+  function femElement(regel: Extract<DrieDRegel, { soort: 'element' }>) {
+    const [naam, set, grootheid] = regel.woorden ?? [];
+    let model: unknown;
+    try {
+      model = r.reken(naam);
+    } catch {
+      model = undefined;
+    }
+    if (!(model instanceof FemModel)) {
+      meld(regel.regel, `${naam} is geen doorgerekend @fem-model (zet het @fem-blok boven dit blok, en wacht tot het gerekend is)`);
+      return;
+    }
+    try {
+      const hoogte = regel.maten.length ? maat(regel.maten[0]) : null;
+      const v = femVlak3D(model, set, grootheid, 1000 / FACTOR[eenheid], hoogte);
+      voegToe({ soort: 'net', punten: v.punten, vlakken: v.vlakken, kleuren: v.kleuren, kleur: DRIE_D_KLEUREN.grijs });
+      const label = (w: number) => `${String(Number(w.toPrecision(3)))} ${v.eenheid}`;
+      voegToe({ soort: 'tekst', plek: v.max.plek, tekst: label(v.max.waarde), kleur: '#1e3a8a' });
+      if (v.min.waarde !== v.max.waarde) voegToe({ soort: 'tekst', plek: v.min.plek, tekst: label(v.min.waarde), kleur: '#991b1b' });
+    } catch (err) {
+      meld(regel.regel, (err as Error).message);
+    }
+  }
+
   function element(regel: Extract<DrieDRegel, { soort: 'element' }>) {
+    if (regel.naam === 'fem') {
+      femElement(regel);
+      return;
+    }
     const soort = SOORTEN[regel.naam];
     if (!soort) return;
     let w: number[];
@@ -731,6 +778,9 @@ export function drieDGrenzen(scene: DrieDScene): { min: Punt3D; max: Punt3D } | 
       case 'vlakken':
         for (const v of el.vlakken) punten.push(...v.punten);
         break;
+      case 'net':
+        punten.push(...el.punten);
+        break;
       default:
         punten.push(el.van, el.naar);
     }
@@ -887,6 +937,8 @@ export function drieDVlakken(el: DrieDElement): DrieDVlak[] {
       return doos(el.hoek, el.maat);
     case 'vlakken':
       return el.vlakken;
+    case 'net':
+      return el.vlakken.map((v) => ({ punten: v.map((k) => el.punten[k]), rand: false }));
     case 'oplegging': {
       const g = el.grootte;
       const [x, y, z] = el.plek;
@@ -974,6 +1026,15 @@ export function drieDSvg(scene: DrieDScene): string {
         break;
       case 'tekst':
         stukken.push({ vorm: 'tekst', laag: 3, diepte: diepte(el.plek), punten: [proj(el.plek)], tekst: el.tekst, kleur: el.kleur });
+        break;
+      case 'net':
+        // Een open vlak: beide kanten zichtbaar, elk vlak in zijn eigen kleur, zonder
+        // schaduw, zodat de kleur die van de legenda van het blad blijft.
+        el.vlakken.forEach((v, i) => {
+          const p = v.map((k) => el.punten[k]);
+          const kleur = el.kleuren[i] ?? el.kleur;
+          stukken.push({ vorm: 'vlak', laag: 1, diepte: diepte(midden(p)), punten: p.map(proj), vul: kleur, lijn: kleur, dekking: 1 });
+        });
         break;
       default:
         for (const v of drieDVlakken(el)) {

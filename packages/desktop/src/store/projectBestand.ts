@@ -14,6 +14,7 @@ import { leesGraaf } from "../graaf/model.ts";
 import { isTekenBlad, leesTekenVel, tekenVelVoorBestand } from "./tekenBlad.ts";
 import { isJupyterBlad, leesJupyterWerkmap } from "./jupyterBlad.ts";
 import { isMarimoBlad, leesMarimoNotebook } from "./marimoBlad.ts";
+import { leesVarianten } from "./varianten.ts";
 
 /**
  * Het projectbestand: één `.ifccalculation` met de héle berekening erin.
@@ -124,7 +125,9 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       md: ex.md,
       graaf: ex.graaf,
       ...(ex.tekenvel ? { tekenvel: tekenVelVoorBestand(ex.tekenvel) as unknown as Record<string, unknown> } : {}),
-      toetsingen: gebruikteToetsingen(ex.toetsingen, uitkomsten.get(ex.id)),
+      // Doorgerekend: zoals het blad ze nog gebruikt, met die van zijn varianten (projectIfcx.ts).
+      toetsingen: uitkomsten.has(ex.id) ? uitkomsten.get(ex.id)!.toetsingen : gebruikteToetsingen(ex.toetsingen, undefined),
+      ...(ex.varianten ? { varianten: ex.varianten } : {}),
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -241,6 +244,9 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   if (marimo) ex.marimo = marimo;
   const toetsingen = leesVastgelegdeToetsingen(e.toetsingen);
   if (toetsingen) ex.toetsingen = toetsingen;
+  // Varianten van het blad (store/varianten.ts); alleen een rekenblad rekent ze door.
+  const varianten = leesVarianten(e.varianten);
+  if (varianten) ex.varianten = varianten;
   return ex;
 }
 

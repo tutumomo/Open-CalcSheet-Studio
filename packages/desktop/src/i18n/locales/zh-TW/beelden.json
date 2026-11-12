@@ -465,6 +465,13 @@
     "opgesteldDoor": "編製者：{{naam}}",
     "paginaWoord": "頁",
     "vanWoord": "／",
+    "varianten": {
+      "kop": "變體",
+      "uitleg": "{{naam}} 改用其他輸入；未列出的輸入與上方計算表相同。",
+      "blad": "計算表",
+      "uc": "控制 UC",
+      "oordeel": "評定"
+    },
     "twKlasse": "建築物用途分類",
     "twKlasseWaarde": "第{{n}}類",
     "twTerrein": "地況",

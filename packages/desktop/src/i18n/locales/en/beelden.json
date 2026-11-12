@@ -465,6 +465,13 @@
     "opgesteldDoor": "Prepared by {{naam}}",
     "paginaWoord": "Page",
     "vanWoord": "of",
+    "varianten": {
+      "kop": "Variants",
+      "uitleg": "{{naam}} with other input; input not listed is the same as in the sheet above.",
+      "blad": "Sheet",
+      "uc": "Governing UC",
+      "oordeel": "Verdict"
+    },
     "twKlasse": "Building use category",
     "twKlasseWaarde": "Category {{n}}",
     "twTerrein": "Terrain category",

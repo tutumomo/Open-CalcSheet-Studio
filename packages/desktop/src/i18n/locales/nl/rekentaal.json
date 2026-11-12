@@ -320,6 +320,7 @@
     "hoekeenheid": "hoekeenheid",
     "tekenblok": "tekenblok",
     "drieDBlok": "3D-beeld",
+    "femBlok": "plaatmodel, gerekend door Open FEM Studio",
     "iframeBlok": "externe pagina",
     "jsBlok": "JavaScript",
     "keuzelijst": "keuzelijst",

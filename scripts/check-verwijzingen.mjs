@@ -15,6 +15,8 @@
 import { parse, evaluate, evaluateMetScope, render, verwijzingenIn, vervangVerwijzingen, leesVerwijzing } from "../packages/core/dist/index.js";
 import { scopeMetVerwijzingen, verwezenBladen } from "../packages/desktop/src/rekenen/verwijzingen.ts";
 import { metBladRefs } from "../packages/desktop/src/store/bladRefs.ts";
+import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
+import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 
 let fouten = 0;
 const meld = (ok, wat, detail = "") => {
@@ -39,6 +41,19 @@ const refs = metBladRefs([{ ref: "1" }, {}, { ref: "7" }, {}]).map((e) => e.ref)
 meld(JSON.stringify(refs) === JSON.stringify(["1", "8", "7", "9"]), "een nieuw blad krijgt één meer dan het hoogste nummer", JSON.stringify(refs));
 const zelfde = [{ ref: "1" }, { ref: "2" }];
 meld(metBladRefs(zelfde) === zelfde, "met alle kenmerken blijft de lijst dezelfde");
+// Een gedupliceerd blad staat direct na het origineel en droeg zijn kenmerk mee.
+const dubbel = metBladRefs([{ ref: "1", naam: "origineel" }, { ref: "1", naam: "kopie" }, { ref: "2" }]);
+meld(JSON.stringify(dubbel.map((e) => e.ref)) === JSON.stringify(["1", "3", "2"]) && dubbel[0].naam === "origineel",
+  "twee bladen met hetzelfde kenmerk: het eerste houdt het, het tweede krijgt een vrij nummer", JSON.stringify(dubbel));
+const uitBestand = leesProjectBestand(bouwProjectBestand({
+  versie: PROJECT_FORMAAT_VERSIE, naam: "Dubbel", gegevens: legeGegevens(),
+  exemplaren: [
+    { id: "ex-a", ref: "4", naam: "A", templateId: "", source: "x = 1", waarden: {}, elementen: [] },
+    { id: "ex-b", ref: "4", naam: "A (kopie)", templateId: "", source: "x = 2", waarden: {}, elementen: [] },
+  ],
+}, null), "dubbel").exemplaren;
+const hersteld = metBladRefs(uitBestand).map((e) => e.ref);
+meld(JSON.stringify(hersteld) === JSON.stringify(["4", "5"]), "een opgeslagen project met een dubbel kenmerk: na openen elk een eigen kenmerk", JSON.stringify(hersteld));
 
 console.log("\nDoorrekenen met verwijzingen");
 const bladen = [

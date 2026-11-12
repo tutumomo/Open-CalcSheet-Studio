@@ -373,7 +373,7 @@ async function controleer(pad) {
   meld(werkmapVellen.length >= 3 && werkmapVellen.every((p) => p.afbeeldingen >= 1),
     `de werkmap van 150 rijen loopt over ${werkmapVellen.length} vellen, elk met afbeelding`, werkmapVellen.length);
 
-  console.log("\nCanvas, graaf, tekening, Jupyter en Marimo");
+  console.log("\nCanvas, graaf, tekening, Jupyter, Marimo en de varianten van een rekenblad");
   for (const [soort, tekst] of Object.entries(KENMERKEN)) {
     const { pagina } = bijlageVan(BLADEN[soort].naam);
     const vel = pagina ? paginas[pagina - 1] : null;

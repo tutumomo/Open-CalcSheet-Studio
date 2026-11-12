@@ -27,7 +27,7 @@
  * opnieuw maken. Uitkomsten, figuren en elementen zijn wel afgeleid: de app rekent ze
  * opnieuw uit bij het openen en opslaan.
  */
-import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions } from '../ifc-generator.js';
+import type { ElementRef, GraafGegevens, IfcCalcSheet, IfcGenerationOptions, VariantenGegevens } from '../ifc-generator.js';
 import type { VastgelegdeToets } from '../types.js';
 import { leesVastgelegdeToetsingen } from '../toetsBlok.js';
 import type { IfcxBestand, IfcxKnoop, IfcxSchema } from './typen.js';
@@ -79,6 +79,8 @@ export interface IfcxGelezenBlad {
   jupyter?: { bestandsnaam: string; data: string; metCode: boolean; automatisch?: boolean };
   marimo?: { bestandsnaam: string; code: string; metCode: boolean; uitvoer: string[] };
   toetsingen?: Record<string, VastgelegdeToets>;
+  /** Zoals ze in het bestand staan; de app leest ze na (store/varianten.ts). */
+  varianten?: VariantenGegevens;
 }
 
 export interface IfcxGelezenProject {
@@ -114,6 +116,31 @@ function pdfBytes(data: string): number {
 
 const paren = (r: Record<string, string> | undefined) =>
   Object.entries(r ?? {}).map(([naam, waarde]) => ({ naam, waarde: String(waarde) }));
+
+/** De varianten als attribuut: de eigen waarden van een variant als paren, zoals de invoer. */
+function variantenAttribuut(v: VariantenGegevens) {
+  return {
+    velden: v.velden,
+    uitkomsten: v.uitkomsten,
+    ...(v.opPapier ? { opPapier: true } : {}),
+    ...(v.zoek !== undefined ? { zoek: v.zoek } : {}),
+    lijst: v.lijst.map(({ waarden, gezocht, ...r }) => ({ ...r, invoer: paren(waarden), ...(gezocht?.length ? { gezocht } : {}) })),
+  };
+}
+
+/** De varianten uit een attribuut, met de paren weer als waarden; de app leest ze daarna na. */
+function variantenUitAttribuut(x: unknown): VariantenGegevens | undefined {
+  const v = x as { lijst?: unknown } | undefined;
+  if (!v || typeof v !== 'object' || !Array.isArray(v.lijst)) return undefined;
+  return {
+    ...(v as VariantenGegevens),
+    lijst: v.lijst.map((r) => {
+      if (!r || typeof r !== 'object') return r;
+      const { invoer, ...rest } = r as { invoer?: unknown };
+      return { ...rest, waarden: uitParen(invoer) };
+    }) as VariantenGegevens['lijst'],
+  };
+}
 
 /** De graaf als attribuut: de velden van een node als paren, zoals de invoer van een rekenblad. */
 function graafAttribuut(g: GraafGegevens) {
@@ -315,6 +342,7 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
       };
     }
     if (blad.toetsingen && Object.keys(blad.toetsingen).length > 0) attributes[ATTR.toetsing] = toetsingAttribuut(blad.toetsingen);
+    if (blad.varianten) attributes[ATTR.varianten] = variantenAttribuut(blad.varianten);
     attributes[ATTR.uitkomst] = uitkomst;
 
     // Figuren: de tekeningen en 3D-beelden staan ook in de rekentekst; hier zijn ze als zodanig te vinden.
@@ -660,6 +688,8 @@ export function leesProjectIfcx(doc: IfcxBestand): IfcxGelezenProject {
     }
     const toetsingen = toetsingUitAttribuut(a[ATTR.toetsing]);
     if (toetsingen) blad.toetsingen = toetsingen;
+    const varianten = variantenUitAttribuut(a[ATTR.varianten]);
+    if (varianten) blad.varianten = varianten;
     return blad;
   });
 

@@ -1,6 +1,6 @@
 [package]
 name = "open-calcsheet-studio"
-version = "2026.45.2"
+version = "2026.46.0"
 description = "Open CalcSheet Studio - lightweight calculation text app for Eurocode verifications"
 authors = ["OpenAEC Contributors"]
 edition = "2021"

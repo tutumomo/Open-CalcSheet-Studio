@@ -211,6 +211,30 @@ export function bouwModel(scene: DrieDScene, tekstSchaal = 1): Model {
         groep.add(s);
         break;
       }
+      case "net": {
+        // Het vlak van een @fem-model: elk vlak in zijn eigen kleur (de klassen van de
+        // legenda), beide kanten zichtbaar, met de normaal per vlak voor het licht.
+        const pos: number[] = [];
+        const nor: number[] = [];
+        const kleur: number[] = [];
+        const c = new THREE.Color();
+        el.vlakken.forEach((v, i) => {
+          const p = v.map((k) => v3(el.punten[k]));
+          const n = new THREE.Vector3().subVectors(p[2], p[0]).cross(new THREE.Vector3().subVectors(p[3], p[1])).normalize();
+          c.set(el.kleuren[i] ?? el.kleur);
+          for (const q of [p[0], p[1], p[2], p[0], p[2], p[3]]) {
+            pos.push(q.x, q.y, q.z);
+            nor.push(n.x, n.y, n.z);
+            kleur.push(c.r, c.g, c.b);
+          }
+        });
+        const g = new THREE.BufferGeometry();
+        g.setAttribute("position", new THREE.Float32BufferAttribute(pos, 3));
+        g.setAttribute("normal", new THREE.Float32BufferAttribute(nor, 3));
+        g.setAttribute("color", new THREE.Float32BufferAttribute(kleur, 3));
+        groep.add(new THREE.Mesh(g, new THREE.MeshLambertMaterial({ vertexColors: true, side: THREE.DoubleSide })));
+        break;
+      }
       default: {
         const g = vlakkenGeometrie(el);
         if (!g) break;

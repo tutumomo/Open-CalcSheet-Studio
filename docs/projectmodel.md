@@ -112,6 +112,7 @@ bestand. De opbouw staat in [ifc-export.md](ifc-export.md).
 | Werkmap | `ocss::blad::xlsx` | bron |
 | Markdown-tekst, met de afbeeldingen die naast het bestand stonden | `ocss::blad::markdown` | bron |
 | Antwoorden van Open FEM Studio op `@toets`-blokken, met verzoek, datum en herkomst | `ocss::blad::toetsing` | bron |
+| Varianten: andere invoer naast die van het blad ([varianten.md](varianten.md)) | `ocss::blad::varianten` | bron |
 | Uitkomsten, oordeel, unity checks | `ocss::blad::uitkomst` | afgeleid |
 | Tekeningen en 3D-beelden | `ocss::figuur` op een kind van het blad | afgeleid |
 | Elementen in de ruimtelijke boom | `ocss::element` | afgeleid |

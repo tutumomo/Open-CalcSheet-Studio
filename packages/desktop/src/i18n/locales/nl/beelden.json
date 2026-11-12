@@ -465,6 +465,13 @@
     "opgesteldDoor": "Opgesteld door {{naam}}",
     "paginaWoord": "Pagina",
     "vanWoord": "van",
+    "varianten": {
+      "kop": "Varianten",
+      "uitleg": "{{naam}} met andere invoer; niet genoemde invoer is gelijk aan het blad hierboven.",
+      "blad": "Blad",
+      "uc": "Maatgevende UC",
+      "oordeel": "Oordeel"
+    },
     "twKlasse": "Gebruikscategorie gebouw",
     "twKlasseWaarde": "Categorie {{n}}",
     "twTerrein": "Terreincategorie",

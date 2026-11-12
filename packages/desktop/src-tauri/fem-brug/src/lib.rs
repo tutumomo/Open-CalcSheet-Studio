@@ -90,19 +90,27 @@ pub fn toolresultaat(resultaat: Value) -> Result<Value, Value> {
     }
 }
 
-/// De reken- en opzoektools. Niet: de app aansturen (`gui_*`, `app_*`), het
-/// project (`project_*`, `model3d_*`), bestanden (`load_fem_project`, de
-/// IFC-import) of een rapport wegschrijven (`generate_*`).
+/// Wat de app niet mag aanroepen: de app van FEM Studio sturen (`gui_*`, `app_*`,
+/// `extensions_*`), het project of het model in de app bijhouden (`project_*`,
+/// `model3d_*`), en bestanden lezen of schrijven (`load_*`, `generate_*` en de
+/// drie IFC-tools). Dezelfde lijst als de webview (`TOETS_UITGESLOTEN` in
+/// packages/core/src/toetsBlok.ts); scripts/check-fem-model.mjs vergelijkt ze.
+pub const UITGESLOTEN_VOORVOEGSELS: [&str; 7] = ["gui_", "app_", "project_", "model3d_", "extensions_", "load_", "generate_"];
+pub const UITGESLOTEN_NAMEN: [&str; 3] = ["open_fem_3d_ifc_importeren", "fem_resultaten_ifc_schrijven", "fem_resultaten_ifc_lezen"];
+
+/// Alle rekentools uit `tools/list` mogen, ook een die er later bij komt
+/// (`solve_open_fem_3d`, `solve_native_fem`, `check_*`, `concrete_*`, …); alleen
+/// wat in de uitsluitlijsten staat niet.
 pub fn toegestaan(tool: &str) -> bool {
-    const VOORVOEGSELS: [&str; 4] = ["check_", "list_", "compute_", "concrete_"];
-    const NAMEN: [&str; 4] = ["validate_fem_model", "solve_fem_model", "portaal_maken", "fem_solver_status"];
-    VOORVOEGSELS.iter().any(|v| tool.starts_with(v)) || NAMEN.contains(&tool)
+    let naam_klopt = tool.chars().next().is_some_and(|c| c.is_ascii_lowercase())
+        && tool.chars().all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == '_');
+    naam_klopt && !UITGESLOTEN_VOORVOEGSELS.iter().any(|v| tool.starts_with(v)) && !UITGESLOTEN_NAMEN.contains(&tool)
 }
 
 /// Argumenten die naar een bestand wijzen, gaan niet mee: een toets krijgt zijn
 /// model in het verzoek zelf (dezelfde regel als de clouddienst van FEM Studio).
 pub fn argumenten_toegestaan(argumenten: &Value) -> bool {
-    const PADEN: [&str; 5] = ["path", "project_path", "project", "pad", "output_path"];
+    const PADEN: [&str; 8] = ["path", "project_path", "project", "pad", "output_path", "uitvoerpad", "save_as", "projectbestand"];
     match argumenten.as_object() {
         Some(velden) => !velden.keys().any(|k| PADEN.contains(&k.as_str())),
         None => argumenten.is_null(),
@@ -421,12 +429,20 @@ mod tests {
 
     #[test]
     fn alleen_toegestane_tools() {
-        for ja in ["check_steel_beam", "list_steel_grades", "compute_section_properties", "concrete_mn_kappa", "check_fem_model", "portaal_maken"] {
+        for ja in [
+            "check_steel_beam", "list_steel_grades", "compute_section_properties", "concrete_mn_kappa", "check_fem_model", "portaal_maken",
+            "solve_open_fem_3d", "solve_native_fem", "solve_frame3d", "solve_fem_model", "validate_fem_model", "fem_solver_status",
+            "open_fem_3d_staalhal_maken", "een_nieuwe_rekentool",
+        ] {
             assert!(toegestaan(ja), "{ja} hoort toegestaan te zijn");
         }
-        for nee in ["gui_quit", "app_project_save", "project_new", "model3d_get", "load_fem_project", "open_fem_3d_ifc_importeren", "generate_steel_report_pdf"] {
+        for nee in [
+            "gui_quit", "app_project_save", "project_new", "model3d_get", "load_fem_project", "open_fem_3d_ifc_importeren", "generate_steel_report_pdf",
+            "fem_resultaten_ifc_schrijven", "fem_resultaten_ifc_lezen", "extensions_list", "project_import", "gui_nieuw", "", "Check_x", "check x",
+        ] {
             assert!(!toegestaan(nee), "{nee} hoort geweigerd te worden");
         }
+        assert!(!argumenten_toegestaan(&json!({ "uitvoerpad": "C:/x.ifc" })));
         assert!(argumenten_toegestaan(&json!({ "model": {} })));
         assert!(argumenten_toegestaan(&Value::Null));
         assert!(!argumenten_toegestaan(&json!({ "project_path": "C:/x.ifcfem" })));
@@ -504,6 +520,20 @@ mod tests {
         let uc = uit["uc_max"].as_f64().expect("uc_max");
         assert!(uc > 0.0 && uc < 1.0, "uc_max = {uc}");
         assert!(uit["checks"].as_array().map_or(false, |c| !c.is_empty()));
+    }
+
+    #[test]
+    #[ignore]
+    fn echte_plaat() {
+        // Het kleine plaatmodel van de controle van het @fem-blok
+        // (scripts/fixtures/fem/klein-ruw.json): 2 × 2 m op vier veren, 25 knopen.
+        let pad = Path::new(env!("CARGO_MANIFEST_DIR")).join("../../../../scripts/fixtures/fem/klein-ruw.json");
+        let fixture: Value = serde_json::from_str(&std::fs::read_to_string(pad).unwrap()).unwrap();
+        let proces = Proces::start(&echte()).unwrap();
+        let uit = proces.tool("solve_open_fem_3d", fixture["argumenten"].clone()).unwrap();
+        assert_eq!(uit["displacements"].as_array().map(Vec::len), Some(25));
+        let som: f64 = uit["reactions"].as_array().unwrap().iter().filter_map(|r| r["fz"].as_f64()).sum();
+        assert!((som - 40.0).abs() < 1e-6, "ΣR = {som}, de last is 10 kN/m² op 4 m²");
     }
 
     #[test]
