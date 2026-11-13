@@ -31,9 +31,16 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
 ```
 
 - **需要 Node 24**：檢查腳本會直接 import `.ts` 檔，依賴 Node 24 內建的 type stripping（CI 也用 24）。
+  shell 預設的 `node` 可能是較舊版本，跑 `npm ci`／`npm run check` 前先用 `node --version` 確認。
 - 檢查腳本使用 `packages/core/dist`；改了 core 之後先跑 `npm --prefix packages/core run build`。
-- 沒有測試框架，「測試」就是 `scripts/check-*.mjs`。`check-alles.mjs` 會自動收進所有 `check-*.mjs`，
-  新增的 `check-tw-*.mjs` 不必另外註冊。
+- 沒有測試框架，「測試」就是 `scripts/check-*.mjs`。`check-alles.mjs` 會自動收進所有 `check-*.mjs`
+  （自己除外），新增的 `check-tw-*.mjs` 不必另外註冊。
+- 不在 `check-alles` 內、要單獨跑的台灣版驗證：`node scripts/valideer-tw-basis.mjs`
+  （中文結尾行、MKS 單位、鋼筋與型鋼表；`release-tw.yml` 會跑）與
+  `node scripts/valideer-tw-i18n-keys.mjs [命名空間]`（zh-TW 鍵與 `{{插值}}` 是否與 en 對齊）。
+- 版號：`node scripts/versie.mjs controleer`／`zet <JJJJ.W.N>` 管理的欄位只含 `package.json`、`tauri.conf.json`、
+  `Cargo.toml`／`Cargo.lock`、`package-lock.json` 與 **nl、en** 的 `common.json`；
+  **`locales/zh-TW/common.json` 的 `version` 不在其中**，升版或合併上游後要手動同步。
 - 修改 core 時的回歸防護網：
   `node scripts/snapshot-templates.mjs voor.json` → 修改並重建 →
   `… na.json` → `… --compare voor.json na.json`。
@@ -50,7 +57,12 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
   git remote add upstream https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio.git   # 只需一次
   git fetch upstream && git merge upstream/main
   ```
-  `AGENTS.md`、`CLAUDE.md` 衝突時以本 fork 為準。
+  `AGENTS.md`、`CLAUDE.md` 衝突時以本 fork 為準。完整流程（退路 tag、衝突處理表、驗證、重新發佈）見
+  `docs/tw/上游同步流程.md`。
+  - 常見衝突點：`tauri.conf.json`（保留 `productName`＝Open CalcSheet Studio TW 與 `identifier`＝`tw.opencalcsheet.studio`，
+    只採用上游 `version`）、`docs/CHANGELOG.md`（兩邊條目都留）、`README.md`／`README.nl.md`（檢查腳本數）。
+  - 合併後固定要做：補 zh-TW 新鍵（`valideer-tw-i18n-keys.mjs` 與 `check-schermtekst.mjs`）、
+    手動同步 `zh-TW/common.json` 版號、README 的 N 以 `node scripts/check-readme.mjs` 算出的為準。
 
 ## 架構概觀
 
@@ -61,6 +73,9 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
   - 自有求解器：`ligger.ts`（1–4 支點梁）、`raamwerk.ts`（平面構架、α_cr）、
     `doorsnede.ts`（組合斷面）、`matrixrekening.ts`。
   - 區塊：`toetsBlok.ts`（`@toets`）、`jsBlok.ts`、`iframeBlok.ts`、`ifcxBlok.ts`、`rekenblok.ts`。
+  - Open FEM Studio 相關區塊：`femBlok.ts`／`femNet.ts`／`femResultaat.ts`（`@fem`，板模型）、
+    `kernBlok.ts`（`@kern`，巢狀輸入的計算工具，結果以數值回傳）。兩者的答案存進專案檔，無答案時視為未計算；
+    用法見 `docs/fem-model.md`、`docs/fem-kernen.md`。
   - `eenheden.ts`／`eenheidstelsel.ts`：單位與單位制；`ifc-generator.ts`：IFCX、IFC4x3。
 - **`packages/desktop`（`@openaec/calcsheet-studio`）**：React 19＋Zustand＋Vite，外殼是 Tauri 2（`src-tauri/`，Rust）。
 
@@ -105,22 +120,27 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
 - `mcp/`：內建 MCP＋REST API（127.0.0.1:3879）。所有工具都來自同一個 registry（`mcp/tools.ts`）。
 - `rekenen/`：計算 worker，以及 Open FEM Studio 的 `@toets` 檢核
   （`femStudio.ts`；Rust 端在 `src-tauri/fem-brug`、`src-tauri/src/fem_studio.rs`）。
+- `components/calc/invoer/`：每張計算表的「輸入畫面」（由計算結果推出輸入欄位的表單，`InvoerPaneel.tsx`、`velden.ts`），
+  以及樁上樓板的平面／剖面圖。
+- FEM 伺服器隨安裝檔出貨：`src-tauri/fem-studio/versie.json` 釘住版本、各平台檔案 sha256、AGPL-3.0 的原始碼與第三方聲明。
+  `tauri.conf.json` 的 `beforeBuildCommand` 會跑 `scripts/haal-fem-server.mjs --als-nodig` 取回；
+  `scripts/pin-fem-server.mjs` 負責把新版本發佈成公開 release 並更新 `versie.json`（需要 FEM Studio 私有 repo 權限）。
+  `fem-studio/versie.json` 內的版本是內嵌的 FEM Studio 版本，不是 App 版本。
 
 ## 台灣化的實作要點
 
-### 加上 zh-TW 時會碰到的地方
+### zh-TW 與多語言的現況與注意事項
 
-- **介面**：新增 `src/i18n/locales/zh-TW/*.json`，並在 `config.ts` 的 import、`resources`
-  與 `LANGUAGES` 加上 zh-TW。`check-schermtekst.mjs` 會自動讀取 locales 下的每個語言資料夾，
-  要求所有語言的鍵相同，所以要一次補齊全部命名空間。
-- **報告與語言判斷**：程式裡假設只有 nl／en 的地方散在約 20 個檔案
-  （搜尋 `rapport.taal`、`startsWith("en")`、`Taal = "nl" | "en"`，例如 `store/projectStore.ts`、
-  `rapport/opzet.ts`、`components/calc/afdrukTaal.tsx`、`components/rapport/paneel/*`）。
-  報告要支援繁中，得把這些地方一起擴充，並補 `check-rapport-talen.mjs` 的對照。
-- **結尾行**：`components/calc/bladLezen.ts` 的 `leesResultaat` 目前只認荷蘭文與英文的關鍵字
-  （約第 80–96 行）。台灣表要用中文結尾行（例如 `控制 UC = … → 合格／不合格`、`總結：未檢核`）時，
-  必須擴充這裡的正規式並加檢查，否則報告標頭會讀不到 UC。
-  尤其要確認「不合格」不會被判成合格。
+- **介面**：`src/i18n/locales/zh-TW/*.json` 已存在，並已接進 `config.ts`（`STANDAARD_TAAL = "zh-TW"`，
+  `release-tw.yml` 的 verify 階段會檢查）。`check-schermtekst.mjs` 要求所有語言資料夾的鍵相同，
+  所以上游新增 nl／en 鍵時必須同步補 zh-TW；`valideer-tw-i18n-keys.mjs` 可直接列出缺的鍵。
+- **報告**：已有台灣結構計算書架構（`rapport/model.ts` 的 `opzetSoort: "eurocode" | "tw"`，繁中報告預設 `"tw"`，
+  `rapport/opzet.ts` 依此分流）。程式裡仍有只假設 nl／en 的判斷散在多處
+  （搜尋 `rapport.taal`、`startsWith("en")`、`Taal = "nl" | "en"`），新增語言或報告架構時要一起檢查，
+  並補 `check-rapport-talen.mjs` 的對照。
+- **結尾行**：`components/calc/bladLezen.ts` 的 `leesResultaat` 已認中文結尾行
+  （`控制 UC = … → 合格／不合格`、`總結：未檢核`），且「不合格」不會被判成合格，由 `valideer-tw-basis.mjs` 驗證。
+  改動這裡的正規式時，這個負向案例必須保留。
 - **翻譯機制**：`vertalingen.ts` 的 `inNederlands` 與 `ENGELS` 預設原文是荷蘭文、只譯成英文。
   台灣模組的原文直接用繁中，不必經過翻譯表；`check-uitvoer-taal.mjs` 的模組清單是手列的，
   不會自動檢查新模組。
@@ -135,9 +155,9 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
 
 ### 單位
 
-- 核心目前沒有 `kgf`、`tf`（`packages/core/src` 中搜得到的 `tf` 都是翼板厚度）。
-  台灣 MKS 單位要加在 `eenheden.ts`，單位制加在 `eenheidstelsel.ts` 的 `STELSELS`（現有 SI 與 `us`），並補檢查
-  （參考 `check-eenheden.mjs`、`check-eenheidstelsel.mjs`）。
+- 台灣 MKS 單位已有：`eenheden.ts` 的 `TAIWAN_MKS` 定義 `tf`（`1000 kgf`），單位制 `tw-mks` 在
+  `eenheidstelsel.ts` 的 `STELSELS`（與 `us` 並列）。新增單位或單位制時要補檢查
+  （參考 `check-eenheden.mjs`、`check-eenheidstelsel.mjs`；MKS 計算正確性另見 `valideer-tw-basis.mjs`）。
 - 計算表內部用 SI；kgf/cm² 形式的經驗式必須改用規範列出的 SI 係數（例如 Vc 的 0.53√fc′ 改用 0.17√fc′）。
 
 ### 設計規範來源：`D:\Civil_Design_WorkBench`（唯讀）
@@ -191,6 +211,11 @@ cd packages/desktop && npx tsc --noEmit -p .            # desktop 型別檢查
 
 - `ci.yml`：每個 PR 與 push 到 `main` 時跑 `npm run check`，Linux 與 **Windows（CRLF 工作副本）**都跑，
   所以程式要能處理 CRLF。另外會在三個平台建置 Tauri，並跑 Rust 測試。
-- 發佈：手動觸發 `release.yml`；見 `docs/ondertekening.md`。
+- 發佈：上游用手動觸發的 `release.yml`（見 `docs/ondertekening.md`）；**台灣版用 `release-tw.yml`**
+  （只能從 `main` 觸發；先跑 `npm run check` 與 `valideer-tw-basis.mjs`，再在 Windows、macOS、Linux x64／arm64 打包，
+  產出 `.exe`、`.dmg`、`.deb` 與 `SHA256SUMS.txt`）。tag 格式 `v<上游版號>-tw.N`，指令與細節見
+  `docs/tw/發佈流程.md`、`docs/tw/上游同步流程.md` §5；`gh workflow run` 一定要加
+  `--repo tutumomo/Open-CalcSheet-Studio`，否則 `gh` 可能解析到 upstream。
+  上游的 `release.yml`、`desktop-ondertekend.yml` 等維持原樣（`check-uitlevering.mjs` 依賴它們）。
 - 無法自動化的手動驗證（列印路徑、WebView2／Tauri 升級後）：`scripts/proef-rapport-app.mjs`、
   `check-rapport-pdf.mjs --app-pdf`、`scripts/proef-js-webrtc.mjs`；見 overdracht §4。

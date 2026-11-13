@@ -18,6 +18,7 @@ import {
   TW_RC_BELASTINGCOMBINATIES,
   TW_VERANDERLIJK_BIJZONDER,
   TW_VLOER_VERANDERLIJK_STATUS,
+  TW_VLOER_VERANDERLIJK_TABEL,
 } from "../../../rapport/tw/normwaarden";
 
 /*
@@ -212,6 +213,13 @@ function TwVeranderlijkInhoud({ w }: { w: RapportWeergave }) {
       <Rij klasse="rpa-tt">
         <Cel k={1} n={9} klasse="rpa-cursief">{TW_VLOER_VERANDERLIJK_STATUS}</Cel>
       </Rij>
+      {TW_VLOER_VERANDERLIJK_TABEL.map((item) => (
+        <Rij key={`t17-${item.id}`} klasse="rpa-tt">
+          <Cel k={1} n={4} o>{`${item.groep} ${item.gebruik}`}</Cel>
+          <Cel k={5} n={2}>{`${item.qlast_kgf} kgf/m²`}</Cel>
+          <Cel k={7} n={3}>{item.menigte === 1 ? "第 17 條附表；人群聚集（不折減）" : "第 17 條附表"}</Cel>
+        </Rij>
+      ))}
       {TW_VERANDERLIJK_BIJZONDER.map((item, i) => (
         <Rij key={i} klasse="rpa-tt">
           <Cel k={1} n={4} o>{item.gebruik}</Cel>

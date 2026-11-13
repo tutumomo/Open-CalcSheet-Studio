@@ -266,9 +266,28 @@ console.log("\n5. A 級與 B 級規範常數庫檢核 (normwaarden.ts)");
   waar("用途係數第三類說明照錄第 43-1 條原表",
     TW_SEISMISCH_I.find((s) => s.categorie === "第三類")?.omschrijving.startsWith("第 17 條第 5 項所定人群聚集之場所"));
 
-  // 樓地板活載重表空表與待補規範標記
-  waar("樓地板活載重表維持為空（絕不自行抄寫未驗證附表）", TW_VLOER_VERANDERLIJK_TABEL.length === 0);
-  waar("樓地板活載重狀態標示「待補：建築技術規則建築構造編第 17 條附表」", TW_VLOER_VERANDERLIJK_STATUS.includes("待補：建築技術規則建築構造編第 17 條附表"));
+  // 構造編第 17 條附表（B 級，官方附件 LawGetFile FileId=0000341671 於 2026-11-13 逐列核對）
+  const T17 = TW_VLOER_VERANDERLIJK_TABEL;
+  waar("第 17 條附表共 40 列且 id 為 1～40 連號", T17.length === 40 && T17.every((r, i) => r.id === i + 1));
+  waar("第 17 條附表每列都有組別、用途、數值與 B 級出處",
+    T17.every((r) => r.groep && r.gebruik && /^\d+$/.test(r.qlast_kgf ?? "") && (r.menigte === 0 || r.menigte === 1) && /^B 級：建築技術規則建築構造編第 17 條附表/.test(r.bron)));
+  waar("第 17 條附表數值僅出現附表值 200/250/300/400/500/600", T17.every((r) => ["200", "250", "300", "400", "500", "600"].includes(r.qlast_kgf)));
+  // 官方附表逐組別核對：[組別, 該組別各列之值（依附表列序）]
+  const 官方 = [
+    ["A-1", [300, 400, 500]], ["A-2", [400]], ["B-1", [300, 500]], ["B-2", [400, 500]], ["B-3", [300]], ["B-4", [200]],
+    ["C-1", [500]], ["C-2", [500, 600]], ["D-1", [400, 500]], ["D-2", [300, 400, 500]], ["D-3", [250]], ["D-4", [250]], ["D-5", [250]],
+    ["E", [200, 400, 500]], ["F-1", [200, 300]], ["F-2", [200, 300]], ["F-3", [250]], ["F-4", [300]],
+    ["G-1", [300]], ["G-2", [300, 300]], ["G-3", [300]], ["H-1", [200]], ["H-2", [200, 200]], ["I", [300, 500, 600]],
+  ];
+  for (const [g, 值] of 官方) {
+    const 實 = T17.filter((r) => r.groep === g).map((r) => Number(r.qlast_kgf));
+    waar(`第 17 條附表 ${g} 組別數值 ${值.join("/")}`, 實.length === 值.length && 實.every((v, i) => v === 值[i]), `實際 ${實.join("/")}`);
+  }
+  waar("第 17 條附表組別清單與官方一致（無多餘或缺漏組別）", new Set(T17.map((r) => r.groep)).size === 官方.length);
+  waar("樓地板活載重狀態標示 B 級並註明官方附件為準", /^B 級：建築技術規則建築構造編第 17 條附表/.test(TW_VLOER_VERANDERLIJK_STATUS) && TW_VLOER_VERANDERLIJK_STATUS.includes("以官方附件為準") && !TW_VLOER_VERANDERLIJK_STATUS.includes("待補"));
+  // 人群聚集旗標：第 17 條末項只列入的組別不得標 0，未列入者不得標 1（混列取 1 偏保守）
+  waar("A、D、E、F、G-1 各列人群聚集旗標為 1", T17.filter((r) => /^(A|D|E|F|G-1)/.test(r.groep)).every((r) => r.menigte === 1));
+  waar("B-4、C、I 各列人群聚集旗標為 0", T17.filter((r) => /^(B-4|C|I)/.test(r.groep)).every((r) => r.menigte === 0));
 
   // 構造編第 17 條 B 級條文摘錄（含 LawAll 來源出處）
   waar("TW_VERANDERLIJK_BIJZONDER 包含 4 項官方核對法規條款", TW_VERANDERLIJK_BIJZONDER.length === 4);

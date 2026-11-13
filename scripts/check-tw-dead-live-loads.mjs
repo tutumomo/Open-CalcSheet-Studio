@@ -2,12 +2,13 @@
 import { parse, evaluate } from "../packages/core/dist/index.js";
 import { twDeadLiveLoads as T } from "../packages/desktop/src/templates/tw-dead-live-loads.ts";
 import { leesResultaat, leesGetallen } from "../packages/desktop/src/components/calc/bladLezen.ts";
+import { TW_VLOER_VERANDERLIJK_TABEL as T17 } from "../packages/desktop/src/rapport/tw/normwaarden.ts";
 
 let fouten = 0;
 const meld = (ok, t, d = "") => { console.log(`  ${ok ? "OK    " : "FOUT  "} ${t}${ok || !d ? "" : `  -> ${d}`}`); if (!ok) fouten++; };
-const draai = (tpl) => ({
-  uit: leesGetallen(evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {})),
-  res: leesResultaat(evaluate(parse(tpl), {}), "tw-dead-live-loads"),
+const draai = (tpl, waarden = {}) => ({
+  uit: leesGetallen(evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), waarden)),
+  res: leesResultaat(evaluate(parse(tpl), waarden), "tw-dead-live-loads"),
 });
 const vervang = (t, o, n) => { if (!t.includes(o)) throw new Error(`找不到：${o}`); return t.replace(o, n); };
 const near = (a, b) => typeof a === "number" && Math.abs(a - b) <= 1e-9 * Math.max(1, Math.abs(b));
@@ -33,7 +34,7 @@ const base = { ts: 0.15, fin: 100, oth: 60, cat: 1, L: 200, roof: 1, A: 30, crow
 
 console.log("=== tw-dead-live-loads（btr_struct） ===\n");
 console.log("0. 第 26 條表值釘死（對照已驗證庫）");
-for (const s of ["if(A_t ≤ 20; 100; if(A_t ≤ 60; 80; 60))", "if(A_t ≤ 20; 80; if(A_t ≤ 60; 70; 60))", "23 * (1 + D_calc / L_calc)", "min(R1_calc; min(R2_calc; 60))", "max(L_in; 500)"])
+for (const s of ["if(A_t ≤ 20; 100; if(A_t ≤ 60; 80; 60))", "if(A_t ≤ 20; 80; if(A_t ≤ 60; 70; 60))", "23 * (1 + D_calc / L_calc)", "min(R1_calc; min(R2_calc; 60))", "max(L_use; 500)"])
   meld(T.includes(s), `範本含 ${s}`);
 
 console.log("\n1. 基準案例手算");
@@ -70,6 +71,49 @@ for (const [名, o, n] of [
 ]) {
   const { uit, res } = draai(vervang(T, o, n));
   meld(uit.D === undefined && res.voldoet !== true && res.nietGetoetst === true, `${名} 拒算`);
+}
+
+console.log("\n5. 第 17 條附表下拉（資料源：normwaarden.ts 之 TW_VLOER_VERANDERLIJK_TABEL）");
+{
+  // 5a 範本陣列與資料表逐列一致
+  const arr = (名) => { const m = T.match(new RegExp(`${名} = \\[([^|]+)\\|([^\\]]+)\\]`)); return m ? [m[1].split(";").map((s) => Number(s.trim())), m[2].split(";").map((s) => Number(s.trim()))] : null; };
+  const aL = arr("use_L_arr"), aC = arr("use_C_arr");
+  meld(aL && aC, "範本含 use_L_arr、use_C_arr");
+  meld(aL[0].length === T17.length + 1 && aL[0].every((v, i) => v === i), "id 為 0..N 連號（0 = 自行輸入）");
+  meld(T17.every((r, i) => aL[1][i + 1] === Number(r.qlast_kgf)) && aL[1][0] === 0, "範本 use_L_arr 與資料表每列相同");
+  meld(T17.every((r, i) => aC[1][i + 1] === r.menigte) && aC[1][0] === 0, "範本 use_C_arr 與資料表每列相同");
+  meld(T.includes(`use_id ≤ ${T17.length}`), `範本之 id 上限 = ${T17.length}`);
+  const sel = T.slice(T.indexOf("@select use_id"), T.indexOf("@end", T.indexOf("@select use_id")));
+  const opts = [...sel.matchAll(/^\s+(.+?)（(\d+) kgf\/m²） = (\d+)$/gm)];
+  meld(opts.length === T17.length, `下拉含 ${T17.length} 個附表選項`, String(opts.length));
+  meld(opts.every((o) => { const r = T17[Number(o[3]) - 1]; return r && o[1].startsWith(r.groep) && o[2] === r.qlast_kgf; }), "每個選項之組別、數值、id 與資料表一致");
+  meld(new Set(opts.map((o) => o[0])).size === opts.length, "選項標籤不重複");
+  meld(/自行輸入（採下方 L_in 與 crowd） = 0/.test(sel), "預設選項 0 = 自行輸入（既有輸入行為不變）");
+}
+{
+  // 5b 行為：每個附表選項帶入 L（類別 1）與人群聚集旗標，與獨立查表相同
+  let bad = 0, c = 0;
+  for (const r of T17) for (const A of [10, 30, 100]) {
+    const p = { ...base, cat: 1, L: 999, A, crowd: 1 - r.menigte };
+    let uit; try { ({ uit } = draai(set(p), { use_id: String(r.id) })); } catch { bad++; continue; }
+    const D = p.ts * 2400 + p.fin + p.oth, L = Number(r.qlast_kgf);
+    const Rr = L <= 500 && r.menigte === 0 && A > 14 ? Math.min(0.85 * (A - 14), 23 * (1 + D / L), 60) : 0;
+    c++;
+    if (!(near(uit.L, L) && near(uit.R_pct, Rr) && near(uit.L_red, L * (1 - Rr / 100)))) bad++;
+  }
+  meld(bad === 0, `${c} 組（${T17.length} 列 × 3 種面積，故意讓 L_in、crowd 與附表相反）：選附表時 L、旗標以附表為準`, `${bad} 組不符`);
+}
+{
+  // 5c 選「自行輸入」維持原結果；無效 id 拒算
+  const { uit: u0 } = draai(set(base)); const { uit: u1 } = draai(set(base), { use_id: "0" });
+  meld(near(u0.L, u1.L) && near(u0.w_u2, u1.w_u2), "use_id = 0 與未選時相同");
+  for (const bad of [-1, 41, 2.5, 99]) {
+    let r; try { r = draai(set(base), { use_id: String(bad) }); } catch { r = { uit: {}, res: { nietGetoetst: true } }; }
+    meld(r.uit.D === undefined && r.res.voldoet !== true, `use_id = ${bad} 拒算`);
+  }
+  // 選附表只影響類別 1 的 L；類別 2 仍取不少於 500
+  const { uit: u2 } = draai(set({ ...base, cat: 2, L: 100 }), { use_id: "10" });
+  meld(u2.L === 500, "類別 2 選 200 kgf/m² 用途仍提升為 500（停車場下限）");
 }
 console.log(fouten === 0 ? "\n全部通過。" : `\n${fouten} 項失敗。`);
 process.exit(fouten === 0 ? 0 : 1);
