@@ -102,6 +102,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
     - **排水溝與明渠水理**（`tw-drainage-channel`）：合理化公式設計流量、曼寧公式滿流容量、牛頓迭代正常水深、流速與出水高限制、側壁靜止土壓抗彎剪力配筋。
     - **滯洪池**（`tw-detention-basin`）：合理化三階段洪峰流量、三角形歷線蓄洪容積、出流洪峰上限、孔口出流、緊急溢洪堰容量與堤頂出水高檢核。
     - **鋼筋混凝土箱涵**（`tw-box-culvert`，`hwbridge` / `rc112`）：HS20-44 輪重透過填土分佈與涵洞衝擊係數、表 3.3 第 VIII 組載重組合、平面閉合剛架（`raamwerk`）內力、頂底版與側牆抗彎剪力配筋、內角加腋、滿流排水容量、地盤承載力與抗浮。
+    - **基樁承載力**（`tw-pile-foundation`，依 `found112`）：N 值法單樁極限與容許垂直支承力（表 5.3-1 安全係數、表 5.3-2 支承力）、基樁數量與單樁承載力檢核。
     - **沉砂池**（`tw-sediment-basin`，`swc_tech` 114）：通用土壤流失公式（USLE）土壤流失量、開挖整地與未開挖分區泥砂生產量、臨時性 1.5 倍設計容量、池體容積、深度範圍（1.5～3.5 m，垂直共構豁免）、矩形溢流堰通水能力與池頂出水高檢核。
 
 ### 台灣本土設計模組清單與狀態
@@ -123,6 +124,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 | **靜活載重彙整** | `tw-dead-live-loads` | 建築技術規則構造編（`btr_struct`）第 11、17、25、26 條 | 已校準（gereed） | `scripts/check-tw-dead-live-loads.mjs` |
 | **RC 單向板** | `tw-rc-slab` | 混凝土結構設計規範（`rc112`）第 6.5、7、22、24 章 | 已校準（gereed） | `scripts/check-tw-rc-slab.mjs` |
 | **三／四樁樁帽** | `tw-pile-cap` | `rc112` 第 23 章／基礎構造設計規範（`found112`） | 已校準（gereed） | `scripts/check-tw-pile-cap.mjs` |
+| **基樁承載力** | `tw-pile-foundation` | 基礎構造設計規範（`found112`）第 5.3 節 | 已校準（gereed） | `scripts/check-tw-pile-foundation.mjs` |
 | **重力式擋土牆** | `tw-gravity-retaining-wall` | `found112`／水保規範（`swc_tech`）／`rc112` 第 14 章 | 已校準（gereed） | `scripts/check-tw-gravity-retaining-wall.mjs` |
 | **明渠水面線** | `tw-backwater-profile` | 水保規範（`swc_tech`）第 84～86 條 | 已校準（gereed） | `scripts/check-tw-backwater-profile.mjs` |
 - **歐洲規範模組**（Eurocode，非台灣規範）：
@@ -158,7 +160,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 測試與可靠性
 
-- **100 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **101 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。
@@ -188,7 +190,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 後續開發路線圖（Roadmap）
 
-台灣版基礎架構、載重產生器、RC／鋼構／大地／水保模組（共 17 張台灣計算表）、鋼構 ASD 雙軌、部分 Designer 圖面、工址參數聯動與台灣版發佈管線已完成（階段 0～8，歷程見 [工作計畫.md](docs/tw/工作計畫.md)）。
+台灣版基礎架構、載重產生器、RC／鋼構／大地／水保模組（共 18 張台灣計算表）、鋼構 ASD 雙軌、部分 Designer 圖面、工址參數聯動與台灣版發佈管線已完成（階段 0～8，歷程見 [工作計畫.md](docs/tw/工作計畫.md)）。
 下一階段以「補齊目前會拒算或標示待補的範圍」優先，其次才是新模組。各項缺口的規範依據與補齊路徑見 [規範來源.md](docs/tw/規範來源.md)。
 
 **第一優先：規範資料補齊（不補齊，下列模組只能拒算或要求使用者自行輸入）**
@@ -205,7 +207,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 **第三優先：新模組（皆須先確認規範已入庫或可由官方來源補齊）**
 
-7. **聯合基腳與樁基承載力**（`found112`）、**跌水工與消能工**（`swc_tech` 第 86、87 條）、**雨水下水道水理**（下水道工程設施標準）。
+7. **聯合基腳與樁基承載力**（`found112`）、**跌水工與消能工**（`swc_tech` 第 86、87 條）、**雨水下水道水理**（下水道工程設施標準）。樁基承載力已完成——`tw-pile-foundation` 以 N 值法（表 5.3-2）與表 5.3-1 安全係數計算單樁極限／容許垂直支承力與基樁數量；聯合基腳、跌水工與消能工、雨水下水道水理待做。
 8. **木構造與橋梁耐震**：兩部規範尚未收錄，須先在 WorkBench 建檔才能開模組；**本輪（階段 9）不納入**。
 
 **使用體驗與報告**

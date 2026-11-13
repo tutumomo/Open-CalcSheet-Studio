@@ -21,6 +21,7 @@ import { twWindLoad } from "./tw-wind-load";
 import { twDeadLiveLoads } from "./tw-dead-live-loads";
 import { twRcSlab } from "./tw-rc-slab";
 import { twPileCap } from "./tw-pile-cap";
+import { twPileFoundation } from "./tw-pile-foundation";
 import { twGravityRetainingWall } from "./tw-gravity-retaining-wall";
 import { twBackwaterProfile } from "./tw-backwater-profile";
 
@@ -46,6 +47,7 @@ export const templates: Record<string, string> = {
   "tw-dead-live-loads": twDeadLiveLoads,
   "tw-rc-slab": twRcSlab,
   "tw-pile-cap": twPileCap,
+  "tw-pile-foundation": twPileFoundation,
   "tw-gravity-retaining-wall": twGravityRetainingWall,
   "tw-backwater-profile": twBackwaterProfile,
 };

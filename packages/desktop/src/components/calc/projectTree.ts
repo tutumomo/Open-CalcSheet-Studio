@@ -105,13 +105,14 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-rc",
     label: "Taiwanese normen — Beton",
     defaultExpanded: true,
-    count: 5,
+    count: 6,
     children: [
       { kind: "item", id: "sheet-tw-rc-beam", label: "Gewapend betonnen ligger (rc112)", templateId: "tw-rc-beam", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-rc-column", label: "Gewapend betonnen kolom (rc112)", templateId: "tw-rc-column", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-isolated-footing", label: "Gewapend betonnen fundering op staal (found112 / rc112)", templateId: "tw-isolated-footing", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-rc-slab", label: "Gewapend betonnen eenrichtingsplaat (rc112)", templateId: "tw-rc-slab", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-pile-cap", label: "Paalfundering met drie of vier palen, staafwerkmodel (rc112)", templateId: "tw-pile-cap", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-pile-foundation", label: "Paaldraagvermogen en aantal palen (found112)", templateId: "tw-pile-foundation", status: "gereed", gepubliceerd: true },
     ],
   },
   {
