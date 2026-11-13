@@ -102,6 +102,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
     - **懸臂式擋土牆**（`tw-retaining-wall`）：Rankine 土壓力、抗傾覆穩定（$FS \ge 2.0$）、基底抗滑動（$FS \ge 1.5$）、合力作用點偏心距（$e \le B/6$）、地盤承載力、立壁剪力彎矩與底版前趾後踵懸臂配筋。
     - **排水溝與明渠水理**（`tw-drainage-channel`）：合理化公式設計流量、曼寧公式滿流容量、牛頓迭代正常水深、流速與出水高限制、側壁靜止土壓抗彎剪力配筋。
     - **垂直式跌水工與消能設施**（`tw-drop-structure`，依 `hwdrain107`）：落差 3 m 以下之適用性、附錄 L 跌水構造最小長度與尾檻高度、附錄 L 尾水條件、出水高、出口護床寬度長度與拋石粒徑。
+    - **雨水下水道管渠水理與配置**（`tw-storm-sewer`，依 `sewer_std`）：曼寧式弓形斷面水理、流速 0.8～3.0 m/s、圓形最小管徑 800 mm、最小覆土 50／75 cm、人孔間距與入口內徑、機械清掃孔。
     - **滯洪池**（`tw-detention-basin`）：合理化三階段洪峰流量、三角形歷線蓄洪容積、出流洪峰上限、孔口出流、緊急溢洪堰容量與堤頂出水高檢核。
     - **鋼筋混凝土箱涵**（`tw-box-culvert`，`hwbridge` / `rc112`）：HS20-44 輪重透過填土分佈與涵洞衝擊係數、表 3.3 第 VIII 組載重組合、平面閉合剛架（`raamwerk`）內力、頂底版與側牆抗彎剪力配筋、內角加腋、滿流排水容量、地盤承載力與抗浮。
     - **基樁承載力**（`tw-pile-foundation`，依 `found112`）：N 值法單樁極限與容許垂直支承力（表 5.3-1 安全係數、表 5.3-2 支承力）、基樁數量與單樁承載力檢核。
@@ -122,6 +123,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 | **RC 懸臂式擋土牆** | `tw-retaining-wall` | 基礎（`found112`）第 7 章／水保（`swc_tech`）／`rc112` | 已校準（gereed） | `scripts/check-tw-retaining-wall.mjs` |
 | **RC 排水溝與明渠** | `tw-drainage-channel` | 水保規範（`swc_tech`）第 16～19、78、82～87 條／`rc112` | 已校準（gereed） | `scripts/check-tw-drainage-channel.mjs` |
 | **垂直式跌水工與消能** | `tw-drop-structure` | 公路排水設計規範（`hwdrain107`）第 4.3.1、4.4.3、4.8.2、5.13 節與附錄 L | 已校準（gereed） | `scripts/check-tw-drop-structure.mjs` |
+| **雨水下水道管渠水理與配置** | `tw-storm-sewer` | 下水道工程設施標準（`sewer_std`）第 3、4、5、8 條 | 已校準（gereed） | `scripts/check-tw-storm-sewer.mjs` |
 | **滯洪池設計** | `tw-detention-basin` | 水保規範（`swc_tech`）第 16～19、94～97 條 | 已校準（gereed） | `scripts/check-tw-detention-basin.mjs` |
 | **RC 箱涵設計** | `tw-box-culvert` | 公路橋梁設計規範（`hwbridge`）第 3、4 章／`rc112` | 已校準（gereed） | `scripts/check-tw-box-culvert.mjs` |
 | **沉砂池設計** | `tw-sediment-basin` | 水保規範（`swc_tech`）第 35、92、93 條／`sewer_std` | 已校準（gereed） | `scripts/check-tw-sediment-basin.mjs` |
@@ -168,7 +170,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 測試與可靠性
 
-- **105 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **106 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。
@@ -198,7 +200,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 後續開發路線圖（Roadmap）
 
-台灣版基礎架構、載重產生器、RC／鋼構／大地／水保模組（共 22 張台灣計算表）、鋼構 ASD 雙軌、部分 Designer 圖面、工址參數聯動與台灣版發佈管線已完成（階段 0～8，歷程見 [工作計畫.md](docs/tw/工作計畫.md)）。
+台灣版基礎架構、載重產生器、RC／鋼構／大地／水保模組（共 23 張台灣計算表）、鋼構 ASD 雙軌、部分 Designer 圖面、工址參數聯動與台灣版發佈管線已完成（階段 0～8，歷程見 [工作計畫.md](docs/tw/工作計畫.md)）。
 下一階段以「補齊目前會拒算或標示待補的範圍」優先，其次才是新模組。各項缺口的規範依據與補齊路徑見 [規範來源.md](docs/tw/規範來源.md)。
 
 **第一優先：規範資料補齊（不補齊，下列模組只能拒算或要求使用者自行輸入）**
@@ -215,7 +217,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 **第三優先：新模組（皆須先確認規範已入庫或可由官方來源補齊）**
 
-7. **聯合基腳與樁基承載力**（`found112`）、**跌水工與消能工**（`hwdrain107` 第 4.8 節與附錄 L）、**雨水下水道水理**（下水道工程設施標準）。樁基承載力已完成——`tw-pile-foundation` 以 N 值法（表 5.3-2）與表 5.3-1 安全係數計算單樁極限／容許垂直支承力與基樁數量；聯合基腳已完成——`tw-combined-footing` 依 `found112` 第 4.1.2 節剛性基腳法檢核雙柱聯合基腳；垂直式跌水工已完成——`tw-drop-structure` 依 `hwdrain107` 附錄 L 檢核構造長度、尾檻、出水高與出口護床（斜面式、齒坡式、衝擊式與靜水池水躍未納入）；雨水下水道水理待做。
+7. **聯合基腳與樁基承載力**（`found112`）、**跌水工與消能工**（`hwdrain107` 第 4.8 節與附錄 L）、**雨水下水道水理**（下水道工程設施標準）。樁基承載力已完成——`tw-pile-foundation` 以 N 值法（表 5.3-2）與表 5.3-1 安全係數計算單樁極限／容許垂直支承力與基樁數量；聯合基腳已完成——`tw-combined-footing` 依 `found112` 第 4.1.2 節剛性基腳法檢核雙柱聯合基腳；垂直式跌水工已完成——`tw-drop-structure` 依 `hwdrain107` 附錄 L 檢核構造長度、尾檻、出水高與出口護床（斜面式、齒坡式、衝擊式與靜水池水躍未納入）；雨水下水道水理已完成——`tw-storm-sewer` 依《下水道工程設施標準》第 3、4、5、8 條檢核圓形管渠水理、流速、最小管徑、覆土與人孔配置。
 8. **木構造與橋梁耐震**：兩部規範已收錄於 WorkBench（代號 `wood100`/`wood110`、`hwbridgeseis108`）。公路橋梁耐震模組已完成——`tw-bridge-seismic` 依第八章檢核液化折減、地震土壓、地震動水壓、梁端防落長度、梁端間隙與伸縮量；木構造模組已完成——`tw-wood-member` 依第 4、5 章檢核受拉、受壓、受彎木構材之容許應力、挫屈、橫向挫屈與剛性。
 
 **使用體驗與報告**

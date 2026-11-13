@@ -111,7 +111,8 @@
       "tw-pile-cap": "三樁／四樁樁帽壓拉桿模型（rc112）",
       "tw-gravity-retaining-wall": "重力式擋土牆（無筋混凝土／砌石；found112 / swc_tech）",
       "tw-backwater-profile": "明渠水面線標準步進法（swc_tech）",
-      "tw-drop-structure": "垂直式跌水工與消能設施（hwdrain107）"
+      "tw-drop-structure": "垂直式跌水工與消能設施（hwdrain107）",
+      "tw-storm-sewer": "雨水下水道管渠水理與配置（sewer_std）"
     }
   },
   "kiezer": {

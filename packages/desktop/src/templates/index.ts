@@ -26,6 +26,7 @@ import { twPileFoundation } from "./tw-pile-foundation";
 import { twGravityRetainingWall } from "./tw-gravity-retaining-wall";
 import { twBackwaterProfile } from "./tw-backwater-profile";
 import { twDropStructure } from "./tw-drop-structure";
+import { twStormSewer } from "./tw-storm-sewer";
 import { twBridgeSeismic } from "./tw-bridge-seismic";
 import { twWoodMember } from "./tw-wood-member";
 
@@ -56,6 +57,7 @@ export const templates: Record<string, string> = {
   "tw-gravity-retaining-wall": twGravityRetainingWall,
   "tw-backwater-profile": twBackwaterProfile,
   "tw-drop-structure": twDropStructure,
+  "tw-storm-sewer": twStormSewer,
   "tw-bridge-seismic": twBridgeSeismic,
   "tw-wood-member": twWoodMember,
 };

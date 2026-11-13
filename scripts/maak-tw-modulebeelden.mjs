@@ -219,12 +219,51 @@ function twDropStructure() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
 }
 
+function twStormSewer() {
+  const WATER = "#bcd9ea";
+  const WATER_DONKER = "#7fa8c4";
+  const delen = [];
+  delen.push(`<rect x="0" y="0" width="${BREEDTE}" height="${HOOGTE}" fill="#ffffff"/>`);
+  // 地盤與路面
+  delen.push(`<rect x="0" y="150" width="${BREEDTE}" height="${HOOGTE - 150}" fill="${ZAND_ONDER}"/>`);
+  delen.push(`<rect x="0" y="140" width="${BREEDTE}" height="10" fill="${LIJN}"/>`);
+  // 開挖溝槽
+  delen.push(`<rect x="40" y="150" width="460" height="120" fill="${ZAND_BOVEN}" stroke="#c9bda3" stroke-width="1.5"/>`);
+  // 坡度線（管底，左高右低）
+  const y1 = 214, y2 = 244;
+  delen.push(`<line x1="60" y1="${y1}" x2="480" y2="${y2}" stroke="${STAAL_DONKER}" stroke-width="2" stroke-dasharray="8 6"/>`);
+  // 管體（圓形）三段
+  for (const [x, y] of [[100, y1 + 8], [250, y1 + 27], [400, y2 - 6]]) {
+    delen.push(`<circle cx="${x + 30}" cy="${y - 14}" r="26" fill="${BETON.boven}" stroke="#5c6b80" stroke-width="2"/>`);
+    delen.push(`<path d="M ${x + 12} ${y - 6} a 26 26 0 0 1 36 0 z" fill="${WATER}"/>`);
+  }
+  // 管底連線與流向
+  delen.push(`<line x1="156" y1="${y1 + 4}" x2="404" y2="${y2 - 2}" stroke="${WATER_DONKER}" stroke-width="3"/>`);
+  delen.push(`<polygon points="404,${y2 + 2} 388,${y2 - 12} 410,${y2 - 16}" fill="${WATER_DONKER}"/>`);
+  // 人孔
+  for (const [x, y] of [[70, y1 - 2], [300, y1 + 34], [480, y2 - 4]]) {
+    delen.push(`<rect x="${x}" y="96" width="22" height="${y - 96}" fill="${BETON.rechts}" stroke="#5c6b80" stroke-width="2"/>`);
+    delen.push(`<rect x="${x - 6}" y="88" width="34" height="10" fill="${STAAL}" stroke="#2a425b" stroke-width="1.5"/>`);
+  }
+  // 覆土深度標註
+  delen.push(`<line x1="330" y1="140" x2="330" y2="${y1 + 34 - 26}" stroke="#c62828" stroke-width="1.6"/>`);
+  delen.push(`<text x="338" y="182" font-size="12" font-weight="bold" fill="#c62828">覆土 ≥ 75 cm</text>`);
+  // 管徑與坡度
+  delen.push(`<circle cx="130" cy="${y1 + 8 - 14}" r="26" fill="none" stroke="#c62828" stroke-width="1.2"/>`);
+  delen.push(`<text x="130" y="${y1 + 4}" font-size="11" font-weight="bold" fill="#c62828" text-anchor="middle">D≥800</text>`);
+  delen.push(`<line x1="60" y1="272" x2="480" y2="272" stroke="#4a6572" stroke-width="1.6"/>`);
+  delen.push(`<text x="270" y="290" font-size="12" font-weight="bold" fill="#4a6572" text-anchor="middle">S · V = 0.8～3.0 m/s</text>`);
+  delen.push(`<text x="24" y="80" font-size="12" font-weight="bold" fill="#3d6b8a">雨水下水道管渠</text>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
+}
+
 const BEELDEN = {
   "tw-pile-foundation": twPileFoundation,
   "tw-bridge-seismic": twBridgeSeismic,
   "tw-wood-member": twWoodMember,
   "tw-combined-footing": twCombinedFooting,
   "tw-drop-structure": twDropStructure,
+  "tw-storm-sewer": twStormSewer,
 };
 
 const [uitvoer = MAP, ...alleen] = process.argv.slice(2);

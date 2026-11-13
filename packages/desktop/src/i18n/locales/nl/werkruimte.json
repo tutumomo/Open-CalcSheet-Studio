@@ -111,7 +111,8 @@
       "tw-pile-cap": "Paalfundering met drie of vier palen, staafwerkmodel (rc112)",
       "tw-gravity-retaining-wall": "Zwaartekrachtkeermuur van ongewapend beton of metselwerk (found112 / swc_tech)",
       "tw-backwater-profile": "Wateroppervlakteprofiel in open kanaal, standaardstapmethode (swc_tech)",
-      "tw-drop-structure": "Verticale valconstructie en energiedissipatie (hwdrain107)"
+      "tw-drop-structure": "Verticale valconstructie en energiedissipatie (hwdrain107)",
+      "tw-storm-sewer": "Hydraulica en configuratie van regenwaterriolen (sewer_std)"
     }
   },
   "kiezer": {

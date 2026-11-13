@@ -132,7 +132,7 @@ export const moduleCatalogus: TreeNode[] = [
     id: "cat-tw-civil",
     label: "Taiwanese normen — Civiel",
     defaultExpanded: true,
-    count: 8,
+    count: 9,
     children: [
       { kind: "item", id: "sheet-tw-retaining-wall", label: "Keermuur van gewapend beton (found112 / swc_tech)", templateId: "tw-retaining-wall", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-drainage-channel", label: "Afwateringsgoot van gewapend beton (swc_tech / rc112)", templateId: "tw-drainage-channel", status: "gereed", gepubliceerd: true },
@@ -142,6 +142,7 @@ export const moduleCatalogus: TreeNode[] = [
       { kind: "item", id: "sheet-tw-sediment-basin", label: "Bezinkbak (swc_tech 35 / 92 / 93)", templateId: "tw-sediment-basin", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-gravity-retaining-wall", label: "Zwaartekrachtkeermuur van ongewapend beton of metselwerk (found112 / swc_tech)", templateId: "tw-gravity-retaining-wall", status: "gereed", gepubliceerd: true },
       { kind: "item", id: "sheet-tw-backwater-profile", label: "Wateroppervlakteprofiel in open kanaal, standaardstapmethode (swc_tech)", templateId: "tw-backwater-profile", status: "gereed", gepubliceerd: true },
+      { kind: "item", id: "sheet-tw-storm-sewer", label: "Hydraulica en configuratie van regenwaterriolen (sewer_std)", templateId: "tw-storm-sewer", status: "gereed", gepubliceerd: true },
     ],
   },
   {
