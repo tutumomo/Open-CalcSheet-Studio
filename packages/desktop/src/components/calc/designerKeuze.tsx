@@ -4,8 +4,15 @@ import BalklaagDesigner from "./BalklaagDesigner";
 import DoorsnedeDesigner from "./DoorsnedeDesigner";
 import LiggerDesigner from "./LiggerDesigner";
 import TweepaalspoerDesigner from "./TweepaalspoerDesigner";
+import TwBoxCulvertDesigner from "./TwBoxCulvertDesigner";
 import TwDetentionBasinDesigner from "./TwDetentionBasinDesigner";
+import TwDrainageChannelDesigner from "./TwDrainageChannelDesigner";
+import TwPileCapDesigner from "./TwPileCapDesigner";
 import TwRcBeamDesigner from "./TwRcBeamDesigner";
+import TwRcColumnDesigner from "./TwRcColumnDesigner";
+import TwRcSlabDesigner from "./TwRcSlabDesigner";
+import TwSteelBeamDesigner from "./TwSteelBeamDesigner";
+import TwSteelColumnDesigner from "./TwSteelColumnDesigner";
 import TwRetainingWallDesigner from "./TwRetainingWallDesigner";
 import TwSeismicLoadDesigner from "./TwSeismicLoadDesigner";
 import TwWindLoadDesigner from "./TwWindLoadDesigner";
@@ -29,6 +36,13 @@ const DESIGNERS: { marker: string; beeld: () => ReactElement }[] = [
   { marker: "Tweepaalspoer", beeld: () => <TweepaalspoerDesigner /> },
   { marker: "Spanningen in een doorsnede", beeld: () => <DoorsnedeDesigner /> },
   { marker: "鋼筋混凝土矩形梁設計與檢核", beeld: () => <TwRcBeamDesigner /> },
+  { marker: "鋼筋混凝土矩形柱設計與檢核", beeld: () => <TwRcColumnDesigner /> },
+  { marker: "鋼筋混凝土單向板設計與檢核", beeld: () => <TwRcSlabDesigner /> },
+  { marker: "三樁／四樁樁帽壓拉桿模型設計與檢核", beeld: () => <TwPileCapDesigner /> },
+  { marker: "鋼筋混凝土箱涵設計與檢核", beeld: () => <TwBoxCulvertDesigner /> },
+  { marker: "鋼筋混凝土排水溝與明渠水理設計檢核", beeld: () => <TwDrainageChannelDesigner /> },
+  { marker: "鋼結構熱軋 H 型鋼梁設計與檢核", beeld: () => <TwSteelBeamDesigner /> },
+  { marker: "鋼結構熱軋 H 型鋼柱與柱腳設計", beeld: () => <TwSteelColumnDesigner /> },
   { marker: "懸臂式擋土牆", beeld: () => <TwRetainingWallDesigner /> },
   { marker: "滯洪池", beeld: () => <TwDetentionBasinDesigner /> },
   { marker: "建築物靜力分析法地震力計算", beeld: () => <TwSeismicLoadDesigner /> },

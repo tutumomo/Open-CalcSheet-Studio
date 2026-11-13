@@ -60,6 +60,8 @@ for (const [, marker, comp] of keuze.matchAll(/marker: "([^"]+)", beeld: \(\) =>
   const invoer = new Set();
   for (const tekst of bladen.filter((t) => t.split("\n")[0].includes(marker))) {
     for (const m of tekst.matchAll(/^\s*([\p{L}_][\p{L}\p{N}_,]*)\s*=\s*\?/gmu)) invoer.add(m[1].replace(/,/g, "_"));
+    // 台灣版單向板的輸入寫成 `h = 150'- <i>說明</i>`（數值後直接接文字行），一樣是輸入。
+    for (const m of tekst.matchAll(/^\s*([\p{L}_][\p{L}\p{N}_]*)\s*=\s*-?[0-9.]+'/gmu)) invoer.add(m[1]);
     for (const m of tekst.matchAll(/^\s*@select\s+(\w+)/gm)) invoer.add(m[1]);
   }
   const zonder = sleutels.filter((k) => !invoer.has(k));

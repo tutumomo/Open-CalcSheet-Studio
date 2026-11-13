@@ -522,6 +522,93 @@
     "doorsnede": "Doorsnede en beugelafstand (aanzicht)",
     "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
   },
+  "twRcColumn": {
+    "titel": "Parametrisch beeld — rechthoekige betonkolom",
+    "kop": "Doorsnede en wapening",
+    "velden": {
+      "cc": "Dekking cc",
+      "bar": "Langsstaaf",
+      "nFace": "Staven per zijde, buigvlak",
+      "nSide": "Tussenstaven per zijde",
+      "barV": "Beugel",
+      "legs": "Beugelbenen"
+    },
+    "noot": "Lasten, materialen, slankheid en toetsingen staan in het blad; het beeld rekent niet.",
+    "doorsnede": "Doorsnede en beugelafstand (aanzicht)",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twRcSlab": {
+    "titel": "Parametrisch beeld — eenrichtingsvloer (strook van 1 m)",
+    "kop": "Dikte en wapening",
+    "velden": {
+      "cover": "Dekking c",
+      "bar": "Hoofdwapening",
+      "s": "Hart-op-hart s",
+      "barT": "Krimpwapening",
+      "sT": "Hart-op-hart krimpwapening"
+    },
+    "noot": "Lasten, oplegging en toetsingen staan in het blad; het beeld toont de strook met positief moment en rekent niet.",
+    "doorsnede": "Doorsnede van een strook van 1 m (hoofdstaven als punten, krimpstaven als lijn)",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twBoxCulvert": {
+    "titel": "Parametrisch beeld — betonnen duiker",
+    "kop": "Duikerlichaam en overdekking",
+    "velden": {
+      "chamfer": "Voute c",
+      "cover": "Overdekking Hc"
+    },
+    "noot": "Lasten, materialen, wapening en hydraulische toetsing staan in het blad; het beeld rekent niet.",
+    "doorsnede": "Doorsnede met grondoverdekking",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twDrainageChannel": {
+    "titel": "Parametrisch beeld — betonnen goot",
+    "kop": "Doorsnede van de goot",
+    "velden": {
+      "z": "Talud z (horizontaal : verticaal, 0 = rechthoek)"
+    },
+    "noot": "Hydrologie, hydraulica en constructieve toetsing staan in het blad; het beeld rekent niet.",
+    "doorsnede": "Doorsnede met wand en bodem",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twPileCap": {
+    "titel": "Parametrisch beeld — paalkop met drie of vier palen",
+    "kop": "Plattegrond van de paalkop",
+    "velden": {
+      "n": "Aantal palen",
+      "h": "Dikte paalkop h"
+    },
+    "noot": "Het stekenmodel en de toetsingen staan in het blad; de omtrek van de paalkop is schematisch; het beeld rekent niet.",
+    "doorsnede": "Plattegrond (palen, kolom en trekstaven)",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twSteelBeam": {
+    "titel": "Parametrisch beeld — warmgewalst H-profielbalk",
+    "kop": "Doorsnede en overspanning",
+    "velden": {
+      "section": "Staalsoort",
+      "Lspan": "Lengte overspanning L",
+      "Lb": "Onsteunde lengte Lb"
+    },
+    "noot": "Lasten, combinaties, profielkeuze en toetsingen staan in het blad; het beeld rekent niet.",
+    "doorsnede": "Doorsnede en overspanning met onsteund deel",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
+  "twSteelColumn": {
+    "titel": "Parametrisch beeld — H-profielkolom en voetplaat",
+    "kop": "Kolom en voetplaat",
+    "velden": {
+      "section": "Staalsoort",
+      "Lcol": "Kolomlengte L",
+      "Bp": "Plaatbreedte Bp",
+      "db": "Ankerboutdiameter db",
+      "hef": "Verankeringsdiepte hef"
+    },
+    "noot": "Lasten, profielkeuze, voetplaat en toetsingen staan in het blad; het beeld rekent niet.",
+    "doorsnede": "Kolom, voetplaat en ankerbouten",
+    "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
+  },
   "twRetainingWall": {
     "titel": "Parametrisch beeld — keerwand (cantilever)",
     "kop": "Grond en lasten",

@@ -522,6 +522,93 @@
     "doorsnede": "Cross-section and stirrup spacing (elevation)",
     "klik": "Click a blue dimension to edit it; the value is written back to the sheet."
   },
+  "twRcColumn": {
+    "titel": "Parametric view — rectangular concrete column",
+    "kop": "Section and reinforcement",
+    "velden": {
+      "cc": "Cover cc",
+      "bar": "Longitudinal bar",
+      "nFace": "Bars per bending face",
+      "nSide": "Intermediate bars per side",
+      "barV": "Tie",
+      "legs": "Tie legs"
+    },
+    "noot": "Loads, materials, slenderness and checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Section and tie spacing (elevation)",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
+  "twRcSlab": {
+    "titel": "Parametric view — one-way slab (1 m strip)",
+    "kop": "Thickness and reinforcement",
+    "velden": {
+      "cover": "Cover c",
+      "bar": "Main bar size",
+      "s": "Main bar spacing s",
+      "barT": "Shrinkage bar size",
+      "sT": "Shrinkage bar spacing"
+    },
+    "noot": "Loads, support condition and checks are in the sheet; the view shows the positive-moment strip and does not calculate.",
+    "doorsnede": "Section of a 1 m strip (main bars as dots, shrinkage bars as a line)",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
+  "twBoxCulvert": {
+    "titel": "Parametric view — RC box culvert",
+    "kop": "Barrel and cover",
+    "velden": {
+      "chamfer": "Haunch c",
+      "cover": "Soil cover Hc"
+    },
+    "noot": "Loads, materials, reinforcement and hydraulic checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Section with soil cover",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
+  "twDrainageChannel": {
+    "titel": "Parametric view — RC drainage channel",
+    "kop": "Channel section",
+    "velden": {
+      "z": "Side slope z (horizontal : vertical, 0 = rectangular)"
+    },
+    "noot": "Hydrology, hydraulics and structural checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Section with wall and base slab",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
+  "twPileCap": {
+    "titel": "Parametric view — three- or four-pile cap",
+    "kop": "Pile cap plan",
+    "velden": {
+      "n": "Number of piles",
+      "h": "Cap thickness h"
+    },
+    "noot": "The strut-and-tie model and checks are in the sheet; the cap outline is schematic; the view does not calculate.",
+    "doorsnede": "Plan (piles, column and ties)",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
+  "twSteelBeam": {
+    "titel": "Parametric view — hot-rolled H-section beam",
+    "kop": "Section and span",
+    "velden": {
+      "section": "Steel section",
+      "Lspan": "Span length L",
+      "Lb": "Unbraced length Lb"
+    },
+    "noot": "Loads, combinations, section choice and checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Section and span with the unbraced part",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
+  "twSteelColumn": {
+    "titel": "Parametric view — H-section column and base plate",
+    "kop": "Column and base",
+    "velden": {
+      "section": "Steel section",
+      "Lcol": "Column length L",
+      "Bp": "Base plate width Bp",
+      "db": "Anchor bolt diameter db",
+      "hef": "Embedment depth hef"
+    },
+    "noot": "Loads, section choice, base plate and checks are in the sheet; the view does not calculate.",
+    "doorsnede": "Column, base plate and anchor bolts",
+    "klik": "Click a blue dimension to change it; the value is written back to the sheet."
+  },
   "twRetainingWall": {
     "titel": "Parametric view — cantilever retaining wall",
     "kop": "Soil and loads",

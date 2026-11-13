@@ -534,5 +534,3 @@ C_w', 翹曲常數 Cw（雙對稱 I 型閉合式）<span class="kolom-2"></span>
     '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、混凝土抗壓強度、柱長細比、基板尺寸或錨栓配置無效或超出範圍；ASD 僅支援純軸壓（Mx = My = 0，ASD 互制式未入已驗證庫）。
 #end if
 `;
-
-export const twSteelColumnTemplate = twSteelColumn;

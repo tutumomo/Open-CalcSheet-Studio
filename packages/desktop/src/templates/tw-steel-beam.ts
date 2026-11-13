@@ -380,5 +380,3 @@ w', 單位長度質量<span class="kolom-2"></span>'
     '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、斷面幾何、跨度或側撐條件無效或超出範圍；ASD 須 Lb ≤ Lc（Lb > Lc 之 7.2.3 式未入已驗證庫）。
 #end if
 `;
-
-export const twSteelBeamTemplate = twSteelBeam;

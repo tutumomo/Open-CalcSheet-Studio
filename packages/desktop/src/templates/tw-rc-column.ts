@@ -314,5 +314,3 @@ n_b', 柱縱向主筋總根數 nb = 2·n_face + 2·n_side（至少 4 根，10.7.
     '<b>總結：無效輸入，未檢核</b>。幾何尺寸不足或未配置有效鋼筋。
 #end if
 `;
-
-export const twRcColumnTemplate = twRcColumn;

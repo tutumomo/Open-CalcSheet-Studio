@@ -210,8 +210,8 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 **使用體驗與報告**
 
-9. **Designer 圖面補齊**：目前僅梁、擋土牆、滯洪池、耐震、耐風有參數化圖；柱、樓版、樁帽、箱涵、鋼梁柱、排水溝尚無。
-10. **台灣建材重量庫**（`library/gewichten/`）與**繁中報告驗證**：重量庫依構造編靜載重表另建；`check-rapport-talen.mjs` 補繁中黃金檔、檢查無殘留荷蘭文／英文，並自動檢查報告目錄頁碼。
+9. **Designer 圖面補齊**：已完成——梁、擋土牆、滯洪池、耐震、耐風之外，新增 RC 柱、單向板、樁帽、箱涵、排水溝、H 型鋼梁與 H 型鋼柱柱腳，共 11 張台灣計算表有參數化圖。
+10. **台灣建材重量庫**（`library/gewichten/`）與**繁中報告驗證**：已完成——重量庫依構造編第 11、14、15 條建立台灣條目並以 `check-tw-gewichten.mjs` 逐列核對；`check-rapport-talen.mjs` 已有繁中黃金檔並檢查無殘留荷蘭文／英文；報告目錄頁碼由 `check-paginering.mjs` 與 `check-rapport-pdf.mjs` 驗證。
 
 **上游與發佈**
 

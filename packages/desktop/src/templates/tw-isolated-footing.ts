@@ -416,5 +416,3 @@ ok_all_input = bool(ok_mat) * bool(ok_geom_size) * bool(ok_loads) * bool(ok_reba
     '<b>總結：無效輸入，未檢核</b>。材料強度、基腳幾何尺寸、柱截面、載重條件或地盤支承力無效或超出工程合理範圍。
 #end if
 `;
-
-export const twIsolatedFootingTemplate = twIsolatedFooting;

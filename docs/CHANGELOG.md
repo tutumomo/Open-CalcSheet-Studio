@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（Designer 圖面補齊與資料庫核對）：新增 7 個參數化圖——RC 柱、單向板、樁帽、箱涵、排水溝、H 型鋼梁、H 型鋼柱與柱腳，台灣 17 張計算表中已有 11 張附參數化圖；`scripts/check-designerkeuze.mjs` 放寬台灣版輸入寫法（`名稱 = 數值'`）並驗證每個圖的起始值都對應自己那張表。台灣建材重量庫補齊構造編第 11 條 30 列（單位體積重量）、第 14 條 8 列與第 15 條 20 列（面層與牆壁），新增 `scripts/check-tw-gewichten.mjs` 逐列核對並與 `rapport/tw/normwaarden.ts` 對照；`check-tw-rapport.mjs` 另確認台灣報告目錄的錨點與編號可用且不重複（頁碼由 `check-paginering.mjs` 與 `check-rapport-pdf.mjs` 驗證）。
 - 台灣版（構造編第 17 條用途活載重附表）：自全國法規資料庫官方附件逐列核對 A～I 類共 40 列（B 級），以 `rapport/tw/normwaarden.ts` 的 `TW_VLOER_VERANDERLIJK_TABEL` 為單一資料源；`tw-dead-live-loads` 新增用途下拉（預設「自行輸入」，既有輸入與結果不變），選用附表列時帶入 L 與人群聚集旗標（第 25 條不折減）；報告載重章節列出全表；更正 `規範來源.md` 已失效的附件連結；工作計畫新增階段 9（補齊拒算範圍與規範缺口，木構造與橋梁耐震不納入本輪）。
 - MCP／REST 補齊所有表單種類：`sheet_add` 可用 `kind` 建立 markdown、graph、drawing、spreadsheet、jupyter 與 marimo 表（calculation 仍為預設），`sheet_get` 對每種表回傳內容（`full: true` 時繪圖表回整份視圖、Marimo 回每格輸出），新增 `sheet_set_markdown`、`sheet_set_graph`、`sheet_set_drawing`、`sheet_set_spreadsheet`、`sheet_set_jupyter`、`sheet_set_marimo` 六個寫入工具；全部經專案 store 動作，可復原（undo）。`scripts/check-mcp.mjs` 補上各類表的新增、讀取、寫入與負向測試（118 項）。
 
