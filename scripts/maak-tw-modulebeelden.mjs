@@ -67,8 +67,52 @@ function twPileFoundation() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
 }
 
+/** 公路橋梁耐震（hwbridgeseis108 第八章）：橋梁立面＋下部結構＋梁端防落＋動水壓＋地震土壓波浪箭頭 */
+function twBridgeSeismic() {
+  const delen = [];
+  // 背景天空與地層
+  delen.push(`<rect x="0" y="0" width="${BREEDTE}" height="190" fill="#eef4f9"/>`);
+  delen.push(`<rect x="0" y="190" width="${BREEDTE}" height="122" fill="#d9cdb8"/>`);
+  delen.push(`<line x1="0" y1="190" x2="${BREEDTE}" y2="190" stroke="#8c7853" stroke-width="2"/>`);
+  // 水體（左側臨水）
+  delen.push(`<rect x="40" y="110" width="160" height="80" fill="#c2dbee" opacity="0.6"/>`);
+  delen.push(`<line x1="40" y1="110" x2="200" y2="110" stroke="#4a8ec2" stroke-width="2"/>`);
+  // 左橋台（兼具擋土牆）
+  delen.push(`<polygon points="40,90 80,90 80,240 40,240" fill="#88929b" stroke="#333" stroke-width="2"/>`);
+  // 橋墩（中間）
+  delen.push(`<rect x="250" y="80" width="40" height="160" fill="#88929b" stroke="#333" stroke-width="2"/>`);
+  delen.push(`<rect x="230" y="70" width="80" height="16" fill="#6d7883" stroke="#333" stroke-width="2"/>`);
+  delen.push(`<rect x="220" y="240" width="100" height="30" fill="#6d7883" stroke="#333" stroke-width="2"/>`);
+  // 主梁 1（跨徑 1）
+  delen.push(`<rect x="75" y="50" width="160" height="20" fill="#4a6572" stroke="#232f34" stroke-width="2"/>`);
+  // 主梁 2（跨徑 2）
+  delen.push(`<rect x="245" y="50" width="220" height="20" fill="#4a6572" stroke="#232f34" stroke-width="2"/>`);
+  // 支承與防落長度標示 LN
+  delen.push(`<circle cx="82" cy="74" r="4" fill="#f9a825"/>`);
+  delen.push(`<polygon points="237,70 241,78 233,78" fill="#f9a825"/>`);
+  delen.push(`<circle cx="253" cy="74" r="4" fill="#f9a825"/>`);
+  delen.push(`<line x1="230" y1="92" x2="270" y2="92" stroke="#c62828" stroke-width="2"/>`);
+  delen.push(`<text x="250" y="104" font-size="11" font-weight="bold" fill="#c62828" text-anchor="middle">LN</text>`);
+  // 地震土壓箭頭（右側土層對橋台/牆之推力）
+  delen.push(`<polygon points="470,120 440,120 446,116 446,124" fill="#b71c1c"/>`);
+  delen.push(`<polygon points="480,150 440,150 446,146 446,154" fill="#b71c1c"/>`);
+  delen.push(`<polygon points="490,180 440,180 446,176 446,184" fill="#b71c1c"/>`);
+  delen.push(`<text x="495" y="154" font-size="11" font-weight="bold" fill="#b71c1c">PEa</text>`);
+  // 地震動水壓箭頭（左側水對橋墩推力）
+  delen.push(`<polygon points="170,140 210,140 204,136 204,144" fill="#0277bd"/>`);
+  delen.push(`<polygon points="160,170 210,170 204,166 204,174" fill="#0277bd"/>`);
+  delen.push(`<text x="145" y="158" font-size="11" font-weight="bold" fill="#0277bd">Pw</text>`);
+  // 地盤震動波浪符號
+  delen.push(`<path d="M 60 270 Q 75 260 90 270 T 120 270 T 150 270" fill="none" stroke="#e65100" stroke-width="3"/>`);
+  delen.push(`<path d="M 370 270 Q 385 260 400 270 T 430 270 T 460 270" fill="none" stroke="#e65100" stroke-width="3"/>`);
+  delen.push(`<text x="105" y="295" font-size="10" font-weight="bold" fill="#e65100" text-anchor="middle">kh · g</text>`);
+  delen.push(`<text x="415" y="295" font-size="10" font-weight="bold" fill="#e65100" text-anchor="middle">FL, DE</text>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
+}
+
 const BEELDEN = {
   "tw-pile-foundation": twPileFoundation,
+  "tw-bridge-seismic": twBridgeSeismic,
 };
 
 const [uitvoer = MAP, ...alleen] = process.argv.slice(2);

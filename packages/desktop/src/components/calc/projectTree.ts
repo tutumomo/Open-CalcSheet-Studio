@@ -144,6 +144,16 @@ export const moduleCatalogus: TreeNode[] = [
   },
   {
     kind: "category",
+    id: "cat-tw-bridge",
+    label: "Taiwanese normen — Bruggen",
+    defaultExpanded: true,
+    count: 1,
+    children: [
+      { kind: "item", id: "sheet-tw-bridge-seismic", label: "Aardbevingsontwerp van bruggen — liquefactie, gronddruk, waterdruk en liggeruiteinden (hwbridgeseis)", templateId: "tw-bridge-seismic", status: "gereed", gepubliceerd: true },
+    ],
+  },
+  {
+    kind: "category",
     id: "cat-tw-load",
     label: "Taiwanese normen — Belastingen",
     defaultExpanded: true,
