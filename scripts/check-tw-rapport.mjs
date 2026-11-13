@@ -85,6 +85,12 @@ console.log("\n1. 台灣報告七章架構與編號 (OPZET_TW / bouwTwOpzet)");
   // 檢核目錄與附錄
   const io = inhoudsopgave(knopen);
   waar("目錄包含各章與節項目", io.length >= 7);
+  // 頁碼本身由 check-paginering.mjs（paginaVanAnkers：由分頁結果推出，與實際頁一致）與
+  // check-rapport-pdf.mjs（PDF 內標題落在目錄所指頁）驗證；台灣架構走同一條 inhoudsopgave 路徑，
+  // 這裡確認它交給分頁的錨點可用：每項有編號、標題、錨點，且錨點不重複（重複時 paginaVanAnkers 取第一頁）。
+  waar("目錄每項都有編號、標題與錨點", io.every((x) => x.nummer && x.titel && x.anker));
+  waar("目錄錨點不重複", new Set(io.map((x) => x.anker)).size === io.length);
+  waar("目錄編號不重複", new Set(io.map((x) => x.nummer)).size === io.length);
   const ioOntwerp = io.find((x) => x.anker === "tw-ontwerpoverzicht");
   const ioNormen = io.find((x) => x.anker === "tw-normen");
   const ioMaterialen = io.find((x) => x.anker === "tw-materialen");
