@@ -158,7 +158,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 測試與可靠性
 
-- **98 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **99 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。
@@ -188,7 +188,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## 後續開發路線圖（Roadmap）
 
-台灣版基礎架構、載重產生器、RC／鋼構／大地／水保模組（共 18 張台灣計算表）、鋼構 ASD 雙軌、部分 Designer 圖面、工址參數聯動與台灣版發佈管線已完成（階段 0～8，歷程見 [工作計畫.md](docs/tw/工作計畫.md)）。
+台灣版基礎架構、載重產生器、RC／鋼構／大地／水保模組（共 17 張台灣計算表）、鋼構 ASD 雙軌、部分 Designer 圖面、工址參數聯動與台灣版發佈管線已完成（階段 0～8，歷程見 [工作計畫.md](docs/tw/工作計畫.md)）。
 下一階段以「補齊目前會拒算或標示待補的範圍」優先，其次才是新模組。各項缺口的規範依據與補齊路徑見 [規範來源.md](docs/tw/規範來源.md)。
 
 **第一優先：規範資料補齊（不補齊，下列模組只能拒算或要求使用者自行輸入）**
@@ -217,7 +217,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 11. **上游協作**：MKS 單位制與多語結尾行解析兩個 PR 分支已推送，後續向 OpenAEC 上游送出並追蹤審查；持續以 `docs/tw/上游同步流程.md` 合併上游新版（目前同步至 v2026.46.1）。
 12. **Open FEM Studio 與 `@kern` 對接**：以 `@kern` 計算工具作為台灣模組的第二套獨立對照，待上游開放 FEM 專案整合後評估板、牆模型的台灣規範檢核。
-13. **文件與統計一致性**：把 `README.zh-TW.md`（檢查腳本數、模組清單）納入 `check-readme.mjs` 檢查，避免數字再次過時；評估台灣版安裝檔的程式碼簽署。
+13. **文件與統計一致性**：已新增 `scripts/check-tw-readme.mjs` 檢查 `README.zh-TW.md`（檢查腳本數、共用數字、模組清單），避免數字再次過時；待辦：評估台灣版安裝檔的程式碼簽署。
 
 ## 核心架構
 
