@@ -96,6 +96,7 @@
       "tw-rc-beam": "RC rectangular beam (rc112)",
       "tw-rc-column": "RC rectangular column (rc112)",
       "tw-isolated-footing": "RC isolated spread footing (found112 / rc112)",
+      "tw-combined-footing": "RC combined footing, two columns (found112 / rc112)",
       "tw-steel-beam": "Steel I-beam (steel99 LRFD)",
       "tw-steel-column": "Steel H-column & base plate (steel99 LRFD)",
       "tw-retaining-wall": "RC cantilever retaining wall (found112 / swc_tech)",

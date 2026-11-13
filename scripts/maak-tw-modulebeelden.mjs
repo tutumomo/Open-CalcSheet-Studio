@@ -144,10 +144,44 @@ function twWoodMember() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
 }
 
+/** 雙柱聯合基腳（found112 §4.1.2）：兩柱、聯合基腳板、線性基底壓力與兩柱間負彎矩 */
+function twCombinedFooting() {
+  const delen = [];
+  // 背景與土層
+  delen.push(`<rect x="0" y="0" width="${BREEDTE}" height="${HOOGTE}" fill="#ffffff"/>`);
+  delen.push(`<rect x="0" y="212" width="${BREEDTE}" height="${HOOGTE - 212}" fill="${ZAND_BOVEN}"/>`);
+  delen.push(`<rect x="0" y="248" width="${BREEDTE}" height="${HOOGTE - 248}" fill="${ZAND_ONDER}"/>`);
+  delen.push(`<line x1="0" y1="212" x2="${BREEDTE}" y2="212" stroke="${LIJN}" stroke-width="1.6"/>`);
+  delen.push(`<line x1="0" y1="248" x2="${BREEDTE}" y2="248" stroke="${LIJN}" stroke-width="1.6" stroke-dasharray="7 6"/>`);
+  // 聯合基腳板（長向）與兩支柱
+  delen.push(`<rect x="60" y="176" width="420" height="36" fill="${BETON.boven}" stroke="#5c6b80" stroke-width="2"/>`);
+  delen.push(`<rect x="128" y="92" width="46" height="86" fill="${BETON.links}" stroke="#5c6b80" stroke-width="2"/>`);
+  delen.push(`<rect x="366" y="92" width="46" height="86" fill="${BETON.rechts}" stroke="#5c6b80" stroke-width="2"/>`);
+  // 基腳頂覆土
+  delen.push(`<rect x="40" y="150" width="460" height="26" fill="${ZAND_BOVEN}" opacity="0.8"/>`);
+  // 柱載重向下
+  delen.push(pijl(151, 20, 88, TURKOOIS, 9, 1));
+  delen.push(pijl(389, 20, 88, TURKOOIS, 9, 1));
+  // 基底壓力（線性分布：左端大、右端小）
+  for (let i = 0; i < 10; i++) {
+    const x = 76 + i * 39;
+    const len = 30 - i * 2.4;
+    delen.push(pijl(x, 284, 284 - len, "#2e7d32", 6, -1));
+  }
+  delen.push(`<text x="270" y="304" font-size="11" font-weight="bold" fill="#2e7d32" text-anchor="middle">w(x) = w0 + k·x</text>`);
+  // 兩柱間負彎矩示意（頂層受拉）
+  delen.push(`<path d="M 174 158 Q 270 122 366 158" fill="none" stroke="#c62828" stroke-width="2.4" stroke-dasharray="8 5"/>`);
+  delen.push(`<text x="270" y="112" font-size="12" font-weight="bold" fill="#c62828" text-anchor="middle">M⁻</text>`);
+  // 剪力與彎矩標示
+  delen.push(`<text x="270" y="62" font-size="12" font-weight="bold" fill="#4a6572" text-anchor="middle">V · M</text>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
+}
+
 const BEELDEN = {
   "tw-pile-foundation": twPileFoundation,
   "tw-bridge-seismic": twBridgeSeismic,
   "tw-wood-member": twWoodMember,
+  "tw-combined-footing": twCombinedFooting,
 };
 
 const [uitvoer = MAP, ...alleen] = process.argv.slice(2);

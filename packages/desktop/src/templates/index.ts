@@ -7,6 +7,7 @@ import { doorsnedeSpanningen } from "./doorsnede-spanningen";
 import { twRcBeam } from "./tw-rc-beam";
 import { twRcColumn } from "./tw-rc-column";
 import { twIsolatedFooting } from "./tw-isolated-footing";
+import { twCombinedFooting } from "./tw-combined-footing";
 // 台灣版（steel99 鋼結構設計規範）
 import { twSteelBeam } from "./tw-steel-beam";
 import { twSteelColumn } from "./tw-steel-column";
@@ -37,6 +38,7 @@ export const templates: Record<string, string> = {
   "tw-rc-beam": twRcBeam,
   "tw-rc-column": twRcColumn,
   "tw-isolated-footing": twIsolatedFooting,
+  "tw-combined-footing": twCombinedFooting,
   "tw-steel-beam": twSteelBeam,
   "tw-steel-column": twSteelColumn,
   "tw-retaining-wall": twRetainingWall,
