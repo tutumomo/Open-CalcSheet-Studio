@@ -25,6 +25,7 @@ import { twPileFoundation } from "./tw-pile-foundation";
 import { twGravityRetainingWall } from "./tw-gravity-retaining-wall";
 import { twBackwaterProfile } from "./tw-backwater-profile";
 import { twBridgeSeismic } from "./tw-bridge-seismic";
+import { twWoodMember } from "./tw-wood-member";
 
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
@@ -52,4 +53,5 @@ export const templates: Record<string, string> = {
   "tw-gravity-retaining-wall": twGravityRetainingWall,
   "tw-backwater-profile": twBackwaterProfile,
   "tw-bridge-seismic": twBridgeSeismic,
+  "tw-wood-member": twWoodMember,
 };

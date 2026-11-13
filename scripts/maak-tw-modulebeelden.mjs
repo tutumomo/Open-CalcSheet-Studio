@@ -110,9 +110,44 @@ function twBridgeSeismic() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
 }
 
+/** 木構造構材（wood100 第 4、5 章）：木梁＋木柱、載重、撓曲曲線與側撐 */
+function twWoodMember() {
+  const HOUT = "#c9a06a";
+  const HOUT_DONKER = "#a97f4d";
+  const delen = [];
+  // Achtergrond
+  delen.push(`<rect x="0" y="0" width="${BREEDTE}" height="${HOOGTE}" fill="#faf7f2"/>`);
+  // Grondslag
+  delen.push(`<rect x="0" y="262" width="${BREEDTE}" height="50" fill="${ZAND_ONDER}"/>`);
+  delen.push(`<line x1="0" y1="262" x2="${BREEDTE}" y2="262" stroke="${LIJN}" stroke-width="2"/>`);
+  // Timberkolommen
+  delen.push(`<rect x="70" y="120" width="34" height="142" fill="${HOUT_DONKER}" stroke="#6d4f2c" stroke-width="2"/>`);
+  delen.push(`<rect x="436" y="120" width="34" height="142" fill="${HOUT_DONKER}" stroke="#6d4f2c" stroke-width="2"/>`);
+  // Timberbalk
+  delen.push(`<rect x="55" y="84" width="430" height="36" fill="${HOUT}" stroke="#6d4f2c" stroke-width="2"/>`);
+  // Houtnerf
+  for (const x of [120, 190, 260, 330, 400]) {
+    delen.push(`<line x1="${x}" y1="88" x2="${x}" y2="116" stroke="#8a6435" stroke-width="1.2" opacity="0.6"/>`);
+  }
+  // Belastingen op de balk
+  for (const x of [180, 270, 360]) delen.push(pijl(x, 18, 84, TURKOOIS, 8, 1));
+  // Doorbuigingskromme
+  delen.push(`<path d="M 70 122 Q 270 190 470 122" fill="none" stroke="#c62828" stroke-width="2.4" stroke-dasharray="8 5"/>`);
+  delen.push(`<text x="270" y="205" font-size="12" font-weight="bold" fill="#c62828" text-anchor="middle">δ</text>`);
+  // Zijsteunen (steunplaten)
+  delen.push(`<rect x="150" y="120" width="14" height="26" fill="#6d7883" stroke="#333" stroke-width="1.5"/>`);
+  delen.push(`<rect x="376" y="120" width="14" height="26" fill="#6d7883" stroke="#333" stroke-width="1.5"/>`);
+  // Aslijn en label
+  delen.push(`<line x1="55" y1="76" x2="485" y2="76" stroke="${LIJN}" stroke-width="1" stroke-dasharray="4 5"/>`);
+  delen.push(`<text x="270" y="34" font-size="13" font-weight="bold" fill="#6d4f2c" text-anchor="middle">M · Q · N</text>`);
+  delen.push(`<text x="270" y="292" font-size="12" font-weight="bold" fill="#4a6572" text-anchor="middle">f_c · f_t · f_b · C_b</text>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
+}
+
 const BEELDEN = {
   "tw-pile-foundation": twPileFoundation,
   "tw-bridge-seismic": twBridgeSeismic,
+  "tw-wood-member": twWoodMember,
 };
 
 const [uitvoer = MAP, ...alleen] = process.argv.slice(2);

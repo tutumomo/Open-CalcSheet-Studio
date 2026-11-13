@@ -154,6 +154,16 @@ export const moduleCatalogus: TreeNode[] = [
   },
   {
     kind: "category",
+    id: "cat-tw-hout",
+    label: "Taiwanese normen — Houtconstructies",
+    defaultExpanded: true,
+    count: 1,
+    children: [
+      { kind: "item", id: "sheet-tw-wood-member", label: "Houtconstructie — toetsing van trek-, druk- en buigelementen (wood100 / wood110)", templateId: "tw-wood-member", status: "gereed", gepubliceerd: true },
+    ],
+  },
+  {
+    kind: "category",
     id: "cat-tw-load",
     label: "Taiwanese normen — Belastingen",
     defaultExpanded: true,
