@@ -1,0 +1,794 @@
+{
+ "versie": "2026.44.2",
+ "geweigerd": "Error: nuPrime must not exceed 1",
+ "toetsingen": {
+  "tc990cf8549b200d5": {
+   "tool": "solve_native_fem",
+   "verzoek": {
+    "inputs": {
+     "kind": "threeLayer",
+     "input": {
+      "forces": {
+       "nx": 0,
+       "ny": 0,
+       "nxy": 0,
+       "mx": 50,
+       "my": 0,
+       "mxy": 0,
+       "vx": 0,
+       "vy": 0
+      },
+      "thicknessMm": 250,
+      "topSkinMm": 80,
+      "bottomSkinMm": 84,
+      "topReinforcement": {
+       "asX": 524,
+       "asY": 524
+      },
+      "bottomReinforcement": {
+       "asX": 754,
+       "asY": 754
+      },
+      "fcdMpa": 20,
+      "fydMpa": 434.782608696,
+      "nuPrime": 0.88,
+      "compressionModel": "ec2AnnexF"
+     }
+    }
+   },
+   "uitkomst": {
+    "kind": "threeLayer",
+    "result": {
+     "bottom": {
+      "annexFBranch": "F.2-F.4",
+      "compressionLimitMpa": 10.56,
+      "concreteCompressionMpa": 0,
+      "forces": {
+       "nx": 297.6190476190476,
+       "nxy": 0,
+       "ny": 0
+      },
+      "reinforcementCase": "x-only",
+      "requiredAsXmm2PerM": 684.5238095232618,
+      "requiredAsYmm2PerM": 0,
+      "utilizationAsX": 0.9078565113040608,
+      "utilizationAsY": 0,
+      "utilizationCompression": 0
+     },
+     "core": {
+      "diagonalStressMpa": null,
+      "directionDeg": 0,
+      "requiredShearMm2PerM2": null,
+      "resultantKnPerM": 0,
+      "shearReinforcementRequired": null,
+      "utilizationDiagonal": null,
+      "utilizationShear": null,
+      "vxKnPerM": 0,
+      "vyKnPerM": 0
+     },
+     "leverArmMm": 168,
+     "notAssessed": [
+      "shell cracking state",
+      "automatic layer sizing and reinforcement eccentricity",
+      "reinforcement anchorage and detailing",
+      "National Annex and project applicability",
+      "core layer shear resistance"
+     ],
+     "status": "partial_check_passes",
+     "top": {
+      "annexFBranch": "F.5-F.7",
+      "compressionLimitMpa": 20,
+      "concreteCompressionMpa": 3.720238095238095,
+      "forces": {
+       "nx": -297.6190476190476,
+       "nxy": 0,
+       "ny": 0
+      },
+      "reinforcementCase": "compression-only",
+      "requiredAsXmm2PerM": 0,
+      "requiredAsYmm2PerM": 0,
+      "utilizationAsX": 0,
+      "utilizationAsY": 0,
+      "utilizationCompression": 0.18601190476190474
+     }
+    }
+   },
+   "datum": "2026-11-12T02:04:42.149Z",
+   "herkomst": {
+    "versie": "2026.44.2",
+    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "schema": "seaaaf098569344b9"
+   }
+  },
+  "t198000be5d663ecc": {
+   "tool": "solve_native_fem",
+   "verzoek": {
+    "reeks": [
+     {
+      "inputs": {
+       "kind": "threeLayer",
+       "input": {
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": 50,
+         "my": 0,
+         "mxy": 0,
+         "vx": 0,
+         "vy": 0
+        },
+        "thicknessMm": 250,
+        "topSkinMm": 80,
+        "bottomSkinMm": 84,
+        "topReinforcement": {
+         "asX": 524,
+         "asY": 524
+        },
+        "bottomReinforcement": {
+         "asX": 754,
+         "asY": 754
+        },
+        "fcdMpa": 20,
+        "fydMpa": 434.782608696,
+        "nuPrime": 0.88,
+        "compressionModel": "ec2AnnexF"
+       }
+      }
+     },
+     {
+      "inputs": {
+       "kind": "threeLayer",
+       "input": {
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": 30,
+         "my": 20,
+         "mxy": 10,
+         "vx": 0,
+         "vy": 0
+        },
+        "thicknessMm": 250,
+        "topSkinMm": 80,
+        "bottomSkinMm": 84,
+        "topReinforcement": {
+         "asX": 524,
+         "asY": 524
+        },
+        "bottomReinforcement": {
+         "asX": 754,
+         "asY": 754
+        },
+        "fcdMpa": 20,
+        "fydMpa": 434.782608696,
+        "nuPrime": 0.88,
+        "compressionModel": "ec2AnnexF"
+       }
+      }
+     },
+     null,
+     {
+      "inputs": {
+       "kind": "threeLayer",
+       "input": {
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": -40,
+         "my": -40,
+         "mxy": 15,
+         "vx": 0,
+         "vy": 0
+        },
+        "thicknessMm": 250,
+        "topSkinMm": 80,
+        "bottomSkinMm": 84,
+        "topReinforcement": {
+         "asX": 524,
+         "asY": 524
+        },
+        "bottomReinforcement": {
+         "asX": 754,
+         "asY": 754
+        },
+        "fcdMpa": 20,
+        "fydMpa": 434.782608696,
+        "nuPrime": 0.88,
+        "compressionModel": "ec2AnnexF"
+       }
+      }
+     }
+    ]
+   },
+   "uitkomst": {
+    "reeks": [
+     {
+      "kind": "threeLayer",
+      "result": {
+       "bottom": {
+        "annexFBranch": "F.2-F.4",
+        "compressionLimitMpa": 10.56,
+        "concreteCompressionMpa": 0,
+        "forces": {
+         "nx": 297.6190476190476,
+         "nxy": 0,
+         "ny": 0
+        },
+        "reinforcementCase": "x-only",
+        "requiredAsXmm2PerM": 684.5238095232618,
+        "requiredAsYmm2PerM": 0,
+        "utilizationAsX": 0.9078565113040608,
+        "utilizationAsY": 0,
+        "utilizationCompression": 0
+       },
+       "core": {
+        "diagonalStressMpa": null,
+        "directionDeg": 0,
+        "requiredShearMm2PerM2": null,
+        "resultantKnPerM": 0,
+        "shearReinforcementRequired": null,
+        "utilizationDiagonal": null,
+        "utilizationShear": null,
+        "vxKnPerM": 0,
+        "vyKnPerM": 0
+       },
+       "leverArmMm": 168,
+       "notAssessed": [
+        "shell cracking state",
+        "automatic layer sizing and reinforcement eccentricity",
+        "reinforcement anchorage and detailing",
+        "National Annex and project applicability",
+        "core layer shear resistance"
+       ],
+       "status": "partial_check_passes",
+       "top": {
+        "annexFBranch": "F.5-F.7",
+        "compressionLimitMpa": 20,
+        "concreteCompressionMpa": 3.720238095238095,
+        "forces": {
+         "nx": -297.6190476190476,
+         "nxy": 0,
+         "ny": 0
+        },
+        "reinforcementCase": "compression-only",
+        "requiredAsXmm2PerM": 0,
+        "requiredAsYmm2PerM": 0,
+        "utilizationAsX": 0,
+        "utilizationAsY": 0,
+        "utilizationCompression": 0.18601190476190474
+       }
+      }
+     },
+     {
+      "kind": "threeLayer",
+      "result": {
+       "bottom": {
+        "annexFBranch": "F.2-F.4",
+        "compressionLimitMpa": 10.56,
+        "concreteCompressionMpa": 1.417233560090703,
+        "forces": {
+         "nx": 178.57142857142858,
+         "nxy": 59.523809523809526,
+         "ny": 119.04761904761905
+        },
+        "reinforcementCase": "both-directions",
+        "requiredAsXmm2PerM": 547.6190476186096,
+        "requiredAsYmm2PerM": 410.7142857139571,
+        "utilizationAsX": 0.7262852090432488,
+        "utilizationAsY": 0.5447139067824365,
+        "utilizationCompression": 0.13420772349343776
+       },
+       "core": {
+        "diagonalStressMpa": null,
+        "directionDeg": 0,
+        "requiredShearMm2PerM2": null,
+        "resultantKnPerM": 0,
+        "shearReinforcementRequired": null,
+        "utilizationDiagonal": null,
+        "utilizationShear": null,
+        "vxKnPerM": 0,
+        "vyKnPerM": 0
+       },
+       "leverArmMm": 168,
+       "notAssessed": [
+        "shell cracking state",
+        "automatic layer sizing and reinforcement eccentricity",
+        "reinforcement anchorage and detailing",
+        "National Annex and project applicability",
+        "core layer shear resistance"
+       ],
+       "status": "partial_check_passes",
+       "top": {
+        "annexFBranch": "F.1(3)",
+        "compressionLimitMpa": 20,
+        "concreteCompressionMpa": 2.6919895749627196,
+        "forces": {
+         "nx": -178.57142857142858,
+         "nxy": -59.523809523809526,
+         "ny": -119.04761904761905
+        },
+        "reinforcementCase": "compression-only",
+        "requiredAsXmm2PerM": 0,
+        "requiredAsYmm2PerM": 0,
+        "utilizationAsX": 0,
+        "utilizationAsY": 0,
+        "utilizationCompression": 0.134599478748136
+       }
+      }
+     },
+     null,
+     {
+      "kind": "threeLayer",
+      "result": {
+       "bottom": {
+        "annexFBranch": "F.1(3)",
+        "compressionLimitMpa": 20,
+        "concreteCompressionMpa": 3.8973922902494333,
+        "forces": {
+         "nx": -238.0952380952381,
+         "nxy": 89.28571428571429,
+         "ny": -238.0952380952381
+        },
+        "reinforcementCase": "compression-only",
+        "requiredAsXmm2PerM": 0,
+        "requiredAsYmm2PerM": 0,
+        "utilizationAsX": 0,
+        "utilizationAsY": 0,
+        "utilizationCompression": 0.19486961451247167
+       },
+       "core": {
+        "diagonalStressMpa": null,
+        "directionDeg": 0,
+        "requiredShearMm2PerM2": null,
+        "resultantKnPerM": 0,
+        "shearReinforcementRequired": null,
+        "utilizationDiagonal": null,
+        "utilizationShear": null,
+        "vxKnPerM": 0,
+        "vyKnPerM": 0
+       },
+       "leverArmMm": 168,
+       "notAssessed": [
+        "shell cracking state",
+        "automatic layer sizing and reinforcement eccentricity",
+        "reinforcement anchorage and detailing",
+        "National Annex and project applicability",
+        "core layer shear resistance"
+       ],
+       "status": "partial_check_exceeded",
+       "top": {
+        "annexFBranch": "F.2-F.4",
+        "compressionLimitMpa": 10.56,
+        "concreteCompressionMpa": 2.232142857142857,
+        "forces": {
+         "nx": 238.0952380952381,
+         "nxy": -89.28571428571429,
+         "ny": 238.0952380952381
+        },
+        "reinforcementCase": "both-directions",
+        "requiredAsXmm2PerM": 752.9761904755882,
+        "requiredAsYmm2PerM": 752.9761904755882,
+        "utilizationAsX": 1.436977462739672,
+        "utilizationAsY": 1.436977462739672,
+        "utilizationCompression": 0.2113771645021645
+       }
+      }
+     }
+    ]
+   },
+   "datum": "2026-11-12T02:04:42.170Z",
+   "herkomst": {
+    "versie": "2026.44.2",
+    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "schema": "seaaaf098569344b9"
+   }
+  },
+  "te916c666a9aff042": {
+   "tool": "solve_native_fem",
+   "verzoek": {
+    "inputs": {
+     "kind": "threeLayerBatch",
+     "input": {
+      "configuration": {
+       "thicknessMm": 250,
+       "topSkinMm": 80,
+       "bottomSkinMm": 84,
+       "topReinforcement": {
+        "asX": 524,
+        "asY": 524
+       },
+       "bottomReinforcement": {
+        "asX": 754,
+        "asY": 754
+       },
+       "fcdMpa": 20,
+       "fydMpa": 434.782608696,
+       "nuPrime": 0.88,
+       "compressionModel": "ec2AnnexF"
+      },
+      "samples": [
+       {
+        "id": "1",
+        "positionM": [
+         0.5,
+         0
+        ],
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": 50,
+         "my": 0,
+         "mxy": 0,
+         "vx": 0,
+         "vy": 0
+        }
+       },
+       {
+        "id": "2",
+        "positionM": [
+         1,
+         0
+        ],
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": 30,
+         "my": 20,
+         "mxy": 10,
+         "vx": 0,
+         "vy": 0
+        }
+       },
+       {
+        "id": "3",
+        "positionM": [
+         1.5,
+         0
+        ],
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": 0,
+         "my": 0,
+         "mxy": 0,
+         "vx": 0,
+         "vy": 0
+        }
+       },
+       {
+        "id": "4",
+        "positionM": [
+         2,
+         0
+        ],
+        "forces": {
+         "nx": 0,
+         "ny": 0,
+         "nxy": 0,
+         "mx": -40,
+         "my": -40,
+         "mxy": 15,
+         "vx": 0,
+         "vy": 0
+        }
+       }
+      ]
+     }
+    }
+   },
+   "uitkomst": {
+    "kind": "threeLayerBatch",
+    "result": {
+     "checkedPoints": 4,
+     "results": [
+      {
+       "id": "1",
+       "positionM": [
+        0.5,
+        0
+       ],
+       "result": {
+        "bottom": {
+         "annexFBranch": "F.2-F.4",
+         "compressionLimitMpa": 10.56,
+         "concreteCompressionMpa": 0,
+         "forces": {
+          "nx": 297.6190476190476,
+          "nxy": 0,
+          "ny": 0
+         },
+         "reinforcementCase": "x-only",
+         "requiredAsXmm2PerM": 684.5238095232618,
+         "requiredAsYmm2PerM": 0,
+         "utilizationAsX": 0.9078565113040608,
+         "utilizationAsY": 0,
+         "utilizationCompression": 0
+        },
+        "core": {
+         "diagonalStressMpa": null,
+         "directionDeg": 0,
+         "requiredShearMm2PerM2": null,
+         "resultantKnPerM": 0,
+         "shearReinforcementRequired": null,
+         "utilizationDiagonal": null,
+         "utilizationShear": null,
+         "vxKnPerM": 0,
+         "vyKnPerM": 0
+        },
+        "leverArmMm": 168,
+        "notAssessed": [
+         "shell cracking state",
+         "automatic layer sizing and reinforcement eccentricity",
+         "reinforcement anchorage and detailing",
+         "National Annex and project applicability",
+         "core layer shear resistance"
+        ],
+        "status": "partial_check_passes",
+        "top": {
+         "annexFBranch": "F.5-F.7",
+         "compressionLimitMpa": 20,
+         "concreteCompressionMpa": 3.720238095238095,
+         "forces": {
+          "nx": -297.6190476190476,
+          "nxy": 0,
+          "ny": 0
+         },
+         "reinforcementCase": "compression-only",
+         "requiredAsXmm2PerM": 0,
+         "requiredAsYmm2PerM": 0,
+         "utilizationAsX": 0,
+         "utilizationAsY": 0,
+         "utilizationCompression": 0.18601190476190474
+        }
+       }
+      },
+      {
+       "id": "2",
+       "positionM": [
+        1,
+        0
+       ],
+       "result": {
+        "bottom": {
+         "annexFBranch": "F.2-F.4",
+         "compressionLimitMpa": 10.56,
+         "concreteCompressionMpa": 1.417233560090703,
+         "forces": {
+          "nx": 178.57142857142858,
+          "nxy": 59.523809523809526,
+          "ny": 119.04761904761905
+         },
+         "reinforcementCase": "both-directions",
+         "requiredAsXmm2PerM": 547.6190476186096,
+         "requiredAsYmm2PerM": 410.7142857139571,
+         "utilizationAsX": 0.7262852090432488,
+         "utilizationAsY": 0.5447139067824365,
+         "utilizationCompression": 0.13420772349343776
+        },
+        "core": {
+         "diagonalStressMpa": null,
+         "directionDeg": 0,
+         "requiredShearMm2PerM2": null,
+         "resultantKnPerM": 0,
+         "shearReinforcementRequired": null,
+         "utilizationDiagonal": null,
+         "utilizationShear": null,
+         "vxKnPerM": 0,
+         "vyKnPerM": 0
+        },
+        "leverArmMm": 168,
+        "notAssessed": [
+         "shell cracking state",
+         "automatic layer sizing and reinforcement eccentricity",
+         "reinforcement anchorage and detailing",
+         "National Annex and project applicability",
+         "core layer shear resistance"
+        ],
+        "status": "partial_check_passes",
+        "top": {
+         "annexFBranch": "F.1(3)",
+         "compressionLimitMpa": 20,
+         "concreteCompressionMpa": 2.6919895749627196,
+         "forces": {
+          "nx": -178.57142857142858,
+          "nxy": -59.523809523809526,
+          "ny": -119.04761904761905
+         },
+         "reinforcementCase": "compression-only",
+         "requiredAsXmm2PerM": 0,
+         "requiredAsYmm2PerM": 0,
+         "utilizationAsX": 0,
+         "utilizationAsY": 0,
+         "utilizationCompression": 0.134599478748136
+        }
+       }
+      },
+      {
+       "id": "3",
+       "positionM": [
+        1.5,
+        0
+       ],
+       "result": {
+        "bottom": {
+         "annexFBranch": "F.2-F.4",
+         "compressionLimitMpa": 20,
+         "concreteCompressionMpa": 0,
+         "forces": {
+          "nx": 0,
+          "nxy": 0,
+          "ny": 0
+         },
+         "reinforcementCase": "compression-only",
+         "requiredAsXmm2PerM": 0,
+         "requiredAsYmm2PerM": 0,
+         "utilizationAsX": 0,
+         "utilizationAsY": 0,
+         "utilizationCompression": 0
+        },
+        "core": {
+         "diagonalStressMpa": null,
+         "directionDeg": 0,
+         "requiredShearMm2PerM2": null,
+         "resultantKnPerM": 0,
+         "shearReinforcementRequired": null,
+         "utilizationDiagonal": null,
+         "utilizationShear": null,
+         "vxKnPerM": 0,
+         "vyKnPerM": 0
+        },
+        "leverArmMm": 168,
+        "notAssessed": [
+         "shell cracking state",
+         "automatic layer sizing and reinforcement eccentricity",
+         "reinforcement anchorage and detailing",
+         "National Annex and project applicability",
+         "core layer shear resistance"
+        ],
+        "status": "partial_check_passes",
+        "top": {
+         "annexFBranch": "F.2-F.4",
+         "compressionLimitMpa": 20,
+         "concreteCompressionMpa": 0,
+         "forces": {
+          "nx": 0,
+          "nxy": 0,
+          "ny": 0
+         },
+         "reinforcementCase": "compression-only",
+         "requiredAsXmm2PerM": 0,
+         "requiredAsYmm2PerM": 0,
+         "utilizationAsX": 0,
+         "utilizationAsY": 0,
+         "utilizationCompression": 0
+        }
+       }
+      },
+      {
+       "id": "4",
+       "positionM": [
+        2,
+        0
+       ],
+       "result": {
+        "bottom": {
+         "annexFBranch": "F.1(3)",
+         "compressionLimitMpa": 20,
+         "concreteCompressionMpa": 3.8973922902494333,
+         "forces": {
+          "nx": -238.0952380952381,
+          "nxy": 89.28571428571429,
+          "ny": -238.0952380952381
+         },
+         "reinforcementCase": "compression-only",
+         "requiredAsXmm2PerM": 0,
+         "requiredAsYmm2PerM": 0,
+         "utilizationAsX": 0,
+         "utilizationAsY": 0,
+         "utilizationCompression": 0.19486961451247167
+        },
+        "core": {
+         "diagonalStressMpa": null,
+         "directionDeg": 0,
+         "requiredShearMm2PerM2": null,
+         "resultantKnPerM": 0,
+         "shearReinforcementRequired": null,
+         "utilizationDiagonal": null,
+         "utilizationShear": null,
+         "vxKnPerM": 0,
+         "vyKnPerM": 0
+        },
+        "leverArmMm": 168,
+        "notAssessed": [
+         "shell cracking state",
+         "automatic layer sizing and reinforcement eccentricity",
+         "reinforcement anchorage and detailing",
+         "National Annex and project applicability",
+         "core layer shear resistance"
+        ],
+        "status": "partial_check_exceeded",
+        "top": {
+         "annexFBranch": "F.2-F.4",
+         "compressionLimitMpa": 10.56,
+         "concreteCompressionMpa": 2.232142857142857,
+         "forces": {
+          "nx": 238.0952380952381,
+          "nxy": -89.28571428571429,
+          "ny": 238.0952380952381
+         },
+         "reinforcementCase": "both-directions",
+         "requiredAsXmm2PerM": 752.9761904755882,
+         "requiredAsYmm2PerM": 752.9761904755882,
+         "utilizationAsX": 1.436977462739672,
+         "utilizationAsY": 1.436977462739672,
+         "utilizationCompression": 0.2113771645021645
+        }
+       }
+      }
+     ],
+     "status": "partial_check_exceeded"
+    }
+   },
+   "datum": "2026-11-12T02:04:42.185Z",
+   "herkomst": {
+    "versie": "2026.44.2",
+    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "schema": "seaaaf098569344b9"
+   }
+  },
+  "t9a953275d51ddc80": {
+   "tool": "solve_native_fem",
+   "verzoek": {
+    "inputs": {
+     "kind": "crackWidth",
+     "input": {
+      "sigmaSMpa": 300,
+      "widthMm": 1000,
+      "heightMm": 250,
+      "effectiveDepthMm": 214,
+      "neutralAxisMm": 40,
+      "bondedReinforcementAreaMm2": 754,
+      "coverToLongitudinalSteelMm": 30,
+      "barOrTendonDiameterMm": 12,
+      "spacingMm": 150,
+      "fCkMpa": 30,
+      "fCtEffMpa": 2.9,
+      "eCmMpa": 33000,
+      "kT": 0.4,
+      "k1": 0.8,
+      "k2": 0.5,
+      "wMaxMm": 0.3
+     }
+    }
+   },
+   "uitkomst": {
+    "kind": "crackWidth",
+    "result": {
+     "allowableCrackWidthMm": 0.3,
+     "crackSpacingEquation": "7.11",
+     "crackWidthMm": 0.26993981858989813,
+     "effectiveConcreteAreaMm2": 70000,
+     "effectiveReinforcementRatio": 0.01077142857142857,
+     "effectiveTensionHeightMm": 70,
+     "maximumCrackSpacingMm": 291.38992042440316,
+     "passes": true,
+     "strainDifference": 0.0009263869463869464,
+     "tensionStiffeningFloorGoverns": false,
+     "utilization": 0.8997993952996605
+    }
+   },
+   "datum": "2026-11-12T02:04:42.225Z",
+   "herkomst": {
+    "versie": "2026.44.2",
+    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "schema": "seaaaf098569344b9"
+   }
+  }
+ }
+}

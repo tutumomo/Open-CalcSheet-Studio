@@ -416,6 +416,26 @@
     "staart": "tail",
     "wisselbalkEnkel": "trimming joist"
   },
+  "invoer": {
+    "wacht": "Not sent yet…",
+    "rekent": "Calculating…",
+    "fem": "Open FEM Studio is calculating…",
+    "eerst": "The input fields appear as soon as the sheet has been calculated.",
+    "geenVelden": "This sheet shows no input fields at the moment.",
+    "uitleg": "Calculates when you leave a field, press Enter or pause for a moment.",
+    "verbergBeeld": "Hide drawing",
+    "toonBeeld": "Show drawing"
+  },
+  "vloerOpPalen": {
+    "plattegrond": "Plan",
+    "doorsnede": "Section at a pile",
+    "strook": "strip",
+    "kop": "drop panel",
+    "paal": "pile",
+    "klik": "Click a blue dimension to edit it.",
+    "oudeMaten": "The drawing shows the last valid dimensions: a pile spacing and the floor thickness must be greater than zero.",
+    "geenModel": "Enter a pile spacing and a floor thickness greater than zero to see the drawing."
+  },
   "afdruk": {
     "titel": "Print preview",
     "titelRapport": "Print preview — report",

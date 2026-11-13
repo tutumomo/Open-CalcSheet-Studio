@@ -14,6 +14,7 @@ welke afspraken gelden, hoe je controleert en hoe je bouwt.
 | `packages/desktop/src/templates` | De rekenbladen, elk als rekentekst in een TypeScript-string. Registratie in `index.ts`. |
 | `packages/desktop/src/components/calc` | Parametrische beelden (`*Designer.tsx`), koppeling blad↔beeld (`designerKeuze.tsx`, via een herkenningstekst uit de titel), modulecatalogus met status (`projectTree.ts`), uitkomst van een blad (`bladResultaat.ts`), afdruk (`PrintDocument.tsx/.css`, `PrintBlad.tsx`, `paginering.ts`), rekenversie en bijwerken van bladen (`bladVersie.ts`, `BladBijwerken.tsx`). |
 | `packages/desktop/src/rapport`, `components/rapport` | Constructierapport (hoofdstukken, uitgangspunten, belastingen met opbouwen, het keuzemenu `gewichten.ts` en de gewichtenbibliotheek `gewichtenBibliotheek.ts` met de gegevens in `library/gewichten/`, bijlage A met de rekenbladen). |
+| `components/calc/invoer` | Het invoerscherm van een rekenblad zonder eigen beeld: een formulier uit de velden van het blad (`InvoerPaneel.tsx`, `velden.ts`), dat pas doorstuurt als een veld wordt verlaten of na een pauze (`wachtrij.ts`), en bij een module uit de modulebibliotheek een beeld erboven op het `templateId` van het blad (`invoerScherm.tsx`, `vloerOpPalen.ts`). Zie [bladsoorten.md](bladsoorten.md#het-invoerscherm-van-een-rekenblad). |
 | `components/calc/bladSoorten.tsx` | Bladen die niet rekenen (PDF, werkmap, Markdown): hier meldt een soort zich aan voor de afdruk en het rapport. Zie [bladsoorten.md](bladsoorten.md). |
 | `packages/desktop/src/graaf`, `components/graaf` | Het grafblad: grafisch programmeren met nodes en verbindingen. `graaf/` rekent zonder React (`model.ts`, `nodes.ts`, `rekenen.ts`, `scene.ts`, `papier.ts`), `components/graaf/` tekent het vlak, het 3D-voorbeeld en de afdruk. Het codeblok gebruikt `packages/core/src/rekenblok.ts`. Controle: `scripts/check-graaf.mjs`. |
 | `packages/desktop/src/store` | Project (exemplaren/bladen, projectgegevens, rapport), projectbestand, undo. |
@@ -121,6 +122,8 @@ Een nieuwe module bestaat uit een rekenblad in `packages/desktop/src/templates`
 (geregistreerd in `index.ts`), een regel in de catalogus (`projectTree.ts`), zo
 nodig een parametrisch beeld (`*Designer.tsx`, gekoppeld in
 `designerKeuze.tsx`), een catalogusbeeld en een eigen `scripts/check-<module>.mjs`.
+Zonder eigen beeld krijgt een module vanzelf het invoerscherm uit haar eigen velden
+(`components/calc/invoer`); dat geldt ook voor een module uit de modulebibliotheek.
 
 Een parametrisch beeld toont maten en lasten in het eenhedenstelsel van het project en
 rekent zelf in de eenheden van het blad. Geef daarvoor in `designerKit.tsx` `Dim` een

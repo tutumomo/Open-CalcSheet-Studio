@@ -3,6 +3,10 @@ name: Release controleren
 # Downloadt de bestanden van een release, of een concept daarvan, op elk platform en
 # controleert ze zoals een gebruiker ze krijgt. De aanroeper publiceert pas als dit
 # groen is. Signingcontroles zijn geen functionele test van de app.
+# De server van Open FEM Studio moet in de installers van de platformen in de invoer
+# fem-studio zitten (de uitvoer fem-studio-platformen van desktop-ondertekend.yml);
+# op de andere platformen geeft zijn ontbreken alleen een waarschuwing. Zit hij in
+# een installer, dan moet het bronarchief van die server bij de release staan.
 
 on:
   workflow_call:
@@ -15,6 +19,10 @@ on:
         description: 'De commit waaruit de controlescripts komen'
         type: string
         required: true
+      fem-studio:
+        description: 'De platformen waar de server van FEM Studio in moet zitten, zoals "windows-x64 linux-x64"'
+        type: string
+        default: ''
 
 permissions:
   contents: read
@@ -43,6 +51,8 @@ jobs:
 
       - name: Controleer de handtekeningen
         shell: pwsh
+        env:
+          FEM_STUDIO_VEREIST: ${{ contains(inputs.fem-studio, 'windows-x64') }}
         run: pwsh -NoProfile -File scripts/release/windows-controleren.ps1 -Map downloads -Aantal 2
 
   macos:
@@ -65,6 +75,7 @@ jobs:
       - name: Controleer de handtekeningen
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          FEM_STUDIO_VEREIST: ${{ contains(inputs.fem-studio, 'macos-universal') }}
         run: bash scripts/release/macos-controleren.sh downloads
 
   linux:
@@ -87,6 +98,9 @@ jobs:
         run: gh release download "$TAG" --repo "$GITHUB_REPOSITORY" --dir downloads
 
       - name: Controleer handtekeningen en checksums
+        env:
+          FEM_STUDIO_VEREIST: ${{ contains(inputs.fem-studio, 'linux-x64') }}
+          FEM_BRON_VEREIST: ${{ inputs.fem-studio != '' }}
         run: |
           set -euo pipefail
           test -f downloads/SHA256SUMS.txt || { echo "::error::SHA256SUMS.txt ontbreekt"; exit 1; }

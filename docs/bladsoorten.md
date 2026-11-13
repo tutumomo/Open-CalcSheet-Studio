@@ -179,9 +179,60 @@ wat in het voorbeeld staat, komt op papier.
   laatste uitvoer, en is aangemeld met `MarimoPapier`. Een schuif staat op papier als zijn waarde. De
   Python-omgeving is die van de Jupyter-bladen: zie `docs/jupyter-blad.md`.
 
+## Het invoerscherm van een rekenblad
+
+Een rekenblad heeft naast de uitwerking een scherm om in te vullen (de tabs *Code + Visueel* en
+*Visueel + Uitwerking*). Welk scherm dat is, kiest de werkruimte in deze volgorde:
+
+1. **Een eigen parametrisch beeld** (`components/calc/designerKeuze.tsx`): de ingebouwde modules,
+   herkend aan een tekst in de kop van het blad. Dat beeld staat ook op papier.
+2. **Een beeld bij een module uit de modulebibliotheek** (`components/calc/invoer/invoerScherm.tsx`):
+   het formulier met een tekening erboven die de invoer volgt. Het hangt aan het `templateId` van
+   het blad. Dat is het id van de module (`store/moduleBibliotheek.ts`), en het blijft bij het
+   blad, ook in een projectbestand op een computer waar de module niet is geïnstalleerd. Nu alleen
+   `vloer-op-palen`: de plattegrond van het paalraster en een doorsnede bij een paal.
+3. **Het formulier uit de velden van het blad** (`components/calc/invoer/InvoerPaneel.tsx`): elk
+   ander rekenblad met een `?`-veld of een keuzelijst. Een module hoeft er niets voor te doen.
+
+Een canvas houdt zijn eigen scherm, en een blad zonder invoer heeft alleen *Code + Uitwerking*.
+
+Een module opent met haar invoerscherm. Een blad waar je de rekentekst schrijft of leest, opent
+met de code en heeft het invoerscherm als tab erbij: een eigen rekenblad (ook een voorbeeld uit
+de bibliotheek), een los geopend bestand en de demo van de rekentaal (`opentMetInvoer` in
+`invoer/velden.ts`). Krijgt zo'n blad tijdens het typen zijn eerste invoerveld, dan blijft de
+editor staan.
+
+Het formulier:
+
+- **De velden** komen uit het doorgerekende blad (`leesInvoer` in `invoer/velden.ts`, in de
+  rekenworker), niet uit de tekst. Zo staat er precies wat de uitwerking toont: in de volgorde van
+  het blad, onder zijn koppen, met de toelichting achter het veld en de eenheid, in de taal van de
+  uitvoer. Een veld in een tak van `#if` die niet gekozen is, of achter `#hide`, staat er niet.
+- **Schrijven** gaat alleen met `zetWaarde`, op de naam uit de rekentekst: dezelfde invoer als het
+  veld in de uitwerking. De rekentekst en de rekenversie veranderen niet, en ongedaan maken en de
+  tab Varianten zien een gewone wijziging van de invoer. Er wordt niets vooraf ingevuld (geen
+  `seedWaarden`): het blad rekent met zijn eigen standaardwaarden.
+- **Rustig rekenen** (`invoer/wachtrij.ts`): wat je typt gaat naar het blad als je het veld
+  verlaat, op Enter, of na een pauze van 0,6 s. Bij een blad met een `@fem`- of `@toets`-blok is
+  dat 1,5 s, omdat elke tussenstand daar een berekening van Open FEM Studio kost. Een keuze uit een
+  lijst gaat meteen. De kop meldt of er invoer wacht, of het blad rekent en of FEM Studio rekent;
+  anders staat er de uitkomst van het blad.
+- **Op papier** staat het formulier niet: de afdruk en de uitwerking van een variant vragen alleen
+  `designerKeuze`.
+
+Een beeld boven het formulier krijgt de rekentekst, een functie die zegt wat er voor een veld is
+ingevuld (wat nog wacht gaat voor wat is opgeslagen) en een functie die een waarde meteen zet
+(`BeeldProps`). Het tekent dus zonder op de doorrekening te wachten. De standaardwaarden en de
+eenheden leest het uit de tekst van het blad (`standaardInvoer`), niet uit eigen constanten:
+wijzigt de module een standaardwaarde, dan volgt het beeld. Voor een nieuw beeld: het model en de
+tekening als zuivere functies (zoals `invoer/vloerOpPalen.ts`), het onderdeel met de klikbare
+maten van `designerKit.tsx`, een regel in `schermSoort` (`velden.ts`) en in `invoerScherm.tsx`,
+en de controle erbij. De opmaak gebruikt alleen de tokens van het ontwerp (`--oa-*`).
+
 ## Controleren
 
 ```
+node scripts/check-invoerpaneel.mjs   # het invoerscherm: de velden, typen, rustig rekenen, het scherm in jsdom
 node scripts/check-markdown.mjs       # opslaan en heropenen, html, opschoning, op papier
 node scripts/check-paginering.mjs     # de verdeling en de nummers bij de ankers
 node scripts/check-rapport-pdf.mjs    # een echte PDF van een gemengd project, alle soorten
@@ -192,3 +243,7 @@ browser, leest de PDF met pdf.js en rekent na: evenveel pagina's als vellen, op 
 pagina zijn eigen nummer, en bij elke regel van de inhoudsopgave de kop op die pagina
 en op geen eerdere. Met `--bewaar <map>` blijven de PDF en het project staan om te
 bekijken.
+
+`check-invoerpaneel` loopt met `--blad <module.cpd>` ook een blad van buiten de repository na,
+zoals een module uit de modulebibliotheek: de velden per kop, en of het blad de namen heeft waar
+het beeld van de vloer op palen aan bindt.

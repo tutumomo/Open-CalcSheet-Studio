@@ -321,6 +321,7 @@
     "tekenblok": "drawing block",
     "drieDBlok": "3D view",
     "femBlok": "plate model, calculated by Open FEM Studio",
+    "kernBlok": "calculation tool of Open FEM Studio with nested input; the result comes back as numbers",
     "iframeBlok": "external page",
     "jsBlok": "JavaScript",
     "keuzelijst": "dropdown block",

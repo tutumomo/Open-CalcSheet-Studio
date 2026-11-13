@@ -416,6 +416,26 @@
     "staart": "短梁",
     "wisselbalkEnkel": "開口橫梁"
   },
+  "invoer": {
+    "wacht": "尚未送出…",
+    "rekent": "計算中…",
+    "fem": "Open FEM Studio 計算中…",
+    "eerst": "計算表算完後，輸入欄位就會出現。",
+    "geenVelden": "此計算表目前沒有顯示任何輸入欄位。",
+    "uitleg": "離開欄位、按 Enter 或稍候片刻即重新計算。",
+    "verbergBeeld": "隱藏圖面",
+    "toonBeeld": "顯示圖面"
+  },
+  "vloerOpPalen": {
+    "plattegrond": "平面圖",
+    "doorsnede": "樁位剖面",
+    "strook": "板帶",
+    "kop": "柱頭板",
+    "paal": "樁",
+    "klik": "點選藍色尺寸即可修改。",
+    "oudeMaten": "圖面顯示最近一次有效的尺寸：樁間距與樓板厚度必須大於零。",
+    "geenModel": "輸入大於零的樁間距與樓板厚度，即可顯示圖面。"
+  },
   "afdruk": {
     "titel": "列印預覽",
     "titelRapport": "列印預覽——報告",

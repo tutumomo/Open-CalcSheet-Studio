@@ -448,6 +448,7 @@
   "paneel": {
     "code": "程式碼",
     "visueel": "圖示",
+    "invoer": "輸入",
     "uitwerking": "計算過程",
     "regels_one": "{{count}}行",
     "regels_other": "{{count}}行"

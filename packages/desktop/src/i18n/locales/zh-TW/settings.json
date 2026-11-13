@@ -211,6 +211,10 @@
     "description": "具備即時輸出、參數化視圖與結構報告的結構計算表，為OpenAEC家族的一員。",
     "femStudio": "FEM Studio（規範檢核）",
     "femStudioBezig": "啟動中…",
+    "femLicentie": "FEM Studio 授權",
+    "femLicentieTekst": "GNU AGPL-3.0；與 CalcSheet 並列的獨立程式。",
+    "femBron": "此版本的原始碼",
+    "femBijlagen": "授權與第三方聲明",
     "femStudioNiet": {
       "geenDesktop": "僅限桌面版App",
       "nietMeegeleverd": "此版本未內含",

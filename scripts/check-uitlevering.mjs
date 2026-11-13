@@ -44,8 +44,10 @@ for (const w of ["release", "nightly"]) {
 klopt("release-concept: maakt alleen een concept", /gh release create .* --draft/.test(stroom["release-concept"]) && !stroom["release-concept"].includes("draft=false"));
 klopt("build: publiceert niets", !/gh release|releases\//.test(stroom.build));
 const ondertekend = stroom["desktop-ondertekend"];
-klopt("Windows: controle vóór de upload", ondertekend.indexOf("windows-controleren.ps1") < ondertekend.indexOf("name: open-calcsheet-studio-windows"));
-klopt("macOS: controle vóór de upload", ondertekend.indexOf("macos-controleren.sh") < ondertekend.indexOf("name: open-calcsheet-studio-macos"));
+// De installers zelf; de controle van alleen de FEM-server vóór het bouwen telt hier niet.
+const voor = (stap, upload) => ondertekend.includes(stap) && ondertekend.indexOf(stap) < ondertekend.indexOf(upload);
+klopt("Windows: controle vóór de upload", voor("windows-controleren.ps1 -Map", "name: open-calcsheet-studio-windows"));
+klopt("macOS: controle vóór de upload", voor("macos-controleren.sh packages/", "name: open-calcsheet-studio-macos"));
 klopt("Linux: controle vóór de upload", ondertekend.indexOf("linux-controleren.sh") < ondertekend.indexOf("name: open-calcsheet-studio-linux"));
 klopt("macOS: de dmg wordt zelf genotariseerd", ondertekend.includes("macos-notariseren.sh"));
 for (const script of ["windows-controleren.ps1", "macos-controleren.sh", "linux-controleren.sh"]) {

@@ -57,6 +57,34 @@ export async function femStudioStatus(): Promise<FemStatus> {
   }
 }
 
+/**
+ * De licentie van de meegeleverde server en de weg naar zijn broncode, uit de
+ * bestanden naast de server. FEM Studio valt onder de AGPL-3.0; CalcSheet start
+ * hem als apart programma.
+ */
+export interface FemLicentie {
+  /** De versie waar het bronarchief bij hoort. */
+  versie?: string | null;
+  /** De naam van het bronarchief van precies die versie. */
+  bron?: string | null;
+  /** Waar het bronarchief staat. */
+  adres?: string | null;
+  /** Het pad van de licentietekst naast de server. */
+  licentie?: string | null;
+  /** Het pad van de vermeldingen van derden naast de server. */
+  vermeldingen?: string | null;
+}
+
+/** De licentie en de bron van de meegeleverde FEM Studio. Start de server niet. */
+export async function femStudioLicentie(): Promise<FemLicentie | null> {
+  if (!inDesktop()) return null;
+  try {
+    return await roep<FemLicentie>("fem_studio_licentie");
+  } catch {
+    return null;
+  }
+}
+
 /** De tools van FEM Studio met hun schema's (`tools/list`). */
 export async function femStudioTools(): Promise<unknown> {
   if (!inDesktop()) throw new FemFout("no desktop app", undefined, "geenDesktop");

@@ -316,6 +316,7 @@
     "voorwaarde": "條件分支",
     "zichtbaarheid": "顯示控制",
     "femBlok": "由 Open FEM Studio 計算的板模型",
+    "kernBlok": "Open FEM Studio 的計算工具，輸入可巢狀；結果以數值回傳",
     "markering": "計算語言標記",
     "lus": "迴圈",
     "hoekeenheid": "角度模式",

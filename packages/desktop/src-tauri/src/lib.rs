@@ -203,6 +203,7 @@ pub fn run() {
             erpnext::erpnext_heeft_geheim,
             erpnext::erpnext_project_veld,
             fem_studio::fem_studio_status,
+            fem_studio::fem_studio_licentie,
             fem_studio::fem_studio_tools,
             fem_studio::fem_studio_aanroep,
         ])

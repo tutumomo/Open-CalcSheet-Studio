@@ -384,6 +384,42 @@ export interface FemNode {
   scherm?: boolean;
 }
 
+/** Een deel van een pad in een `@kern`-blok: `samples[k]` is de naam `samples` met de index `k` (vanaf 1). */
+export interface KernPadDeel {
+  naam: string;
+  /** De uitdrukking tussen de rechte haken, als het veld een lijst is. */
+  index?: string;
+}
+
+/**
+ * Een regel van een `@kern`-blok (kernBlok.ts): een veld met zijn pad en uitdrukking, of
+ * een `#for` of `#if` met regels erin.
+ */
+export type KernRegel =
+  | { soort: 'veld'; regel: number; pad: KernPadDeel[]; expr: string }
+  | { soort: 'for'; regel: number; teller: string; van: string; tot: string; body: KernRegel[] }
+  | { soort: 'if'; regel: number; takken: { voorwaarde: string; body: KernRegel[] }[]; anders: KernRegel[] };
+
+/**
+ * Een `@kern naam = tool … @end`-blok: een rekentool van Open FEM Studio met geneste
+ * invoer, waarvan de uitkomst als getallen terugkomt (zie kernBlok.ts). Elke regel is
+ * `pad.naar.veld = uitdrukking`.
+ */
+export interface KernNode {
+  type: 'kern';
+  /** De naam van de uitkomst: `drie` geeft `drie_result_…`. */
+  naam: string;
+  /** De tool van FEM Studio, zoals `solve_native_fem`. */
+  tool: string;
+  /** `per k = 1 : n`: een reeks aanroepen, één per waarde van de teller. */
+  per?: { teller: string; van: string; tot: string; regel: number };
+  regels: KernRegel[];
+  fouten: string[];
+  hidden?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type AstNode =
   | HeadingNode
   | TextNode
@@ -406,7 +442,8 @@ export type AstNode =
   | OpdrachtNode
   | EenheidDefNode
   | ToetsNode
-  | FemNode;
+  | FemNode
+  | KernNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -738,6 +775,13 @@ export interface ToetsVerzoek {
    * `argumenten` is dan leeg.
    */
   bewaar?: FemRekenmodel;
+  /**
+   * Bij een `@kern`-blok met `per`: de argumenten van elke aanroep, in volgorde; null is
+   * een aanroep die het blad overslaat. De app roept de tool voor elk ervan aan
+   * (kernAanroepen) en bewaart de antwoorden samen onder deze ene hash; `argumenten` is
+   * dan leeg.
+   */
+  reeks?: (Record<string, unknown> | null)[];
 }
 
 /**
@@ -912,6 +956,48 @@ export interface EvaluatedFem {
   scherm?: boolean;
 }
 
+/** Een doorgerekend `@kern`-blok. */
+export interface EvaluatedKern {
+  type: 'kern';
+  naam: string;
+  tool: string;
+  /**
+   * `klaar`: het antwoord is er en de uitkomsten staan in de scope; `wacht`: het verzoek
+   * is onderweg (werkruimte); `niet-gerekend`: er is geen antwoord en hier wordt niet
+   * gevraagd; `fout`: in het blok of van FEM Studio, met de reden in `melding`. Alleen
+   * bij `klaar` bestaan de uitkomsten.
+   */
+  status: 'wacht' | 'klaar' | 'fout' | 'niet-gerekend';
+  hash?: string;
+  melding?: string;
+  /** Het aantal aanroepen (bij `per` de lengte van de reeks), en hoeveel daarvan overgeslagen zijn. */
+  aanroepen?: number;
+  overgeslagen?: number;
+  /** De argumenten van de eerste aanroep, als JSON, voor de toelichting op het scherm. */
+  invoer?: string;
+  /** De uitkomsten na het blok: de naam in de rekentaal en de waarde als tekst (de eerste zestig). */
+  uitkomsten?: { naam: string; waarde: string }[];
+  /** Hoeveel uitkomsten er in totaal zijn. */
+  aantalUitkomsten?: number;
+  /** De versie van FEM Studio waarmee gerekend is, en wanneer. */
+  versie?: string;
+  datum?: string;
+  /** Zie EvaluatedToets.verouderd. */
+  verouderd?: { versie?: string; schema?: boolean };
+  /** Opnieuw rekenen lukte niet; het blok toont het vorige antwoord. */
+  waarschuwing?: string;
+  /** Alleen in de modus `vragen`: de knop "opnieuw rekenen" staat erbij. */
+  opnieuw?: boolean;
+  /** Alleen in de modus `vragen`, zolang er geen antwoord is. */
+  verzoek?: ToetsVerzoek;
+  /** `nl` of `en`: de vaste woorden. */
+  taal: string;
+  /** Achter `#hide`: rekent mee, staat niet op het blad. */
+  verborgen?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type EvaluatedNode =
   | EvaluatedEenheidDef
   | EvaluatedHeading
@@ -931,4 +1017,5 @@ export type EvaluatedNode =
   | EvaluatedSelect
   | EvaluatedGefUpload
   | EvaluatedToets
-  | EvaluatedFem;
+  | EvaluatedFem
+  | EvaluatedKern;

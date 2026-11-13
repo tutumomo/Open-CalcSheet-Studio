@@ -92,9 +92,31 @@ const ACHTERVOEGSELS: readonly (readonly [string, string])[] = [
   ['_m', 'm'],
 ];
 
+/**
+ * Hetzelfde voor een naam in camelCase, zoals de rekenkernen van `solve_native_fem` ze
+ * schrijven (`thicknessMm`, `fcdMpa`, `vRdcKnPerM`); de langste eerst. Het achtervoegsel
+ * begint met een hoofdletter en er staat een naam vóór: `M` alleen is geen lengte.
+ */
+const ACHTERVOEGSELS_CAMEL: readonly (readonly [string, string])[] = [
+  ['Mm2PerM2', 'mm^2/m^2'],
+  ['Mm2PerM', 'mm^2/m'],
+  ['KnPerM2', 'kN/m^2'],
+  ['KnPerM', 'kN/m'],
+  ['KnM2', 'kN/m^2'],
+  ['Mm2', 'mm^2'],
+  ['Mm4', 'mm^4'],
+  ['Mpa', 'MPa'],
+  ['Knm', 'kN m'],
+  ['Mm', 'mm'],
+  ['Kn', 'kN'],
+  ['M', 'm'],
+];
+
 export function eenheidVanVeld(veld: string): string | null {
   const v = veld.toLowerCase();
-  return ACHTERVOEGSELS.find(([achter]) => v.endsWith(achter))?.[1] ?? null;
+  const metStreepje = ACHTERVOEGSELS.find(([achter]) => v.endsWith(achter))?.[1];
+  if (metStreepje) return metStreepje;
+  return ACHTERVOEGSELS_CAMEL.find(([achter]) => veld.length > achter.length && veld.endsWith(achter) && /[a-z0-9]/i.test(veld[veld.length - achter.length - 1]))?.[1] ?? null;
 }
 
 /** De kolommen van `forces_envelope` als matrix: per rij één station. */

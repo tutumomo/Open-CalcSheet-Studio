@@ -211,6 +211,10 @@
     "description": "Structural calculation sheets with live output, parametric views and a structural report. Part of the OpenAEC family.",
     "femStudio": "FEM Studio (code checks)",
     "femStudioBezig": "starting…",
+    "femLicentie": "FEM Studio license",
+    "femLicentieTekst": "GNU AGPL-3.0; a separate program next to CalcSheet.",
+    "femBron": "Source code of this version",
+    "femBijlagen": "License and third-party notices",
     "femStudioNiet": {
       "geenDesktop": "desktop app only",
       "nietMeegeleverd": "not included in this version",

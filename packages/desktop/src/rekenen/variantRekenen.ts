@@ -22,7 +22,7 @@ import { variantInvoer } from "../store/varianten";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
 import { useDebouncedValue } from "../hooks/useDebouncedValue";
 import { verwezenBladen, type VerwijsBlad } from "./verwijzingen";
-import { metToetsingen, toetsingenNu, toetsVersie } from "./toetsCache";
+import { HEEFT_FEM_BLOK, metToetsingen, toetsingenNu, toetsVersie } from "./toetsCache";
 import { kenFemStudio, legToetsingenVast, useToetsVersie, vraagToetsingen } from "./femToetsing";
 import { hoekmodusNu } from "./doorrekening";
 import { toetsDeel, type VariantUitkomst } from "./varianten";
@@ -208,7 +208,7 @@ export function useVariantUitkomsten(ex: Exemplaar): VariantenUitkomst {
     const omg = { gegevens, exemplaren, taal };
     const vs = stil.varianten;
     // Alleen bij een blad met @toets: per kolom de antwoorden die zijn vorige uitkomst gebruikte.
-    const antwoorden = /^\s*@toets\b/m.test(stil.source) ? toetsingenNu() : {};
+    const antwoorden = HEEFT_FEM_BLOK.test(stil.source) ? toetsingenNu() : {};
     const toets = (id: string) => toetsDeel(stil.source, vorige.current.get(id)?.uitkomst?.toetsen, antwoorden);
     return [
       { id: BLAD, v: verzoekVoor(stil, stil.waarden, omg, toets(BLAD)) },

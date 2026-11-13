@@ -84,7 +84,7 @@ Een project is een lijst bladen. Elke soort staat beschreven in [de documentatie
 
 ## Modules en bibliotheek
 
-Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** en een **ligger van hout of staal** volgens EN 1995-1-1 en EN 1993-1-1, en een **tweepaalspoer** volgens EN 1992-1-1, met de Nederlandse nationale bijlage. De [online modulebibliotheek](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) kan modules toevoegen zonder nieuwe release; voorlopig staat daar de balklaag. Zie [hoe de toetsing van de balklaag werkt](docs/balklaag-toetsing.md) en [die van de poer](docs/tweepaalspoer-toetsing.md).
+Modules zijn kant-en-klare bladen met een invoerscherm: een **houten balklaag** en een **ligger van hout of staal** volgens EN 1995-1-1 en EN 1993-1-1, en een **tweepaalspoer** volgens EN 1992-1-1, met de Nederlandse nationale bijlage. De [online modulebibliotheek](https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio-modules) kan modules toevoegen zonder nieuwe release; voorlopig staat daar de balklaag. Elk ander blad met invoer, ook een module uit die bibliotheek, krijgt naast het uitgewerkte blad een invoerformulier uit zijn eigen velden. Zie [hoe de toetsing van de balklaag werkt](docs/balklaag-toetsing.md) en [die van de poer](docs/tweepaalspoer-toetsing.md).
 
 De tweepaalspoer heeft naast de tekening een 3D-studiemodel. Dat toont de poer, de palen, de kolom en elke staaf, en volgt elk veld en elke blauwe maat meteen. **Add module** toont bij elke keuze een plaatje, van een leeg tekenblad tot een Marimo-notebook.
 
@@ -120,7 +120,7 @@ De app heeft een ingebouwde MCP-server en een REST-API met dezelfde 49 tools: pr
 
 ## Testen en betrouwbaarheid
 
-- **96 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
+- **98 controlescripts** in `scripts/`, gedraaid met `npm run check` bij elke pull request, op Linux en op Windows.
 - **382 uitkomsten tegen een handberekening**: 313 in `scripts/check-formules.mjs` en 69 in `scripts/check-library.mjs`, die laatste waar mogelijk langs een andere weg, zoals het evenwicht narekenen.
 - **Een echte PDF van een gemengd project** in `scripts/check-rapport-pdf.mjs`: evenveel pagina's als vellen, op elke pagina zijn nummer, en elke regel van de inhoudsopgave op de juiste pagina.
 - **Beveiligingsproeven in de echte app**, met de hand gedraaid: `scripts/proef-js-webrtc.mjs` voor scripts in een blad, en `scripts/proef-jupyter-venster.mjs` en `scripts/proef-marimo-venster.mjs` voor notebooks. Ze tellen met een luisterpost wat er naar buiten gaat.

@@ -416,6 +416,26 @@
     "staart": "staart",
     "wisselbalkEnkel": "wisselbalk"
   },
+  "invoer": {
+    "wacht": "Nog niet verstuurd…",
+    "rekent": "Rekent…",
+    "fem": "Open FEM Studio rekent…",
+    "eerst": "De invoervelden verschijnen zodra het blad is doorgerekend.",
+    "geenVelden": "Dit blad toont nu geen invoervelden.",
+    "uitleg": "Rekent door als je een veld verlaat, op Enter drukt of even wacht.",
+    "verbergBeeld": "Tekening verbergen",
+    "toonBeeld": "Tekening tonen"
+  },
+  "vloerOpPalen": {
+    "plattegrond": "Plattegrond",
+    "doorsnede": "Doorsnede bij een paal",
+    "strook": "strook",
+    "kop": "ponskop",
+    "paal": "paal",
+    "klik": "Klik op een blauwe maat om hem te wijzigen.",
+    "oudeMaten": "De tekening toont de laatste geldige maten: een paalafstand en de vloerdikte moeten groter zijn dan nul.",
+    "geenModel": "Vul een paalafstand en een vloerdikte groter dan nul in om de tekening te zien."
+  },
   "afdruk": {
     "titel": "Afdrukvoorbeeld",
     "titelRapport": "Afdrukvoorbeeld rapport",

@@ -211,6 +211,10 @@
     "description": "Constructieve rekenbladen met directe uitwerking, parametrische beelden en een constructief rapport. Onderdeel van de OpenAEC-familie.",
     "femStudio": "FEM Studio (toetsing)",
     "femStudioBezig": "wordt gestart…",
+    "femLicentie": "Licentie FEM Studio",
+    "femLicentieTekst": "GNU AGPL-3.0; een apart programma naast CalcSheet.",
+    "femBron": "Broncode van deze versie",
+    "femBijlagen": "Licentie en vermeldingen van derden",
     "femStudioNiet": {
       "geenDesktop": "alleen in de desktop-app",
       "nietMeegeleverd": "niet meegeleverd in deze versie",

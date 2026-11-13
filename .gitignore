@@ -26,5 +26,8 @@ scripts/last-render.html
 
 # Jupyter-omgeving: gemaakt door scripts/bouw-jupyter-omgeving.mjs
 packages/desktop/src-tauri/jupyter-omgeving/omgeving.*
-# De server van Open FEM Studio: opgehaald door scripts/haal-fem-server.mjs
+# De server van Open FEM Studio: opgehaald door scripts/haal-fem-server.mjs, met de
+# vermeldingen van derden van die versie en de verwijzing naar de bron
 packages/desktop/src-tauri/fem-studio/openaec-mcp-server*
+packages/desktop/src-tauri/fem-studio/THIRD-PARTY-NOTICES.txt
+packages/desktop/src-tauri/fem-studio/SOURCE.txt

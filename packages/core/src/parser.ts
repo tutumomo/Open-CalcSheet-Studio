@@ -8,6 +8,7 @@ import { IFRAME_RE, leesIframe } from './iframeBlok.js';
 import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
 import { FEM_START_RE, leesFemBlok } from './femBlok.js';
+import { KERN_START_RE, leesKernBlok } from './kernBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
@@ -64,6 +65,7 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `@ifcx balklaag` — 3D-beeld uit een IFCX-document; zie ifcxBlok.ts
  *                       `@toets naam = tool … @end` — normtoets door Open FEM Studio; zie toetsBlok.ts
  *                       `@fem naam … @end` — plaatmodel, gerekend door Open FEM Studio; zie femBlok.ts
+ *                       `@kern naam = tool … @end` — rekentool van Open FEM Studio met geneste invoer; zie kernBlok.ts
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
@@ -257,7 +259,8 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t)) {
+      // Ook een `@kern`-blok: een pad met punten (`inputs.input.forces`) is daar geen naam.
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t)) {
         in3d = true;
         return regel;
       }
@@ -310,7 +313,7 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
  * preceding word char.
  */
 function stripDollarSuffix(source: string): string {
-  if (!/^\s*@(?:3d\s*$|fem\b|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+  if (!/^\s*@(?:3d\s*$|fem\b|kern\b|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
   // De teksten in een `@3d`-blok blijven letterlijk (zie alleenInCode).
   let in3d = false;
   return source
@@ -321,7 +324,7 @@ function stripDollarSuffix(source: string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t)) in3d = true;
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t)) in3d = true;
       // Een dollarteken in een adres is geen achtervoegsel van een naam.
       if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
       return regel.replace(/([\p{L}\p{N}_])\$/gu, '$1');
@@ -1289,6 +1292,22 @@ function parseLines(
       const blok = leesFemBlok(femMatch[1], blokRegels, normaliseer3d);
       if (i >= end) blok.fouten.push('@fem-blok zonder @end');
       nodes.push(markHidden({ type: 'fem', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // Kernblok (`@kern naam = tool … @end`): een rekentool van FEM Studio met geneste invoer (kernBlok.ts).
+    const kernMatch = trimmed.match(KERN_START_RE);
+    if (kernMatch) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesKernBlok(kernMatch[1], kernMatch[2], blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('@kern-blok zonder @end');
+      nodes.push(markHidden({ type: 'kern', ...blok }, state));
       if (i < end) i++;
       continue;
     }

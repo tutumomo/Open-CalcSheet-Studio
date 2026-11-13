@@ -448,6 +448,7 @@
   "paneel": {
     "code": "Code",
     "visueel": "Visueel",
+    "invoer": "Invoer",
     "uitwerking": "Uitwerking",
     "regels_one": "{{count}} regel",
     "regels_other": "{{count}} regels"

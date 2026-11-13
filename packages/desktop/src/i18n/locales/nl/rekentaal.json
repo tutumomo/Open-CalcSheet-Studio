@@ -321,6 +321,7 @@
     "tekenblok": "tekenblok",
     "drieDBlok": "3D-beeld",
     "femBlok": "plaatmodel, gerekend door Open FEM Studio",
+    "kernBlok": "rekentool van Open FEM Studio met geneste invoer; de uitkomst komt terug als getallen",
     "iframeBlok": "externe pagina",
     "jsBlok": "JavaScript",
     "keuzelijst": "keuzelijst",

@@ -20,7 +20,7 @@ import type { Invoerveld } from "../components/calc/bladVersie.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
 import { heeftEenheden } from "../store/canvasBlad.ts";
 import { reeksWaarden, variantInvoer, type Variant, type Varianten, type Zoekopdracht } from "../store/varianten.ts";
-import { metToetsingen, toetsHashes, verzamelVerzoeken } from "./toetsCache.ts";
+import { HEEFT_FEM_BLOK, metToetsingen, toetsHashes, verzamelVerzoeken } from "./toetsCache.ts";
 import { scopeMetVerwijzingen, type VerwijsBlad } from "./verwijzingen.ts";
 
 /** Wat de tabel van één kolom laat zien. */
@@ -216,10 +216,10 @@ export function papierTabellen(
  * Het deel van de sleutel van een kolom dat van de antwoorden van FEM Studio afhangt:
  * alleen de antwoorden voor de blokken die de vorige uitkomst van die kolom had
  * (`hashes`). Zo rekent bij een nieuw antwoord alleen de kolom opnieuw die het gebruikt,
- * niet de hele tabel. Zonder `@toets` in de tekst leeg; nog niet doorgerekend: "?".
+ * niet de hele tabel. Zonder `@toets`, `@fem` of `@kern` in de tekst leeg; nog niet doorgerekend: "?".
  */
 export function toetsDeel(source: string, hashes: readonly string[] | undefined, antwoorden: Record<string, ToetsAntwoord>): string {
-  if (!/^\s*@toets\b/m.test(source)) return "";
+  if (!HEEFT_FEM_BLOK.test(source)) return "";
   if (!hashes) return "?";
   return JSON.stringify(hashes.map((h) => {
     const a = antwoorden[h];
@@ -237,7 +237,7 @@ export function variantToetsHashes(
   ex: { source: string; waarden: Record<string, string>; varianten?: Varianten },
   scope: Record<string, unknown>,
 ): string[] {
-  if (!ex.varianten?.lijst.length || !/^\s*@toets\b/m.test(ex.source)) return [];
+  if (!ex.varianten?.lijst.length || !HEEFT_FEM_BLOK.test(ex.source)) return [];
   const uit = new Set<string>();
   for (const v of ex.varianten.lijst) {
     try {

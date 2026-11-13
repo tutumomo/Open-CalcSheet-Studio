@@ -1,6 +1,32 @@
 {
-  "versie": "2026.45.0",
-  "repo": "OpenAEC-Foundation/open-fem-studio",
-  "tag": "v2026.45.0",
-  "bestanden": {}
+  "versie": "2026.46.1",
+  "repo": "OpenAEC-Foundation/Open-CalcSheet-Studio",
+  "tag": "fem-server-2026.46.1",
+  "herkomst": {
+    "repo": "OpenAEC-Foundation/open-fem-studio",
+    "tag": "v2026.46.1"
+  },
+  "bestanden": {
+    "windows-x64": {
+      "naam": "openaec-mcp-server_2026.46.1_windows-x64.exe",
+      "sha256": "5de627dde7c6eedc6e29d22e5bbd248d492a4bb9a87b7df33f5cca8ae391e047"
+    },
+    "macos-universal": {
+      "naam": "openaec-mcp-server_2026.46.1_macos-universal",
+      "sha256": "adfb283282137733042e9ae77316d3ba6145a688177371137e4243620af40612"
+    },
+    "linux-x64": {
+      "naam": "openaec-mcp-server_2026.46.1_linux-x64",
+      "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938"
+    }
+  },
+  "bron": {
+    "naam": "openaec-mcp-server_2026.46.1_source.tar.gz",
+    "sha256": "1b353b5a0814ebc416f5d49c29a00e6f28314f70f83b0826825cfb84c43562e2",
+    "url": "https://github.com/OpenAEC-Foundation/Open-CalcSheet-Studio/releases/download/fem-server-2026.46.1/openaec-mcp-server_2026.46.1_source.tar.gz"
+  },
+  "vermeldingen": {
+    "naam": "openaec-mcp-server_2026.46.1_THIRD-PARTY-NOTICES.txt",
+    "sha256": "c4cb07ceb9ccae61a9066f88e72df50f60f3994c4b3a6e092aac92205a19b18c"
+  }
 }

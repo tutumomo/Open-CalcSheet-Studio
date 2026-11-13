@@ -134,6 +134,40 @@ m_ks = -fem_strook(vloer; "UGT"; "mx"; 5 m; 3.75 m; 5 m; 6.25 m)
 Het antwoord wordt opgezocht en vastgelegd zoals bij `@toets` hieronder; zonder antwoord
 staat het blok als NIET GEREKEND, nooit met een uitkomst.
 
+## Een rekentool met geneste invoer: `@kern`
+
+Een rekentool van Open FEM Studio waarvan de uitkomst uit getallen bestaat, zoals de
+rekenkernen van `solve_native_fem` (het drielagenmodel voor de wapening van een plaat, de
+scheurwijdte volgens NEN-EN 1992-1-1 7.3.4). Elke regel is `pad = uitdrukking`; een pad
+met punten bouwt de geneste invoer op. Daarna rekent het blad verder met de getallen uit
+het antwoord. Alles staat in [fem-kernen.md](fem-kernen.md); in het kort:
+
+```text
+@kern drie = solve_native_fem
+  inputs.kind = "threeLayer"
+  inputs.input.forces = {nx: 0, ny: 0, nxy: 0, mx: m_x/(1 kN), my: 0, mxy: 0, vx: 0, vy: 0}
+  inputs.input.thicknessMm = h
+  inputs.input.topSkinMm = 2*a_b
+  inputs.input.bottomSkinMm = 2*a_o
+  inputs.input.topReinforcement = {asX: 524, asY: 524}
+  inputs.input.bottomReinforcement = {asX: 754, asY: 754}
+  inputs.input.fcdMpa = f_cd
+  inputs.input.fydMpa = f_yd
+  inputs.input.nuPrime = 0.88
+  inputs.input.compressionModel = "ec2AnnexF"
+@end
+A_sx = drie.result.bottom.requiredAsXmm2PerM*mm^2
+```
+
+- Eenheden volgen het einde van de naam van het veld (`thicknessMm`, `fcdMpa`,
+  `length_m`); een veld zonder eenheid in zijn naam krijgt een getal.
+- Met `per k = 1 : n` doet het blok een reeks aanroepen, en is elke uitkomst een vector
+  met een waarde per aanroep. Een k zonder velden wordt overgeslagen.
+- `lijst[k].veld = …` met `#for … #loop` bouwt een lijst van objecten op.
+- Het blok geeft geen oordeel en rekent niets zelf. Het antwoord wordt opgezocht en
+  vastgelegd zoals bij `@toets`; zonder antwoord staat het blok als NIET GEREKEND en
+  bestaan de uitkomsten niet.
+
 ## Normtoetsen: `@toets`
 
 Een normtoets komt uit één bron: Open FEM Studio, dat headless in CalcSheet zit. Een

@@ -15,6 +15,7 @@ import Preview from "./components/calc/Preview";
 import SplitPane from "./components/calc/SplitPane";
 import ProjectBrowser from "./components/calc/ProjectBrowser";
 import { designerVoor } from "./components/calc/designerKeuze";
+import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
 import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
@@ -159,7 +160,17 @@ export default function App() {
   const { addRecentFile } = useRecentFiles();
   const { openen } = useBestandActies();
   useSneltoetsen();
-  useMcpBrug({ splitMode, setSplitMode, activeView, setActiveView, setTheme });
+  // Een blad waar je de rekentekst schrijft of leest (een eigen rekenblad, de demo van de
+  // rekentaal) opent met de code; het invoerscherm is daar een tab erbij. Ook als zo'n blad
+  // tijdens het typen zijn eerste invoerveld krijgt, blijft de editor staan waarin je typt.
+  // Tot je zelf een weergave kiest. Een module opent met haar invoerscherm. De keuze valt
+  // bij het openen van een blad (`blad` is het blad waarvoor ze geldt).
+  const [opening, setOpening] = useState<{ blad: string; code: boolean }>({ blad: "", code: false });
+  const kiesSplitMode = useCallback((m: "cv" | "cu" | "vu") => {
+    setOpening((o) => ({ ...o, code: false }));
+    setSplitMode(m);
+  }, []);
+  useMcpBrug({ splitMode, setSplitMode: kiesSplitMode, activeView, setActiveView, setTheme });
 
   const printBezig = usePrintStore((s) => s.bezig);
   const printVoorbeeld = usePrintStore((s) => s.voorbeeld);
@@ -231,7 +242,13 @@ export default function App() {
     if ((printSoort === "rapport") !== (activeId === RAPPORT_ID)) sluitVoorbeeld();
   }, [printVoorbeeld, printSoort, activeId, sluitVoorbeeld]);
 
-  const designerPane = designerVoor(source);
+  // Het parametrische beeld van het blad. Een rekenblad zonder eigen beeld krijgt het
+  // invoerscherm uit zijn eigen velden, bij een module met een beeld erboven
+  // (components/calc/invoer/invoerScherm.tsx).
+  const eigenBeeld = designerVoor(source);
+  const invoerScherm = eigenBeeld || !actief ? null : invoerSchermVoor(actief);
+  const designerPane = eigenBeeld ?? invoerScherm?.scherm ?? null;
+  const opentMetScherm = eigenBeeld !== null || !!invoerScherm?.opent;
   // Het projectgegevens-formulier is geen rekenblad: geen editor, geen
   // uitwerking, geen splitsing — alleen het formulier.
   const toontProjectGegevens = activeId === PROJECT_ID;
@@ -261,14 +278,24 @@ export default function App() {
   const jupyterBlad = actief !== null && isJupyterBlad(actief);
   // En een Marimo-blad: ook alleen zijn omgeving.
   const marimoBlad = actief !== null && isMarimoBlad(actief);
-  const mode = hasDesigner ? splitMode : "cu";
+  // Alleen bij het openen van een blad: wat het daarna krijgt, komt erbij als tab. Tijdens
+  // het tekenen beslist, niet in een effect: anders staat het invoerscherm er één beeld lang.
+  let codeBlijft = opening.code;
+  if (opening.blad !== activeId) {
+    codeBlijft = !(hasDesigner && opentMetScherm);
+    setOpening({ blad: activeId, code: codeBlijft });
+  }
+  const mode = hasDesigner && !codeBlijft ? splitMode : "cu";
   const regels = source.split("\n").length;
   const codePaneel = (
     <WerkPaneel titel={t("paneel.code")} info={t("paneel.regels", { count: regels })}>
       <Editor />
     </WerkPaneel>
   );
-  const beeldPaneel = <WerkPaneel titel={t("paneel.visueel")} papier>{designerPane}</WerkPaneel>;
+  // Het formulier zonder beeld heet naar wat het is: invoer.
+  const beeldPaneel = (
+    <WerkPaneel titel={invoerScherm && !invoerScherm.metBeeld ? t("paneel.invoer") : t("paneel.visueel")} papier>{designerPane}</WerkPaneel>
+  );
   const uitwerkingPaneel = (
     <WerkPaneel titel={t("paneel.uitwerking")} info={actief ? <UcInfo blad={actief.id} /> : null} papier>
       <Preview />
@@ -283,7 +310,7 @@ export default function App() {
   // melding als de module intussen een nieuwere rekenversie heeft.
   const kiesWeergave = (m: "cv" | "cu" | "vu") => {
     sluitVoorbeeld();
-    setSplitMode(m);
+    kiesSplitMode(m);
     setCanvasCode(true);
     setVariantenOpen(false);
   };

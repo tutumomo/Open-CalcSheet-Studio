@@ -12,6 +12,7 @@ export {
   eenheidVanVeld, toetsToolToegestaan, TOETS_UITGESLOTEN, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
 } from './toetsBlok.js';
 export { FEM_START_RE, FEM_TOOL, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, type FemRekenaar } from './femBlok.js';
+export { KERN_START_RE, leesKernBlok, bouwKern, renderKern, naarKernSchema, kernAanroepen, kernVerzoekBewaard, type KernRekenaar } from './kernBlok.js';
 export {
   maakFemNet, femRekenmodel, femArgumenten, femBewaar, femParen, femSteunknopen, femSomLast, FEM_MAX_KNOPEN,
   type FemInvoer, type FemNet, type FemPlaat, type FemVeer, type FemLijn, type FemLast, type FemGeval,

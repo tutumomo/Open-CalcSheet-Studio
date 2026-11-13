@@ -1,8 +1,9 @@
 /**
- * De verzoeken van `@toets`- en `@fem`-blokken naar Open FEM Studio sturen, en de
- * antwoorden bij het blad vastleggen. Een `@fem`-blok stuurt een verzoek per
+ * De verzoeken van `@toets`-, `@fem`- en `@kern`-blokken naar Open FEM Studio sturen, en
+ * de antwoorden bij het blad vastleggen. Een `@fem`-blok stuurt een verzoek per
  * belastinggeval, met zijn rekenmodel (`bewaar`): daaruit volgen de argumenten, en het
- * antwoord wordt compact bewaard met het raster erbij (femNet.ts in de kern).
+ * antwoord wordt compact bewaard met het raster erbij (femNet.ts in de kern). Een
+ * `@kern`-blok met `per` stuurt één verzoek met een reeks aanroepen (kernBlok.ts).
  *
  * De werkruimte rekent een blad in de rekenworker door met `toetsModus: "vragen"`.
  * Een blok zonder antwoord geeft dan een verzoek mee (doorrekening.ts). Hier gaat
@@ -23,6 +24,8 @@ import {
   alsAntwoord,
   femBewaar,
   femVerzoekArgumenten,
+  kernAanroepen,
+  kernVerzoekBewaard,
   schemaHash,
   type ToetsHerkomst,
   type ToetsVerzoek,
@@ -31,6 +34,7 @@ import {
 import { femStudioAanroep, femStudioStatus, femStudioTools, FemFout } from "./femStudio";
 import {
   abonneerToetsingen,
+  HEEFT_FEM_BLOK,
   heeftToetsAntwoord,
   nieuwVastTeLeggen,
   toetsHashes,
@@ -117,10 +121,12 @@ export function vraagToetsingen(verzoeken: readonly ToetsVerzoek[]): Promise<voi
       try {
         // Een @fem-blok geeft zijn rekenmodel mee (femBlok.ts): daaruit volgen de
         // argumenten, en het wordt met het antwoord compact bewaard, raster en al.
-        const ruw = await femStudioAanroep(v.tool, femVerzoekArgumenten(v));
+        // Een @kern-blok met een reeks doet zijn aanroepen na elkaar (kernBlok.ts); de
+        // antwoorden gaan samen onder de ene hash van het blok.
+        const ruw = v.bewaar ? await femStudioAanroep(v.tool, femVerzoekArgumenten(v)) : await kernAanroepen(v, femStudioAanroep);
         const vast: VastgelegdeToets = {
           tool: v.tool,
-          verzoek: (v.bewaar as unknown as Record<string, unknown> | undefined) ?? v.argumenten,
+          verzoek: (v.bewaar as unknown as Record<string, unknown> | undefined) ?? kernVerzoekBewaard(v),
           uitkomst: v.bewaar ? femBewaar(v.bewaar, ruw) : ruw,
           datum: new Date().toISOString(),
           herkomst: herkomstVoor(await femNu(), v.tool),
@@ -195,7 +201,7 @@ export async function werkToetsingenBij(ids: readonly string[] | null, maxMs = 1
     const scope = projectScope(gegevens);
     const verzoeken: ToetsVerzoek[] = [];
     for (const ex of exemplaren) {
-      if ((ids && !ids.includes(ex.id)) || !/^\s*@(toets|fem)\b/m.test(ex.source)) continue;
+      if ((ids && !ids.includes(ex.id)) || !HEEFT_FEM_BLOK.test(ex.source)) continue;
       // Het blad zelf, en zijn varianten als die op papier komen (docs/varianten.md).
       const vs = ex.varianten;
       const invoeren = [ex.waarden, ...(vs?.opPapier ? vs.lijst.map((v) => variantInvoer(ex.waarden, v, vs.velden)) : [])];

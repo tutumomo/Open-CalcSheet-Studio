@@ -6,6 +6,7 @@ import { renderIframe } from './iframeBlok.js';
 import { renderIfcxBlok } from './ifcxBlok.js';
 import { renderToets, TOETS_CSS } from './toetsBlok.js';
 import { renderFem, FEM_CSS } from './femBlok.js';
+import { renderKern, KERN_CSS } from './kernBlok.js';
 import { renderJsBlok } from './jsBlok.js';
 
 // ─── KaTeX rendering ────────────────────────────────────────────────
@@ -309,6 +310,9 @@ function renderNode(node: EvaluatedNode): string {
 
     case 'fem':
       return renderFem(node);
+
+    case 'kern':
+      return renderKern(node);
 
     case 'js':
       return renderJsBlok(node);
@@ -696,6 +700,7 @@ export const defaultStyles = `
 
 /* @toets: een normtoets door Open FEM Studio (toetsBlok.ts). */${TOETS_CSS}
 /* @fem: een plaatmodel, gerekend door Open FEM Studio (femBlok.ts). */${FEM_CSS}
+/* @kern: een rekentool van Open FEM Studio met geneste invoer (kernBlok.ts). */${KERN_CSS}
 /* @iframe: een kader met het adres. De app zet er een iframe in als de gebruiker
    het heeft bevestigd; de maat staat vast, geladen of niet. */
 .calc-iframe {

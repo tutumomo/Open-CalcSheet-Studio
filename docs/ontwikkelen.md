@@ -82,12 +82,35 @@ over stdin/stdout. Het ontwerp staat in
      `%LOCALAPPDATA%\Open FEM Studio\openaec-mcp-server.exe`.
 
   Is er geen server, dan toont Instellingen › Over "niet meegeleverd".
-- **Meeleveren.** `src-tauri/fem-studio/versie.json` pint de versie, en per platform het
-  bestand uit de release van FEM Studio met zijn sha256.
-  - `node scripts/haal-fem-server.mjs` haalt het op met `gh` en `GH_TOKEN`; in de
-    workflow is dat het secret `FEM_STUDIO_TOKEN`.
-  - Zonder bestand of token bouwt de app zonder server. Tot FEM Studio de server per
-    platform als release-bestand heeft (FEM Studio #298), is dat altijd zo.
+- **Meeleveren.** `src-tauri/fem-studio/versie.json` pint de versie, per platform de
+  server met zijn sha256, het bronarchief van precies die versie en de vermeldingen
+  van derden. De server heet `openaec-mcp-server_<versie>_<platform>` (`windows-x64`
+  met `.exe`, `macos-universal`, `linux-x64`), het bronarchief
+  `openaec-mcp-server_<versie>_source.tar.gz`.
+  - **De server valt onder de AGPL-3.0** en gaat nooit zonder zijn bron mee. De
+    bestanden staan daarom in een openbare release van deze repository,
+    `fem-server-<versie>`; de repository van FEM Studio zelf blijft privé.
+  - `node scripts/pin-fem-server.mjs vJJJJ.W.N` haalt de bestanden uit de release van
+    FEM Studio (`gh` met toegang tot die repository), controleert de sha256 tegen
+    `SHA256SUMS` en toont wat er openbaar zou worden. Pas met `--publiceer` maakt het
+    de release `fem-server-<versie>` en schrijft het `versie.json`.
+  - `node scripts/haal-fem-server.mjs` haalt de server voor dit platform en de
+    vermeldingen uit die openbare release, controleert de sha256 en schrijft
+    `SOURCE.txt`. Daar is geen geheim voor nodig, ook niet in de workflows.
+  - Zonder bestand voor het platform bouwt de app zonder server; de log waarschuwt en
+    de release-tekst zegt het. Een server zonder bronarchief in `versie.json` laat
+    de bouw falen.
+  - De server gaat ongewijzigd mee als resource, met de handtekening van FEM Studio.
+    De workflow controleert die vóór het bouwen, en de controles zoeken hem daarna in
+    de installers, met de licentie, de vermeldingen en `SOURCE.txt` ernaast. Een
+    release zet het bronarchief naast de installers. Zie
+    [ondertekening.md](ondertekening.md#de-server-van-open-fem-studio).
+- **Een nieuwe versie van FEM Studio meeleveren:** een release van FEM Studio met de
+  losse servers en het bronarchief, dan `node scripts/pin-fem-server.mjs vJJJJ.W.N`
+  (nalezen wat er openbaar wordt), daarna met `--publiceer`,
+  `node scripts/haal-fem-server.mjs` en `node scripts/check-fem-server.mjs`, en
+  `versie.json` committen. Een proefbouw met `build.yml` op de tak laat zien of hij
+  meegaat en ondertekend is; de samenvatting van de run zegt het per platform.
 - **Toetsen:**
 
   ```bash

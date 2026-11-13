@@ -28,6 +28,7 @@ const FOLD_RULES: FoldRule[] = [
   { open: /^\s*@svg\b/, close: /^\s*@end\b/ },
   { open: /^\s*@3d\b/, close: /^\s*@end\b/ },
   { open: /^\s*@fem\b/, close: /^\s*@end\b/ },
+  { open: /^\s*@kern\b/, close: /^\s*@end\b/ },
   { open: /^\s*@js\b/, close: /^\s*@end\s*$/ },
   { open: /^\s*@select\b/, close: /^\s*@end\b/ },
   { open: /^\s*#if\b/, close: /^\s*#end\s+if\b/ },
@@ -344,6 +345,10 @@ const STATIC_COMPLETIONS: Aanvulling[] = [
   {
     label: "@fem", type: "namespace", sleutel: "femBlok",
     apply: "@fem vloer\n  materiaal 33 GPa; 0.2\n  maas 0.5 m\n  plaat 0; 0; 10 m; 10 m; 250 mm\n  veren 0; 0; 3; 3; 5 m; 5 m; 200 MN/m; 400 mm\n  geval G\n    eigengewicht 25 kN/m^3\n  geval Q\n    vlaklast 5 kN/m^2\n  combinatie UGT = 1.2*G + 1.5*Q\n@end",
+  },
+  {
+    label: "@kern", type: "namespace", sleutel: "kernBlok",
+    apply: "@kern drie = solve_native_fem\n  inputs.kind = \"threeLayer\"\n  inputs.input.forces = {nx: 0, ny: 0, nxy: 0, mx: 50, my: 0, mxy: 0, vx: 0, vy: 0}\n  inputs.input.thicknessMm = 250 mm\n  inputs.input.topSkinMm = 80 mm\n  inputs.input.bottomSkinMm = 84 mm\n  inputs.input.topReinforcement = {asX: 524, asY: 524}\n  inputs.input.bottomReinforcement = {asX: 754, asY: 754}\n  inputs.input.fcdMpa = 20 N/mm^2\n  inputs.input.fydMpa = 435 N/mm^2\n  inputs.input.nuPrime = 0.88\n  inputs.input.compressionModel = \"ec2AnnexF\"\n@end",
   },
   { label: "@iframe", type: "namespace", sleutel: "iframeBlok", apply: "@iframe https:// hoogte=120mm" },
   { label: "@js", type: "namespace", sleutel: "jsBlok", apply: "@js hoogte=80mm titel=\"\"\n\n@end" },

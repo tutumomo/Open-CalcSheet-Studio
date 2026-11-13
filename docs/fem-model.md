@@ -199,7 +199,12 @@ per belastinggeval Σ last en Σ R (het evenwicht), en per geval en combinatie d
 
 - **Fysisch niet-lineair** (gescheurd beton met wapeningslagen): `solve_open_fem_3d`
   weigert een model met platen dat niet lineair is. Het blok kent daarom alleen
-  `analyse lineair`. Het is er wel op gebouwd: een rekengeval is nu een belastinggeval, en
+  `analyse lineair`; een andere analyse, zoals `analyse fysisch-niet-lineair`, laat het
+  blok als niet gerekend staan met de reden erbij, zodat een blad die keuze al kan
+  aanbieden zonder ooit een lineaire uitkomst onder een andere naam te tonen. De
+  rekenkernen van `solve_native_fem` rekenen een gewapende plaat ook nog niet
+  niet-lineair: zie [fem-kernen.md](fem-kernen.md), "Fysisch niet-lineair rekenen van een
+  plaat". Het blok is er wel op gebouwd: een rekengeval is nu een belastinggeval, en
   combinaties zijn een lineaire som. Voor een niet-lineaire berekening wordt elke
   combinatie zelf een rekengeval met zijn gefactoriseerde lasten, zonder optellen. Wat
   daarvoor in FEM Studio nodig is: een tool (of `analysis` in `solve_open_fem_3d`) die een

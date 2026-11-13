@@ -20,7 +20,7 @@ import { geheimActies } from "../../tauri/erpnextGeheim";
 import { version as pakketVersie } from "../../../package.json";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
-import { femStudioStatus, type FemStatus } from "../../rekenen/femStudio";
+import { femStudioLicentie, femStudioStatus, type FemLicentie, type FemStatus } from "../../rekenen/femStudio";
 
 const THEME_OPTIONS = [
   { value: "light",               labelKey: "appearance.light",             swatches: ["#F1EEEA", "#FFFFFF", "#D97706", "#2A2A32"] },
@@ -586,6 +586,7 @@ function AboutTabContent() {
   const [versie, setVersie] = useState(pakketVersie);
   // FEM Studio pas vragen als deze tab opent: de vraag start de server.
   const [fem, setFem] = useState<FemStatus | null>(null);
+  const [femLicentie, setFemLicentie] = useState<FemLicentie | null>(null);
   useEffect(() => {
     import("@tauri-apps/api/app")
       .then(({ getVersion }) => getVersion())
@@ -594,6 +595,9 @@ function AboutTabContent() {
     let weg = false;
     femStudioStatus().then((s) => {
       if (!weg) setFem(s);
+    });
+    femStudioLicentie().then((l) => {
+      if (!weg) setFemLicentie(l);
     });
     return () => {
       weg = true;
@@ -604,12 +608,52 @@ function AboutTabContent() {
     : fem.beschikbaar
       ? fem.versie || "?"
       : t(`about.femStudioNiet.${fem.code ?? "startMislukt"}`);
+  // De bron hoort bij één versie: alleen tonen bij de server die meegeleverd is.
+  const femBron = fem?.beschikbaar && femLicentie?.adres && femLicentie.versie === fem.versie ? femLicentie.adres : null;
+  const femBijlage = fem?.beschikbaar ? femLicentie?.licentie ?? null : null;
+  const openBron = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!femBron) return;
+    try {
+      const { openUrl } = await import("@tauri-apps/plugin-opener");
+      await openUrl(femBron);
+    } catch {
+      window.open(femBron, "_blank", "noopener,noreferrer");
+    }
+  };
+  const toonBijlage = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    if (!femBijlage) return;
+    try {
+      const { revealItemInDir } = await import("@tauri-apps/plugin-opener");
+      await revealItemInDir(femBijlage);
+    } catch {
+      // Zonder de map blijft het pad in de tooltip staan.
+    }
+  };
   return (
     <div className="settings-section">
       <h3>{t("about.appName")}</h3>
       <div style={{ fontSize: "var(--oa-size-body)", lineHeight: 1.8 }}>
         <p><strong>{t("about.version")}:</strong> {versie}</p>
         <p title={fem?.reden ?? fem?.pad ?? undefined}><strong>{t("about.femStudio")}:</strong> {femTekst}</p>
+        {fem?.beschikbaar && (
+          <p>
+            <strong>{t("about.femLicentie")}:</strong> {t("about.femLicentieTekst")}
+            {femBron && (
+              <>
+                {" "}
+                <a href={femBron} onClick={openBron} title={femLicentie?.bron ?? undefined}>{t("about.femBron")}</a>
+              </>
+            )}
+            {femBijlage && (
+              <>
+                {" "}
+                <a href="#" onClick={toonBijlage} title={femBijlage}>{t("about.femBijlagen")}</a>
+              </>
+            )}
+          </p>
+        )}
         <p><strong>{t("about.framework")}:</strong> Tauri + React + TypeScript</p>
         <p><strong>{t("about.license")}:</strong> LGPL-3.0</p>
         <p style={{ marginTop: 8, color: "var(--theme-dialog-content-secondary)" }}>

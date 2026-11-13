@@ -159,12 +159,19 @@ export function metToetsingen(opties: EvalOpties, modus: "vragen" | "lezen", taa
 }
 
 /**
- * Elk blok dat FEM Studio iets vraagt: een `@toets`-blok (één verzoek, één hash) of een
+ * Staat er in de rekentekst een blok dat FEM Studio iets vraagt (`@toets`, `@fem` of
+ * `@kern`)? Zonder zo'n blok hangt een blad niet van de antwoorden af.
+ */
+export const HEEFT_FEM_BLOK = /^\s*@(toets|fem|kern)\b/m;
+
+/**
+ * Elk blok dat FEM Studio iets vraagt: een `@toets`- of `@kern`-blok (één verzoek, één
+ * hash; bij een `@kern`-blok met `per` zit de hele reeks in dat ene verzoek) of een
  * `@fem`-blok (een verzoek en een hash per belastinggeval). Zonder hash: een fout in het blok.
  */
 function elkeToets(nodes: readonly EvaluatedNode[], doe: (verzoeken: ToetsVerzoek[], hashes: string[]) => void) {
   for (const n of nodes) {
-    if (n.type === "toets") doe(n.verzoek ? [n.verzoek] : [], n.hash ? [n.hash] : []);
+    if (n.type === "toets" || n.type === "kern") doe(n.verzoek ? [n.verzoek] : [], n.hash ? [n.hash] : []);
     else if (n.type === "fem") doe(n.verzoeken ?? [], n.hashes ?? []);
     const kinderen = (n as { children?: EvaluatedNode[] }).children;
     if (Array.isArray(kinderen)) elkeToets(kinderen, doe);

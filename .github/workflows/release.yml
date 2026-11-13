@@ -115,6 +115,7 @@ jobs:
       contents: write
     uses: ./.github/workflows/release-concept.yml
     with:
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
       tag: ${{ needs.voorbereiden.outputs.tag }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
       versie: ${{ needs.voorbereiden.outputs.versie }}
@@ -125,6 +126,8 @@ jobs:
         Open desktop app for structural calculations written as calculation text, with direct IFC 4x3 / IFCX export.
 
         ${{ needs.voorbereiden.outputs.wijzigingen }}
+
+        ${{ needs.bouwen.outputs.fem-studio-tekst }}
 
         ### Downloads
         - **Windows (System)**: Download the `*_x64-setup.exe` installer for system-wide installation (requires admin)
@@ -137,13 +140,14 @@ jobs:
     secrets: inherit
 
   controleren:
-    needs: [voorbereiden, concept]
+    needs: [voorbereiden, bouwen, concept]
     permissions:
       contents: write
     uses: ./.github/workflows/release-controleren.yml
     with:
       tag: ${{ needs.voorbereiden.outputs.tag }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
     secrets: inherit
 
   publiceren:
@@ -165,11 +169,12 @@ jobs:
   # De werkelijk aangeboden downloads nog een keer. Dit kan niets meer tegenhouden,
   # maar een rode run hier betekent dat er iets mis is met wat openbaar staat.
   na-publicatie:
-    needs: [voorbereiden, publiceren]
+    needs: [voorbereiden, bouwen, publiceren]
     permissions:
       contents: write
     uses: ./.github/workflows/release-controleren.yml
     with:
       tag: ${{ needs.voorbereiden.outputs.tag }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
     secrets: inherit

@@ -3,11 +3,23 @@
 # Faalt bij een ontbrekende, ongeldige of niet-getijdstempelde handtekening, bij een
 # andere uitgever, en als WebView2Loader.dll niet is meegekomen.
 #
+# De server van Open FEM Studio (fem-studio\openaec-mcp-server.exe) is een resource:
+# Tauri tekent hem niet, FEM Studio heeft hem al getekend, met dezelfde uitgever. Staat
+# hij in de installatie, dan moet die handtekening kloppen. Ontbreekt hij, dan is dat
+# een fout als FEM_STUDIO_VEREIST=true (de bouw had hem opgehaald), anders een
+# waarschuwing: zonder server in fem-studio/versie.json bouwt de app bewust zonder.
+# De server valt onder de AGPL-3.0 en gaat nooit alleen mee: naast hem moeten de
+# licentie, de vermeldingen van derden en de verwijzing naar de bron staan.
+#
 # Gebruik: pwsh scripts/release/windows-controleren.ps1 -Map <map> -Aantal <installers>
-[CmdletBinding()]
+#          pwsh scripts/release/windows-controleren.ps1 -Bestand <bestand>
+# De tweede vorm controleert alleen dat bestand, met de eigen uitgever: de FEM-server
+# voor het bouwen.
+[CmdletBinding(DefaultParameterSetName = 'Map')]
 param(
-  [Parameter(Mandatory)][string]$Map,
-  [Parameter(Mandatory)][int]$Aantal
+  [Parameter(Mandatory, ParameterSetName = 'Map')][string]$Map,
+  [Parameter(Mandatory, ParameterSetName = 'Map')][int]$Aantal,
+  [Parameter(Mandatory, ParameterSetName = 'Bestand')][string]$Bestand
 )
 $ErrorActionPreference = 'Stop'
 
@@ -15,6 +27,7 @@ $ErrorActionPreference = 'Stop'
 $Uitgever = 'CN=Impertio Studio B.V.'
 $Microsoft = 'CN=Microsoft Corporation'
 $Programma = 'open-calcsheet-studio.exe'
+$FemServer = 'openaec-mcp-server.exe'
 
 $script:signtool = Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin\*\x64\signtool.exe' |
   Where-Object { $_.Directory.Parent.Name -match '^\d+\.\d+\.\d+\.\d+$' } |
@@ -45,6 +58,20 @@ function Test-Handtekening([string]$Label, [string]$Pad, [string[]]$Toegestaan) 
     Write-Host "::group::signtool verify /pa /v $Label"; Write-Host $uit; Write-Host '::endgroup::'
   }
   $script:regels.Add("| $Label | $(if ($goed) { 'OK' } else { 'FOUT' }) | $($sig.Status) | $ondertekenaar | $tijdstempel |")
+}
+
+function Schrijf-Samenvatting {
+  $samenvatting = @('## Authenticode', '', '| bestand | uitkomst | status | ondertekenaar | tijdstempel |', '|---|---|---|---|---|') + $script:regels
+  $samenvatting | Write-Host
+  if ($env:GITHUB_STEP_SUMMARY) { $samenvatting -join "`n" | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8 }
+  if ($script:fouten -gt 0) { throw "$($script:fouten) bestand(en) zonder geldige handtekening met tijdstempel van de juiste uitgever" }
+}
+
+if ($PSCmdlet.ParameterSetName -eq 'Bestand') {
+  Test-Handtekening (Split-Path -Leaf $Bestand) $Bestand @($Uitgever)
+  Schrijf-Samenvatting
+  Write-Host "Handtekening in orde: $Bestand"
+  exit 0
 }
 
 $installers = @(Get-ChildItem -LiteralPath $Map -Filter '*-setup.exe' -File)
@@ -79,7 +106,35 @@ foreach ($installer in $installers) {
     # Vaste eis: de loader moet mee, anders start de app niet op een schone Windows.
     Test-Handtekening "$kort/WebView2Loader.dll" (Join-Path $doel 'WebView2Loader.dll') @($Microsoft, $Uitgever)
 
-    $bekend = @($Programma, 'uninstall.exe', 'WebView2Loader.dll')
+    # De server van Open FEM Studio, als resource meegeleverd.
+    $server = Join-Path (Join-Path $doel 'fem-studio') $FemServer
+    if (Test-Path -LiteralPath $server) {
+      Test-Handtekening "$kort/fem-studio/$FemServer" $server @($Uitgever)
+      foreach ($naam in 'LICENSE-AGPL-3.0.txt', 'THIRD-PARTY-NOTICES.txt', 'SOURCE.txt') {
+        $bijlage = Join-Path (Join-Path $doel 'fem-studio') $naam
+        $aanwezig = (Test-Path -LiteralPath $bijlage) -and ((Get-Item -LiteralPath $bijlage).Length -gt 0)
+        if ($aanwezig -and $naam -eq 'LICENSE-AGPL-3.0.txt') {
+          $aanwezig = [bool](Select-String -LiteralPath $bijlage -SimpleMatch 'GNU AFFERO GENERAL PUBLIC LICENSE' -Quiet)
+        }
+        if ($aanwezig -and $naam -eq 'SOURCE.txt') {
+          $aanwezig = [bool](Select-String -LiteralPath $bijlage -SimpleMatch '_source.tar.gz' -Quiet)
+        }
+        if ($aanwezig) {
+          $script:regels.Add("| $kort/fem-studio/$naam | OK | naast de FEM-server | | |")
+        } else {
+          $script:fouten++
+          $script:regels.Add("| $kort/fem-studio/$naam | FOUT | ontbreekt of klopt niet naast de FEM-server | | |")
+        }
+      }
+    } elseif ($env:FEM_STUDIO_VEREIST -eq 'true') {
+      $script:fouten++
+      $script:regels.Add("| $kort/fem-studio/$FemServer | FOUT | ontbreekt, maar de bouw had hem opgehaald | | |")
+    } else {
+      Write-Host "::warning::FEM Studio is niet meegeleverd in $($installer.Name)"
+      $script:regels.Add("| $kort/fem-studio/$FemServer | niet meegeleverd | | | |")
+    }
+
+    $bekend = @($Programma, 'uninstall.exe', 'WebView2Loader.dll', $FemServer)
     $overig = Get-ChildItem -LiteralPath $doel -Recurse -File -Include '*.exe', '*.dll' |
       Where-Object { $bekend -notcontains $_.Name }
     foreach ($bestand in $overig) {
@@ -103,8 +158,5 @@ foreach ($installer in $installers) {
   }
 }
 
-$samenvatting = @('## Authenticode', '', '| bestand | uitkomst | status | ondertekenaar | tijdstempel |', '|---|---|---|---|---|') + $script:regels
-$samenvatting | Write-Host
-if ($env:GITHUB_STEP_SUMMARY) { $samenvatting -join "`n" | Add-Content -LiteralPath $env:GITHUB_STEP_SUMMARY -Encoding utf8 }
-if ($script:fouten -gt 0) { throw "$($script:fouten) bestand(en) zonder geldige handtekening met tijdstempel van de juiste uitgever" }
+Schrijf-Samenvatting
 Write-Host 'Windows-handtekeningen in orde.'

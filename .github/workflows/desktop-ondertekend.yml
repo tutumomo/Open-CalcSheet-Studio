@@ -8,9 +8,31 @@ name: Desktop ondertekend
 #
 # De geheimen staan per stap, niet per job: alleen de stappen die ze nodig hebben
 # krijgen ze te zien.
+#
+# De server van Open FEM Studio (fem-studio/versie.json) gaat mee als resource, met
+# de handtekening van FEM Studio: Tauri tekent een resource niet, en de notarisatie
+# op macOS eist dat elk programma in de app een Developer ID-handtekening heeft. De
+# stap "FEM Studio ophalen" haalt hem uit de openbare release fem-server-<versie> van
+# deze repository; een geheim is daar niet voor nodig. Zonder bestand voor het
+# platform in versie.json bouwt de app zonder server: een waarschuwing in de log, en
+# de uitvoer fem-studio-tekst zegt het in de release-tekst. Is hij opgehaald, dan
+# controleert de job zijn handtekening vóór het bouwen en zoekt de controle hem
+# daarna in de installer, met de licentie, de vermeldingen van derden en de
+# verwijzing naar de bron ernaast.
+#
+# De server valt onder de AGPL-3.0. Gaat hij op een platform mee, dan zet de job
+# fem-studio het bronarchief van precies die versie bij de artifacts; een release
+# zet het zo naast de installers (scripts/release/assets-klaarzetten.sh eist het).
 
 on:
   workflow_call:
+    outputs:
+      fem-studio-platformen:
+        description: 'De platformen met de server van FEM Studio, zoals "windows-x64 macos-universal linux-x64"'
+        value: ${{ jobs.fem-studio.outputs.platformen }}
+      fem-studio-tekst:
+        description: 'Of de server van FEM Studio is meegeleverd, voor de release-tekst'
+        value: ${{ jobs.fem-studio.outputs.tekst }}
     inputs:
       ref:
         description: 'De commit om te bouwen; leeg is de commit van de run'
@@ -33,6 +55,9 @@ jobs:
     name: Desktop (windows-${{ matrix.variant }})
     runs-on: windows-latest
     timeout-minutes: 60
+    outputs:
+      fem-studio: ${{ steps.fem.outputs.status }}
+      fem-studio-versie: ${{ steps.fem.outputs.versie }}
     strategy:
       fail-fast: false
       matrix:
@@ -73,14 +98,20 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
-      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
-      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
-      # Instellingen > Over meldt dan "niet meegeleverd". Op macOS moet de server nog
-      # mee in de ondertekening voor de notarisatie: dat volgt met FEM Studio #298.
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json),
+      # uit de openbare release fem-server-<versie>, met de vermeldingen van derden.
+      # Zonder bestand voor dit platform bouwt de app zonder; Instellingen > Over meldt
+      # dan "niet meegeleverd".
       - name: FEM Studio ophalen
-        env:
-          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
+        id: fem
         run: node scripts/haal-fem-server.mjs
+
+      # Authenticode van FEM Studio, met de eigen uitgever en een tijdstempel. Tauri
+      # tekent de resource niet opnieuw; zo blijft ook de sha256 die van versie.json.
+      - name: Controleer de handtekening van de FEM-server
+        if: steps.fem.outputs.status == 'meegeleverd'
+        shell: pwsh
+        run: pwsh -NoProfile -File scripts/release/windows-controleren.ps1 -Bestand packages/desktop/src-tauri/fem-studio/openaec-mcp-server.exe
 
       # De signeerclient van Azure heeft .NET 8 nodig.
       - name: Setup .NET 8
@@ -124,6 +155,8 @@ jobs:
 
       - name: Controleer de handtekeningen
         shell: pwsh
+        env:
+          FEM_STUDIO_VEREIST: ${{ steps.fem.outputs.status == 'meegeleverd' }}
         run: pwsh -NoProfile -File scripts/release/windows-controleren.ps1 -Map packages/desktop/src-tauri/target/release/bundle/nsis -Aantal 1
 
       - name: Upload installer
@@ -137,6 +170,9 @@ jobs:
     name: Desktop (macos)
     runs-on: macos-latest
     timeout-minutes: 60
+    outputs:
+      fem-studio: ${{ steps.fem.outputs.status }}
+      fem-studio-versie: ${{ steps.fem.outputs.versie }}
 
     steps:
       - uses: actions/checkout@v6
@@ -173,14 +209,22 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
-      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
-      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
-      # Instellingen > Over meldt dan "niet meegeleverd". Op macOS moet de server nog
-      # mee in de ondertekening voor de notarisatie: dat volgt met FEM Studio #298.
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json),
+      # uit de openbare release fem-server-<versie>, met de vermeldingen van derden.
+      # Zonder bestand voor dit platform bouwt de app zonder; Instellingen > Over meldt
+      # dan "niet meegeleverd".
       - name: FEM Studio ophalen
-        env:
-          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
+        id: fem
         run: node scripts/haal-fem-server.mjs
+
+      # Tauri tekent een resource niet, maar de notarisatie eist een Developer
+      # ID-handtekening met hardened runtime en tijdstempel op elk programma in de
+      # app. FEM Studio levert de server zo aan; hier de controle, vóór het bouwen.
+      - name: Controleer de handtekening van de FEM-server
+        if: steps.fem.outputs.status == 'meegeleverd'
+        env:
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: bash scripts/release/macos-controleren.sh --fem-server packages/desktop/src-tauri/fem-studio/openaec-mcp-server
 
       - name: Controleer de geheimen en schrijf de notarisatiesleutel
         env:
@@ -228,6 +272,7 @@ jobs:
       - name: Controleer de handtekeningen
         env:
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          FEM_STUDIO_VEREIST: ${{ steps.fem.outputs.status == 'meegeleverd' }}
         run: bash scripts/release/macos-controleren.sh packages/desktop/src-tauri/target/universal-apple-darwin/release/bundle/dmg
 
       - name: Upload dmg
@@ -241,6 +286,9 @@ jobs:
     name: Desktop (linux)
     runs-on: ubuntu-22.04
     timeout-minutes: 60
+    outputs:
+      fem-studio: ${{ steps.fem.outputs.status }}
+      fem-studio-versie: ${{ steps.fem.outputs.versie }}
 
     steps:
       - uses: actions/checkout@v6
@@ -279,13 +327,12 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
-      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json).
-      # Zonder bestand voor dit platform of zonder FEM_STUDIO_TOKEN bouwt de app zonder;
-      # Instellingen > Over meldt dan "niet meegeleverd". Op macOS moet de server nog
-      # mee in de ondertekening voor de notarisatie: dat volgt met FEM Studio #298.
+      # De server van Open FEM Studio voor de normtoetsingen (fem-studio/versie.json),
+      # uit de openbare release fem-server-<versie>, met de vermeldingen van derden.
+      # Zonder bestand voor dit platform bouwt de app zonder; Instellingen > Over meldt
+      # dan "niet meegeleverd".
       - name: FEM Studio ophalen
-        env:
-          GH_TOKEN: ${{ secrets.FEM_STUDIO_TOKEN }}
+        id: fem
         run: node scripts/haal-fem-server.mjs
 
       - name: Build Tauri app
@@ -307,7 +354,10 @@ jobs:
           OPENAEC_GPG_FINGERPRINT: ${{ vars.OPENAEC_GPG_FINGERPRINT }}
         run: bash scripts/release/linux-ondertekenen.sh "$RUNNER_TEMP/linux-pakketten"
 
+      # Ook de FEM-server in de .deb (met de sha256 uit versie.json) en de .AppImage.
       - name: Controleer de handtekeningen
+        env:
+          FEM_STUDIO_VEREIST: ${{ steps.fem.outputs.status == 'meegeleverd' }}
         run: bash scripts/release/linux-controleren.sh "$RUNNER_TEMP/linux-pakketten"
 
       - name: Upload packages
@@ -316,3 +366,98 @@ jobs:
           name: open-calcsheet-studio-linux
           path: ${{ runner.temp }}/linux-pakketten/*
           if-no-files-found: error
+
+  # Of de server van FEM Studio per platform is meegeleverd, voor de release-tekst en
+  # de controles na het uploaden. Een opsomming zou de website als wijziging tellen;
+  # daarom lopende tekst.
+  fem-studio:
+    name: FEM Studio meegeleverd?
+    needs: [windows, macos, linux]
+    runs-on: ubuntu-latest
+    outputs:
+      platformen: ${{ steps.samenvatten.outputs.platformen }}
+      tekst: ${{ steps.samenvatten.outputs.tekst }}
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+
+      # Zonder bron geen binary: gaat de server op een platform mee, dan hoort het
+      # bronarchief van precies die versie bij de installers.
+      - name: Bronarchief van de FEM-server ophalen
+        id: bron
+        if: >-
+          needs.windows.outputs.fem-studio == 'meegeleverd' ||
+          needs.macos.outputs.fem-studio == 'meegeleverd' ||
+          needs.linux.outputs.fem-studio == 'meegeleverd'
+        run: |
+          set -euo pipefail
+          node scripts/haal-fem-server.mjs --bron "$RUNNER_TEMP/fem-bron"
+          echo "naam=$(basename "$RUNNER_TEMP"/fem-bron/*_source.tar.gz)" >>"$GITHUB_OUTPUT"
+
+      - name: Upload het bronarchief
+        if: steps.bron.outputs.naam != ''
+        uses: actions/upload-artifact@v5
+        with:
+          name: open-calcsheet-studio-fem-bron
+          path: ${{ runner.temp }}/fem-bron/*_source.tar.gz
+          if-no-files-found: error
+
+      - name: Samenvatten
+        id: samenvatten
+        env:
+          WINDOWS: ${{ needs.windows.outputs.fem-studio }}
+          MACOS: ${{ needs.macos.outputs.fem-studio }}
+          LINUX: ${{ needs.linux.outputs.fem-studio }}
+          VERSIE: ${{ needs.linux.outputs.fem-studio-versie }}
+          BRON: ${{ steps.bron.outputs.naam }}
+        run: |
+          set -euo pipefail
+          MET=()
+          MET_NAMEN=()
+          ZONDER_NAMEN=()
+          for regel in "windows-x64 Windows ${WINDOWS:-}" "macos-universal macOS ${MACOS:-}" "linux-x64 Linux ${LINUX:-}"; do
+            read -r platform naam status <<<"$regel"
+            if [ "${status:-}" = meegeleverd ]; then
+              MET+=("$platform")
+              MET_NAMEN+=("$naam")
+            else
+              ZONDER_NAMEN+=("$naam")
+            fi
+          done
+          # "Windows, macOS and Linux"
+          lijst() {
+            local uit="" i=0
+            for x in "$@"; do
+              i=$((i + 1))
+              if [ "$i" -eq 1 ]; then uit="$x"; elif [ "$i" -eq "$#" ]; then uit="$uit and $x"; else uit="$uit, $x"; fi
+            done
+            printf '%s' "$uit"
+          }
+          KOP="### Open FEM Studio"
+          OVER='Settings › About shows "not included in this version".'
+          if [ "${#MET[@]}" -gt 0 ]; then
+            TEKST="$KOP"$'\n\n'"The headless server of Open FEM Studio ${VERSIE:-} (\`openaec-mcp-server\`) is included on $(lijst "${MET_NAMEN[@]}"), for the code checks in \`@toets\` blocks. It carries the signature of the Open FEM Studio release."
+            TEKST+=$'\n\n'"The server is a separate program with its own license, the GNU AGPL-3.0 (Open CalcSheet Studio itself is LGPL-3.0). Its license, the third-party notices and a pointer to the source are installed next to it (see Settings › About). The complete source of exactly this server version is attached to this release: \`${BRON}\`."
+            if [ "${#ZONDER_NAMEN[@]}" -gt 0 ]; then
+              TEKST+=$'\n\n'"> **Not included on $(lijst "${ZONDER_NAMEN[@]}").** There the code checks in \`@toets\` blocks are not available. $OVER"
+            fi
+          else
+            TEKST="$KOP"$'\n\n'"> **Not included.** This build does not include the server of Open FEM Studio, so the code checks in \`@toets\` blocks are not available. $OVER"
+          fi
+          if [ "${#ZONDER_NAMEN[@]}" -gt 0 ]; then
+            echo "::warning::FEM Studio is niet meegeleverd op: $(lijst "${ZONDER_NAMEN[@]}")"
+          fi
+          EINDE="EINDE_$(openssl rand -hex 8)"
+          {
+            echo "platformen=${MET[*]}"
+            echo "tekst<<$EINDE"
+            printf '%s\n' "$TEKST"
+            echo "$EINDE"
+          } >>"$GITHUB_OUTPUT"
+          printf '%s\n' "$TEKST" >>"$GITHUB_STEP_SUMMARY"

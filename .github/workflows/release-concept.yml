@@ -30,6 +30,10 @@ on:
       prerelease:
         type: boolean
         default: false
+      fem-studio:
+        description: 'De platformen met de server van FEM Studio; niet leeg betekent dat het bronarchief van de server bij de bestanden moet zitten'
+        type: string
+        default: ''
     outputs:
       release_id:
         description: 'Het ID van het concept'
@@ -60,9 +64,12 @@ jobs:
           merge-multiple: true
           path: artefacten
 
+      # Met de server van FEM Studio in een installer hoort het bronarchief van die
+      # server bij de release: zonder bron geen binary (AGPL-3.0).
       - name: Zet de bestanden klaar
         env:
           VERSIE: ${{ inputs.versie }}
+          FEM_BRON_VEREIST: ${{ inputs.fem-studio != '' }}
         run: bash scripts/release/assets-klaarzetten.sh artefacten assets "$VERSIE"
 
       - name: Sign checksums
@@ -73,6 +80,8 @@ jobs:
         run: bash scripts/release/linux-ondertekenen.sh assets
 
       - name: Controleer de handtekeningen
+        env:
+          FEM_BRON_VEREIST: ${{ inputs.fem-studio != '' }}
         run: bash scripts/release/linux-controleren.sh assets
 
       # Een eerder mislukte poging met dezelfde tag laat een concept achter. Drafts

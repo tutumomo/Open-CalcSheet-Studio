@@ -1,0 +1,318 @@
+/* Het invoerscherm van een rekenblad (InvoerPaneel.tsx) en het beeld van de vloer op
+   palen erboven (VloerOpPalenBeeld.tsx). Alleen tokens van het ontwerp: het paneel staat
+   op papier (licht) naast de uitwerking, en volgt verder het thema van zijn omgeving.
+
+   De kop, de groepskoppen, de voetregel en de klikbare maten komen uit de bouwstenen van
+   de parametrische beelden (designerKit.tsx, VoetplaatDesigner.css). */
+
+.ip-paneel {
+  /* Het formulier scrolt, niet het paneel: de kop, het beeld en de voetregel blijven staan. */
+  overflow: hidden;
+  font-family: var(--oa-font-body);
+  font-size: var(--oa-size-body);
+}
+
+/* Een dunne balk onder de kop zolang er gerekend wordt. */
+.ip-voortgang {
+  flex: none;
+  height: var(--oa-space-hairline);
+  overflow: hidden;
+}
+.ip-voortgang.ip-loopt {
+  background: var(--oa-selected);
+}
+.ip-voortgang.ip-loopt::after {
+  content: "";
+  display: block;
+  width: 30%;
+  height: 100%;
+  background: var(--oa-accent);
+  animation: ip-loop 1.2s linear infinite;
+}
+@keyframes ip-loop {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(340%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ip-voortgang.ip-loopt::after {
+    width: 100%;
+    animation: none;
+  }
+}
+
+.ip-inhoud {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Smal (het paneel van 518 px): het beeld boven het formulier, op een vaste hoogte die het
+   paneel uitrekent (InvoerPaneel.tsx, beeldHoogte). */
+.ip-beeld {
+  flex: 0 0 225px;
+  /* De hoogte volgt het paneel, nooit de tekeningen: die worden op dit vak gemeten. */
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 1px solid var(--oa-border);
+  background: var(--oa-panel);
+}
+
+.ip-formulier {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  /* Een vaste goot: verschijnt de schuifbalk, dan verspringen de velden niet. */
+  scrollbar-gutter: stable;
+  padding: var(--oa-space-md) var(--oa-space-md) var(--oa-space-lg);
+}
+
+/* Breed: het formulier links in een eigen kolom, het beeld ernaast over de volle hoogte. */
+.ip-breed .ip-inhoud {
+  flex-direction: row-reverse;
+}
+.ip-breed .ip-beeld {
+  flex: 1 1 0;
+  min-width: 0;
+  border-bottom: none;
+  border-left: 1px solid var(--oa-border);
+}
+.ip-breed .ip-beeld + .ip-formulier {
+  flex: 0 0 clamp(420px, 46%, 520px);
+}
+
+/* Zonder beeld vult het formulier het paneel: in een breed paneel de groepen naast elkaar. */
+.ip-groepen {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+  column-gap: var(--oa-space-xl);
+  row-gap: var(--oa-space-md);
+  align-items: start;
+}
+.ip-groep {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.ip-groep > .vd-ctrl-h {
+  margin: 0 0 var(--oa-space-xs);
+}
+
+/* Een veld: naam, toelichting, het getal en de eenheid, op vaste kolommen zodat de
+   velden onder elkaar op één lijn staan. */
+.ip-rij {
+  display: grid;
+  grid-template-columns: 58px minmax(0, 1fr) 92px 50px;
+  align-items: center;
+  column-gap: var(--oa-space-sm);
+  min-height: var(--oa-row);
+  border-bottom: 1px solid var(--oa-border-subtle);
+}
+.ip-rij:last-child {
+  border-bottom: none;
+}
+.ip-naam {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-family: var(--oa-font-numbers);
+  color: var(--oa-text);
+}
+.ip-naam sub,
+.ip-label sub,
+.ip-label sup {
+  font-size: 0.78em;
+  line-height: 0;
+}
+.ip-label {
+  min-width: 0;
+  padding: var(--oa-space-xs) 0;
+  color: var(--oa-text-secondary);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+.ip-veld {
+  box-sizing: border-box;
+  width: 100%;
+  height: 22px;
+  padding: 0 6px;
+  border: 1px solid var(--oa-border-strong);
+  border-radius: var(--oa-radius-small);
+  background: var(--oa-field);
+  color: var(--oa-text);
+  font-family: var(--oa-font-numbers);
+  font-size: var(--oa-size-body);
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.ip-veld::placeholder {
+  color: var(--oa-text-disabled);
+}
+.ip-veld:hover {
+  border-color: var(--oa-text-secondary);
+}
+.ip-veld:focus {
+  outline: 2px solid var(--oa-focus);
+  outline-offset: -1px;
+  border-color: var(--oa-focus);
+}
+/* Een eenheid die niet bij het veld past: niet opgeslagen. */
+.ip-veld.ip-fout {
+  border-color: var(--oa-error);
+  background: var(--oa-error-tint);
+}
+.ip-veld.ip-fout:focus {
+  outline-color: var(--oa-error);
+}
+.ip-eenheid {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  color: var(--oa-text-muted);
+}
+
+/* Een keuzelijst: het label over de kolommen van naam en toelichting, de lijst over die
+   van getal en eenheid. */
+.ip-keuze {
+  grid-template-columns: minmax(0, 1fr) 150px;
+}
+.ip-keuze .ip-label {
+  color: var(--oa-text);
+}
+.ip-keuze .themed-select {
+  min-width: 0;
+}
+.ip-keuze .themed-select-trigger {
+  min-height: 22px;
+}
+
+.ip-leeg {
+  margin: var(--oa-space-lg) 0;
+  color: var(--oa-text-muted);
+}
+
+/* Eén regel: de hoogte van het paneel is voor het beeld en het formulier. */
+.ip-voet {
+  flex: none;
+  flex-wrap: nowrap;
+  min-height: var(--oa-row);
+  padding: var(--oa-space-xs) var(--oa-space-md);
+}
+.ip-voet > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.ip-voet > button {
+  flex: none;
+  padding: var(--oa-space-hairline) var(--oa-space-md);
+}
+
+/* ── Het beeld van de vloer op palen ─────────────────────────────────────── */
+
+.ip-tekeningen {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  display: flex;
+  gap: var(--oa-space-md);
+  padding: var(--oa-space-sm) var(--oa-space-md) 0;
+  overflow: hidden;
+}
+.ip-tekeningen.ip-onder {
+  flex-direction: column;
+  align-items: center;
+}
+.ip-tekeningen.ip-oud .ip-tekening {
+  opacity: 0.4;
+}
+.ip-figuur {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  margin: 0;
+}
+.ip-bijschrift {
+  flex: none;
+  height: 18px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  font-weight: var(--oa-weight-semibold);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--oa-text-muted);
+}
+/* De eenheid van de maten blijft zoals hij is: (m) is geen (M). */
+.ip-bijschrift > span {
+  text-transform: none;
+  letter-spacing: 0;
+}
+.ip-tekening {
+  position: relative;
+  flex: none;
+}
+.ip-svg {
+  position: absolute;
+  inset: 0;
+}
+
+/* De plattegrond: hoe dikker het beton, hoe donkerder het vlak. */
+.ip-vloer { fill: var(--oa-frame); }
+.ip-strook { fill: var(--oa-border); }
+/* Dekkend: een kop op een strook is even donker als een kop op de vloer. */
+.ip-kop { fill: color-mix(in srgb, var(--oa-border-strong) 55%, var(--oa-frame)); }
+.ip-vloerrand { fill: none; stroke: var(--oa-text-secondary); stroke-width: 1.3; }
+.ip-as { stroke: var(--oa-border); stroke-width: 0.7; stroke-dasharray: 5 3; }
+.ip-paal { fill: var(--oa-text); }
+
+/* De doorsnede. */
+.ip-beton { fill: var(--oa-frame); }
+.ip-betonlijn { fill: none; stroke: var(--oa-text-secondary); stroke-width: 1.3; stroke-linejoin: round; stroke-linecap: round; }
+.ip-snedepaal { fill: var(--oa-panel); }
+.ip-snedepaal-lijn { fill: none; stroke: var(--oa-text-secondary); stroke-width: 1.3; }
+.ip-breuk { fill: none; stroke: var(--oa-text-muted); stroke-width: 0.9; }
+
+/* De legenda en de aanwijzing onder de tekeningen. */
+.ip-legenda {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--oa-space-md);
+  height: 22px;
+  padding: 0 var(--oa-space-md);
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: var(--oa-size-label);
+  color: var(--oa-text-muted);
+}
+.ip-legenda-item {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--oa-space-xs);
+}
+.ip-legenda-vlak {
+  width: 10px;
+  height: 10px;
+  border: 1px solid var(--oa-text-secondary);
+}
+.ip-legenda-vlak.ip-is-strook { background: var(--oa-border); }
+.ip-legenda-vlak.ip-is-kop { background: color-mix(in srgb, var(--oa-border-strong) 55%, var(--oa-frame)); }
+.ip-legenda-vlak.ip-is-paal { border-radius: var(--oa-radius-full); background: var(--oa-text); }
+.ip-legenda-tekst {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ip-melding {
+  margin: auto;
+  padding: var(--oa-space-lg);
+  text-align: center;
+  color: var(--oa-text-muted);
+}

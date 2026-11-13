@@ -8,6 +8,7 @@ import { bouwIframe } from './iframeBlok.js';
 import { bouwIfcxBlok } from './ifcxBlok.js';
 import { bouwToets } from './toetsBlok.js';
 import { bouwFem } from './femBlok.js';
+import { bouwKern } from './kernBlok.js';
 import { FemModel, femWaarde, femStrook, femSvg, femGrootheid, FEM_EENHEID } from './femResultaat.js';
 import { bouwJsBlok } from './jsBlok.js';
 import { leesVerwijzing, verwijzingNaam, verwijzingenInMelding } from './verwijzing.js';
@@ -2048,6 +2049,26 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // Net als @toets: ook verborgen rekent het blok. De teller van een #for en de
         // gevallen in een combinatie staan even in de scope en daarna weer zoals ze waren.
         result.push(bouwFem(node, {
+          reken: (expr) => reken(expr, scope),
+          zet: (naam, waarde) => {
+            const had = Object.prototype.hasOwnProperty.call(scope, naam);
+            const oud = scope[naam];
+            scope[naam] = waarde;
+            return () => {
+              if (had) scope[naam] = oud;
+              else delete scope[naam];
+            };
+          },
+          scope,
+          opties: stand.opties,
+        }));
+        break;
+      }
+
+      case 'kern': {
+        // Net als @toets en @fem: ook verborgen rekent het blok, en de teller van `per`
+        // of een #for staat even in de scope en daarna weer zoals hij was.
+        result.push(bouwKern(node, {
           reken: (expr) => reken(expr, scope),
           zet: (naam, waarde) => {
             const had = Object.prototype.hasOwnProperty.call(scope, naam);

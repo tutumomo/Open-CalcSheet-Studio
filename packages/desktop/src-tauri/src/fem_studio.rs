@@ -75,6 +75,52 @@ pub async fn fem_studio_status(app: AppHandle) -> Result<FemStatus, String> {
     .map_err(|e| e.to_string())
 }
 
+/// De licentie van de meegeleverde server en de weg naar zijn broncode, uit de
+/// bestanden die naast hem in de resources staan (`fem-studio/`). De server valt
+/// onder de AGPL-3.0; `versie.json` noemt het bronarchief van precies die versie.
+#[derive(Serialize)]
+pub struct FemLicentie {
+    /// De versie waar het bronarchief bij hoort.
+    versie: Option<String>,
+    /// De naam van het bronarchief en het adres waar het staat.
+    bron: Option<String>,
+    adres: Option<String>,
+    /// De licentietekst en de vermeldingen van derden naast de server, als ze er zijn.
+    licentie: Option<String>,
+    vermeldingen: Option<String>,
+}
+
+/// Wat Instellingen › Over over de licentie van FEM Studio toont. Start niets.
+#[tauri::command]
+pub fn fem_studio_licentie(app: AppHandle) -> FemLicentie {
+    let map = app.path().resolve("fem-studio", BaseDirectory::Resource).ok();
+    let bestand = |naam: &str| {
+        map.as_ref()
+            .map(|m| m.join(naam))
+            .filter(|p| p.is_file())
+            .map(|p| p.display().to_string())
+    };
+    let versie: Option<Value> = map
+        .as_ref()
+        .and_then(|m| std::fs::read_to_string(m.join("versie.json")).ok())
+        .and_then(|tekst| serde_json::from_str(&tekst).ok());
+    let tekst = |pad: &[&str]| {
+        let mut v = versie.as_ref()?;
+        for sleutel in pad {
+            v = v.get(sleutel)?;
+        }
+        v.as_str().map(str::to_owned)
+    };
+    FemLicentie {
+        versie: tekst(&["versie"]),
+        bron: tekst(&["bron", "naam"]),
+        // Alleen een https-adres gaat naar de webview: die opent het in de browser.
+        adres: tekst(&["bron", "url"]).filter(|u| u.starts_with("https://")),
+        licentie: bestand("LICENSE-AGPL-3.0.txt"),
+        vermeldingen: bestand("THIRD-PARTY-NOTICES.txt"),
+    }
+}
+
 /// De tools met hun schema's (`tools/list`).
 #[tauri::command]
 pub async fn fem_studio_tools(app: AppHandle) -> Result<Value, String> {

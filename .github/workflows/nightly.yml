@@ -75,6 +75,7 @@ jobs:
       contents: write
     uses: ./.github/workflows/release-concept.yml
     with:
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
       tag: nightly-${{ github.run_id }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
       versie: ${{ needs.voorbereiden.outputs.versie }}
@@ -89,19 +90,22 @@ jobs:
         Source: `${{ needs.voorbereiden.outputs.sha }}`
         Build version: `${{ needs.voorbereiden.outputs.bouwnummer }}`
 
+        ${{ needs.bouwen.outputs.fem-studio-tekst }}
+
         Windows and macOS installers are signed. Linux packages and `SHA256SUMS.txt` have detached
         OpenPGP signatures (`.asc`), key fingerprint `13F6D414ADEE4ED4CD09AC60601D86C93C504D29`.
         How to verify: [docs/ondertekening.md](https://github.com/${{ github.repository }}/blob/main/docs/ondertekening.md).
     secrets: inherit
 
   controleren:
-    needs: [voorbereiden, concept]
+    needs: [voorbereiden, bouwen, concept]
     permissions:
       contents: write
     uses: ./.github/workflows/release-controleren.yml
     with:
       tag: nightly-${{ github.run_id }}
       sha: ${{ needs.voorbereiden.outputs.sha }}
+      fem-studio: ${{ needs.bouwen.outputs.fem-studio-platformen }}
     secrets: inherit
 
   publiceren:

@@ -44,7 +44,7 @@
     "tooltip": "MCP and REST API at {{adres}} — set up in Settings › API and AI assistant",
     "tooltipBrowser": "The server for MCP and the REST API only exists in the desktop app."
   },
-  "version": "Open CalcSheet Studio v2026.46.0",
+  "version": "Open CalcSheet Studio v2026.46.1",
   "section": "Section {{number}}",
   "contentPlaceholder": "Content here",
   "sendFeedback": "Send Feedback",
