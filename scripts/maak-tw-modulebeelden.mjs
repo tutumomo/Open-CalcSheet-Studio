@@ -177,11 +177,54 @@ function twCombinedFooting() {
   return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
 }
 
+/** 垂直式跌水工：上游渠道、跌水牆、靜水池、尾檻與出口護床。 */
+function twDropStructure() {
+  const WATER = "#bcd9ea";
+  const WATER_DONKER = "#7fa8c4";
+  const delen = [];
+  delen.push(`<rect x="0" y="0" width="${BREEDTE}" height="${HOOGTE}" fill="#ffffff"/>`);
+  // 地盤
+  delen.push(`<rect x="0" y="262" width="${BREEDTE}" height="${HOOGTE - 262}" fill="${ZAND_ONDER}"/>`);
+  // 上游渠道（渠底 y=168、水面 y=104）
+  delen.push(`<rect x="0" y="104" width="232" height="64" fill="${WATER}"/>`);
+  delen.push(`<line x1="0" y1="104" x2="232" y2="104" stroke="${WATER_DONKER}" stroke-width="2"/>`);
+  delen.push(`<rect x="0" y="168" width="232" height="14" fill="${BETON.boven}" stroke="#5c6b80" stroke-width="2"/>`);
+  // 跌水牆（垂直牆面）
+  delen.push(`<rect x="232" y="168" width="22" height="94" fill="${BETON.links}" stroke="#5c6b80" stroke-width="2"/>`);
+  // 靜水池（池底 y=262）
+  delen.push(`<rect x="254" y="196" width="212" height="66" fill="${WATER}"/>`);
+  delen.push(`<line x1="254" y1="196" x2="466" y2="196" stroke="${WATER_DONKER}" stroke-width="2" stroke-dasharray="9 6"/>`);
+  delen.push(`<rect x="254" y="262" width="212" height="12" fill="${BETON.boven}" stroke="#5c6b80" stroke-width="2"/>`);
+  // 尾檻 h'
+  delen.push(`<rect x="452" y="214" width="16" height="48" fill="${BETON.rechts}" stroke="#5c6b80" stroke-width="2"/>`);
+  // 下游渠道與護床
+  delen.push(`<rect x="468" y="214" width="72" height="48" fill="${WATER}"/>`);
+  delen.push(`<line x1="468" y1="214" x2="${BREEDTE}" y2="214" stroke="${WATER_DONKER}" stroke-width="2"/>`);
+  delen.push(`<rect x="468" y="262" width="72" height="12" fill="#c3bda9" stroke="#8b9096" stroke-width="2"/>`);
+  for (const x of [482, 502, 522]) {
+    delen.push(`<circle cx="${x}" cy="268" r="5" fill="#a89f88" stroke="#7d7565" stroke-width="1"/>`);
+  }
+  // 水流跌落
+  delen.push(`<path d="M 196 140 Q 246 150 258 206" fill="none" stroke="${WATER_DONKER}" stroke-width="3"/>`);
+  delen.push(`<polygon points="258,214 250,198 268,200" fill="${WATER_DONKER}"/>`);
+  // 落差 h 與構造長度 L 標註
+  delen.push(`<line x1="500" y1="168" x2="500" y2="262" stroke="#c62828" stroke-width="1.6"/>`);
+  delen.push(`<text x="508" y="220" font-size="12" font-weight="bold" fill="#c62828">h</text>`);
+  delen.push(`<line x1="246" y1="290" x2="466" y2="290" stroke="#4a6572" stroke-width="1.6"/>`);
+  delen.push(`<text x="356" y="306" font-size="12" font-weight="bold" fill="#4a6572" text-anchor="middle">L</text>`);
+  delen.push(`<text x="460" y="206" font-size="12" font-weight="bold" fill="#4a6572">h′</text>`);
+  // 水位與臨界水深標示
+  delen.push(`<text x="24" y="96" font-size="12" font-weight="bold" fill="#3d6b8a">Q · h_c</text>`);
+  delen.push(`<text x="330" y="188" font-size="12" font-weight="bold" fill="#3d6b8a" text-anchor="middle">靜水池</text>`);
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="${BREEDTE}" height="${HOOGTE}" viewBox="0 0 ${BREEDTE} ${HOOGTE}">${delen.join("")}</svg>`;
+}
+
 const BEELDEN = {
   "tw-pile-foundation": twPileFoundation,
   "tw-bridge-seismic": twBridgeSeismic,
   "tw-wood-member": twWoodMember,
   "tw-combined-footing": twCombinedFooting,
+  "tw-drop-structure": twDropStructure,
 };
 
 const [uitvoer = MAP, ...alleen] = process.argv.slice(2);

@@ -110,7 +110,8 @@
       "tw-rc-slab": "RC one-way slab (rc112)",
       "tw-pile-cap": "Three- or four-pile cap, strut-and-tie model (rc112)",
       "tw-gravity-retaining-wall": "Gravity retaining wall, plain concrete or masonry (found112 / swc_tech)",
-      "tw-backwater-profile": "Open-channel backwater profile, standard step method (swc_tech)"
+      "tw-backwater-profile": "Open-channel backwater profile, standard step method (swc_tech)",
+      "tw-drop-structure": "Vertical drop structure and energy dissipation (hwdrain107)"
     }
   },
   "kiezer": {
