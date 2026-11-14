@@ -57,6 +57,59 @@
 
 ---
 
+### PR 3：無頭模式與命令列（`--headless`、`eval`、`render`）
+
+- **上游分支目標**：`OpenAEC-Foundation/Open-CalcSheet-Studio:main`
+- **狀態**：草稿，尚未切分支（本 fork 內自用；決定送出時再自 `upstream/main` 乾淨切出）
+- **修改檔案**：
+  - `packages/desktop/src-tauri/src/cli.rs`（新增）：參數解析（`--version`／`--help`／`--headless`／`serve`／`eval`／`render`、`--json`／`--quiet`），不認得的 `-` 開頭參數以代碼 2 結束。
+  - `packages/desktop/src-tauri/src/kenmerken.rs`（新增）與 `packages/desktop/build.rs`：建置時寫入 `OCSS_EDITION`、`OCSS_GIT_COMMIT`、`OCSS_BUILD_DATE`、完整 tag，讓不開視窗也讀得到版本。
+  - `packages/desktop/src-tauri/src/lib.rs`：`--headless` 只啟動 API／MCP 伺服器（127.0.0.1:3879），`RunEvent::Exit` 時清理子程序。
+  - `packages/desktop/src/mcp/cli.ts`（新增）：`eval`／`render` 走**同一個**工具 registry（`mcp/tools.ts`），因此命令列與 API 能力一致。
+  - `packages/desktop/src/mcp/rest.ts`：新增免權杖的 `GET /api/v1/health`（回 edition／version／tag）。
+- **動機與效益**：CI、腳本與 AI 代理不需要視窗。版本資訊在建置時寫入，也讓同一台機器上的多個 edition 可辨識。
+- **驗證指令**：
+  ```bash
+  node scripts/check-ocss-headless.mjs
+  cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib cli
+  ```
+
+---
+
+### PR 4：PDF 產出（`export_pdf` 與 `render --pdf`）
+
+- **上游分支目標**：`OpenAEC-Foundation/Open-CalcSheet-Studio:main`
+- **狀態**：草稿，尚未切分支
+- **修改檔案**：
+  - `packages/desktop/src/mcp/tools/overig.ts`：新增 `export_pdf` 工具（把一張表或一份報告輸出成 PDF 檔），MCP 與 REST 兩邊同時註冊，annotations 為 `readOnlyHint: false`。
+  - `packages/desktop/src/mcp/cli.ts`：`render <bestand> --pdf <uit.pdf>` 以 `sheet_add` 建表後呼叫 `export_pdf`。
+  - 建置：需要報表引擎（`--features rapportengine`）；未編譯該 feature 時工具回報明確錯誤，而不是靜默失敗。
+- **動機與效益**：PDF 是交付物本身。上游已有列印路徑，缺的是可從 API／命令列觸發的同一個出口。
+- **驗證指令**：
+  ```bash
+  node scripts/check-rapport-pdf.mjs
+  node scripts/check-mcp.mjs
+  ```
+
+---
+
+### PR 5：單位警告與 `strict` 拒算
+
+- **上游分支目標**：`OpenAEC-Foundation/Open-CalcSheet-Studio:main`
+- **狀態**：草稿，尚未切分支
+- **修改檔案**：
+  - `packages/desktop/src/mcp/rekenen.ts`：每行回傳 `warnings[]`（非整數次方造成的量綱不確定），錯誤碼沿用既有 `UNIT_WARNING`。
+  - `packages/desktop/src/mcp/tools/bladen.ts`：`calc_evaluate`／`sheet_evaluate` 新增 `strict`（預設 false）；`strict: true` 時有警告即拒算並回 `UNIT_WARNING`，另加 `conventionalUnits` 給慣用單位。
+  - `packages/desktop/src/mcp/contracts.ts`：回應欄位只增不改（`expr`、`si_value`、`clause`、`check`、`warnings`）。
+- **動機與效益**：`x^0.5` 之類的式子在量綱上不嚴謹，卻常是工程慣例。把「警告」與「拒算」分成兩個開關，下游可以自己決定嚴格度，既有呼叫端行為不變。
+- **驗證指令**：
+  ```bash
+  node scripts/check-api.mjs
+  node scripts/check-mcp.mjs
+  ```
+
+---
+
 ## 3. 上游同步（Upstream Sync）標準流程
 
 依據 `CLAUDE.md`：
