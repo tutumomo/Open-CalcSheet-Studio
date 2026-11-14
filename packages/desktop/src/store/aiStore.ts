@@ -18,6 +18,8 @@ import i18next from "../i18n/config.ts";
 import { getSetting, setSetting } from "../store.ts";
 import {
   aiBeschikbaar,
+  detecteerLokaal as detecteerLokaalRust,
+  importeerLokaal as importeerLokaalRust,
   listModels,
   oauthCancel,
   oauthCompleteManual,
@@ -34,6 +36,7 @@ import {
   type AiAuthModus,
   type AiBericht,
   type AiGereedschap,
+  type AiLokaleBron,
   type AiProfielAuthStatus,
 } from "../tauri/ai.ts";
 import { MCP_TOOLS } from "../mcp/tools.ts";
@@ -67,6 +70,7 @@ import {
   type AiOAuthConfig,
   type AiProfiel,
 } from "../components/ai/profielen.ts";
+import { leverancierUitBron, type Leverancier, type LokaleBron } from "../components/ai/leveranciers.ts";
 import type { McpToolDef } from "../mcp/contracts.ts";
 
 const SLEUTEL = "aiInstellingen";
@@ -116,6 +120,9 @@ interface AiStand {
   modellenFout: string | null;
   oauthLopend: AiOAuthLopend | null;
   oauthFout: string | null;
+  /** Wat er op deze machine al draait of klaarstaat (alleen vlaggen, geen sleutels). */
+  lokaleBronnen: AiLokaleBron[];
+  lokaleBezig: boolean;
   /** Externe MCP-servers (stdio / HTTP) en hun verbindingsstatus. */
   mcpServers: McpExternServerConfig[];
   mcpStatussen: Record<string, McpExternStatus>;
@@ -135,6 +142,12 @@ interface AiStand {
   werkProfielBij(id: string, wijziging: Partial<AiProfiel>): Promise<void>;
   werkOAuthBij(id: string, wijziging: Partial<AiOAuthConfig>): Promise<void>;
   voegProfielToe(sjabloonId: string, naam?: string): Promise<string>;
+  /** Een aanbieder uit de catalogus als profiel toevoegen (de wizard). */
+  voegLeverancierToe(leverancier: Leverancier, naam?: string): Promise<string>;
+  /** Zoek op deze machine naar draaiende modelservers en CLI-configuratie. */
+  detecteerLokaal(): Promise<void>;
+  /** De sleutel van een lokale configuratie overnemen in de sleutelbos. */
+  importeerLokaal(bron: LokaleBron): Promise<string>;
   verwijderProfiel(id: string): Promise<void>;
   bewaarSleutel(sleutel: string): Promise<void>;
   bewaarClientSecret(secret: string): Promise<void>;
@@ -249,6 +262,8 @@ export const useAiStore = create<AiStand>((set, get) => ({
   modellenFout: null,
   oauthLopend: null,
   oauthFout: null,
+  lokaleBronnen: [],
+  lokaleBezig: false,
   mcpServers: [],
   mcpStatussen: {},
   mcpBezig: {},
@@ -353,6 +368,83 @@ export const useAiStore = create<AiStand>((set, get) => ({
     await bewaarInstellingen(id, profielen);
     if (get().beschikbaar) {
       const st = await profielStatus(id);
+      set({ statussen: { ...get().statussen, [id]: st } });
+    }
+    return id;
+  },
+
+  async voegLeverancierToe(leverancier, naam) {
+    const bestaande = get().profielen;
+    const bestaand = bestaande.find((p) => p.id === leverancier.id);
+    if (bestaand) {
+      // Het profiel bestaat al (de drie standaardaanbieders): alleen de
+      // aanmeldwijze bijwerken en nooit een bestaande OAuth-instelling wissen.
+      const wijziging: Partial<AiProfiel> = {};
+      if (bestaand.authModus !== leverancier.authModus) wijziging.authModus = leverancier.authModus;
+      if (leverancier.oauth && !bestaand.oauth) {
+        wijziging.oauth = {
+          ...leverancier.oauth,
+          ...(leverancier.oauth.extraParams
+            ? { extraParams: { ...leverancier.oauth.extraParams } }
+            : {}),
+        };
+      }
+      if (Object.keys(wijziging).length > 0) await get().werkProfielBij(bestaand.id, wijziging);
+      await get().kiesProfiel(bestaand.id);
+      return bestaand.id;
+    }
+    const label = naam && naam.trim() !== "" ? naam.trim() : leverancier.naam;
+    const id = maakProfielId(
+      leverancier.id.startsWith("custom") && !naam ? "custom" : leverancier.id,
+      bestaande.map((p) => p.id),
+    );
+    const nieuw: AiProfiel = {
+      id,
+      naam: label,
+      aanbieder: leverancier.aanbieder,
+      endpoint: leverancier.endpoint,
+      model: leverancier.modellen[0] ?? "",
+      authModus: leverancier.authModus,
+      ...(leverancier.oauth
+        ? {
+            oauth: {
+              ...leverancier.oauth,
+              ...(leverancier.oauth.extraParams
+                ? { extraParams: { ...leverancier.oauth.extraParams } }
+                : {}),
+            },
+          }
+        : {}),
+      ...(leverancier.extraKoppen ? { extraKoppen: { ...leverancier.extraKoppen } } : {}),
+    };
+    const profielen = [...bestaande, nieuw];
+    set({ profielen, actiefId: id, fout: null, oauthFout: null, modellenFout: null });
+    await bewaarInstellingen(id, profielen);
+    if (get().beschikbaar) {
+      const st = await profielStatus(id);
+      set({ statussen: { ...get().statussen, [id]: st } });
+    }
+    return id;
+  },
+
+  async detecteerLokaal() {
+    if (!get().beschikbaar) {
+      set({ lokaleBronnen: [] });
+      return;
+    }
+    set({ lokaleBezig: true });
+    try {
+      const bronnen = await detecteerLokaalRust();
+      set({ lokaleBronnen: bronnen, lokaleBezig: false });
+    } catch {
+      set({ lokaleBronnen: [], lokaleBezig: false });
+    }
+  },
+
+  async importeerLokaal(bron) {
+    const id = await get().voegLeverancierToe(leverancierUitBron(bron));
+    if (bron.heeft_geheim) {
+      const st = await importeerLokaalRust(bron.id, id);
       set({ statussen: { ...get().statussen, [id]: st } });
     }
     return id;

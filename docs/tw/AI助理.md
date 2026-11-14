@@ -45,11 +45,35 @@ App 內建的 AI 助理（OCSS 規格 P2-15）。標題列的 **AI** 按鈕開�
 
 ## 提供者、第三方模型與 OAuth 登入
 
-面板的「服務提供者」區塊支援**三個預設提供者**，並可自由新增任意數量的**自定義第三方或本機大模型**，各自可選擇**API 金鑰**、**OAuth 2.0 登入**或**無須驗證**：
+面板的「模型供應商」區塊只列出**已經加入的供應商**：名稱、連線狀態、目前模型，以及「設定」按鈕。
+新增供應商一律走三步驟精靈「**新增供應商 → 連線 → 選擇模型**」，
+使用者不會再看到 OAuth 授權網址、Client ID、Scopes、Callback 路徑、連接埠、Token 格式等協定細節；
+那些欄位只藏在該供應商「設定」裡的「進階設定」摺疊區，供自訂端點的情況使用。
+
+精靈第一步是供應商目錄，分四組：
+
+| 分組 | 內容 |
+|---|---|
+| 訂閱帳號登入 | ChatGPT Plus／Pro（Codex 裝置代碼與 PKCE）、OpenRouter（PKCE） |
+| API 金鑰 | Anthropic、OpenAI、Google Gemini、DeepSeek、Groq、xAI、Mistral、智譜 GLM、Moonshot Kimi、SiliconFlow；每列都有「前往取得 API 金鑰」的官方連結與建議模型 |
+| 本機模型 | Ollama、LM Studio、llama.cpp、vLLM、Magpie（預填 localhost 位址，免金鑰） |
+| 自訂端點 | OpenAI／Anthropic／Gemini 三種協定的自訂端點 |
+
+### 本機已偵測
+
+精靈開啟時會呼叫 `ai_detecteer_lokaal` 掃描這台機器，結果列在目錄最上方：
+
+- **正在執行的模型伺服器**：Ollama（`127.0.0.1:11434`）、LM Studio（`:1234`）、llama.cpp（`:8080`）、vLLM（`:8000`）、Magpie（`:3425`），以 `GET /v1/models` 探測。
+- **已存的 CLI 設定**：`~/.claude/settings.json`（`ANTHROPIC_API_KEY`／`ANTHROPIC_AUTH_TOKEN`、`ANTHROPIC_BASE_URL`）、
+  `~/.codex/auth.json` 與 `~/.codex/config.toml`（`OPENAI_API_KEY` 或既有登入）、
+  `~/.config/opencode/opencode.json` 與 `~/.local/share/opencode/auth.json`。
+
+偵測是唯讀的，回傳前端的只有「有沒有金鑰」這個旗標；使用者按下該列才會呼叫 `ai_importeer_lokaal`，
+由 Rust 直接讀取設定檔並把金鑰寫進作業系統金鑰環，金鑰本身不會經過前端。
 
 ### 預設提供者（API 金鑰與 OAuth 2.0 登入）
 
-三個預設提供者皆支援 **API 金鑰**，以及 **OAuth 2.0**（`Authorization: Bearer`）認證模式：
+三個預設提供者皆支援 **API 金鑰**，其中 OpenAI 與 Google 另備 **OAuth 2.0**（`Authorization: Bearer`）設定：
 
 | 提供者 | 協定 | 端點（預設） | 模型（預設） | OAuth 流程與實際端點 |
 |---|---|---|---|---|
@@ -59,27 +83,35 @@ App 內建的 AI 助理（OCSS 規格 P2-15）。標題列的 **AI** 按鈕開�
 
 > 注意：Anthropic 僅對第一方官方用戶端提供訂閱 OAuth 並禁止第三方工具冒用；Google 桌面端 OAuth 依規定需帶 `client_secret`，為避免在公開程式碼庫存放憑證，請於面板填入自建 Google Cloud Desktop OAuth Client ID／Secret（存於作業系統金鑰環）或直接填 Gemini API 金鑰。
 
-### 新增第三方／本機大模型
+### 自訂端點與進階設定
 
-點選「**+ 新增模型**」即可建立自訂設定檔，並附有常用預設範本（建好後仍可自由修改名稱、API 協定、端點、模型與**自訂 HTTP 標頭**）：
+供應商目錄最下方是「**自訂端點**」，可自選 OpenAI／Anthropic／Gemini 三種協定，
+填入名稱、Base URL 與選填的 API 金鑰（本機位址且金鑰留空時自動視為免驗證）。
+建好之後，每一張供應商卡片的「**進階設定**」摺疊區仍可自由修改名稱、API 協定、端點、模型與
+`Key: Value` 格式的**自訂 HTTP 標頭**（例如 OpenRouter 的 `HTTP-Referer`、`X-Title` 或企業代理標頭；
+`Authorization`、`x-api-key`、`Host` 等受保護標頭由 Rust 端過濾阻擋），以及完整的 OAuth 參數。
 
-- **OpenAI 相容**（`openai`）：OpenRouter、DeepSeek、Groq、xAI、Mistral、智譜 Z.AI、Moonshot (Kimi)、vLLM、LiteLLM，以及本機 **Ollama**（`http://127.0.0.1:11434/v1`）、**LM Studio**（`http://127.0.0.1:1234/v1`）、**magpie**（`http://127.0.0.1:3425`）；
-- **Anthropic 相容**（`anthropic`）：自架或第三方 Anthropic Messages API 代理；
-- **Google Gemini 相容**（`gemini`）：自訂 Vertex／Gemini 端點。
-
-端點處理會依第三方的路徑前綴（例如 `/api/v1`、`/openai/v1`、`/v1`）自動接上 `/chat/completions` 或 `/models`，不會重複串出 `/v1/v1`。自訂設定檔可填入 `Key: Value` 格式的額外 HTTP 標頭（例如 OpenRouter 的 `HTTP-Referer`、`X-Title` 或企業代理標頭；`Authorization`、`x-api-key`、`Host` 等受保護標頭由 Rust 端過濾阻擋）。
+端點處理會依第三方的路徑前綴（例如 `/api/v1`、`/openai/v1`、`/v1`）自動接上 `/chat/completions` 或 `/models`，
+不會重複串出 `/v1/v1`。
 
 ### 抓取可用模型列表
 
-每個設定檔在模型欄位旁都有「**抓取模型列表**」按鈕，呼叫對應端點的模型清單（Anthropic `/v1/models`、OpenAI 相容 `/v1/models`、ChatGPT Codex OAuth `chatgpt.com/backend-api/codex/models`、Gemini `/v1beta/models`，並沿用該設定檔目前的 API 金鑰、OAuth 權杖與自訂標頭）；抓取成功後會出現下拉選單供直接選取，下方仍保留手動輸入欄以便指定任何模型 ID。
+精靈第三步與每張供應商卡片都會呼叫對應端點的模型清單
+（Anthropic `/v1/models`、OpenAI 相容 `/v1/models`、ChatGPT Codex OAuth `chatgpt.com/backend-api/codex/models`、
+Gemini `/v1beta/models`，並沿用該供應商目前的 API 金鑰、OAuth 權杖與自訂標頭）。
+抓取失敗或回空時，清單自動退回該供應商的**建議模型**，使用者不會被卡住；下方仍保留手動輸入欄以便指定任何模型 ID。
 
 ### 驗證方式與金鑰環安全
 
-每個設定檔可獨立選擇：
+每個供應商可獨立選擇：
 
 1. **API 金鑰**（`apikey`）：以 `x-api-key`（Anthropic）、`?key=`（Gemini）或 `Authorization: Bearer`（OpenAI 相容）送出；連往 `localhost`/`127.0.0.1` 時不強制填金鑰。
-2. **OAuth 登入**（`oauth`）：支援標準 **OAuth 2.0 Authorization Code + PKCE**（S256，可自訂回呼主機 `127.0.0.1`/`localhost`、回呼路徑與連接埠、form/JSON token 交換格式、CSRF `state` 或 `state=verifier` 驗證、`code#state` 貼上完成）、**裝置代碼登入**（OpenAI Device Code Flow）與 **OpenRouter PKCE**，並內建 Anthropic、OpenAI、Google、OpenRouter、GitHub 與自訂 OAuth 範本。支援 `refresh_token` 在過期前自動續期並回存金鑰環。
-3. **無須驗證**（`none`）：不送授權標頭，適合無需驗證的本機 Ollama／LM Studio／magpie。
+2. **OAuth 登入**（`oauth`）：支援標準 **OAuth 2.0 Authorization Code + PKCE**（S256，可自訂回呼主機 `127.0.0.1`/`localhost`、回呼路徑與連接埠、form/JSON token 交換格式、CSRF `state` 或 `state=verifier` 驗證、`code#state` 貼上完成）、**裝置代碼登入**（OpenAI Device Code Flow）與 **OpenRouter PKCE**；`OAuthSectie` 內建 OpenAI、Google、OpenRouter、GitHub 與自訂範本。支援 `refresh_token` 在過期前自動續期並回存金鑰環。
+3. **無須驗證**（`none`）：不送授權標頭，適合無需驗證的本機 Ollama／LM Studio／llama.cpp／vLLM／Magpie。
+
+> Anthropic 未對第三方開放訂閱 OAuth，本 App 不會冒用官方 CLI 身分，因此 Anthropic 一律走 API 金鑰。
+> Google 桌面端 OAuth 需帶 `client_secret`，公開發行版未內建，請在「進階設定」填入自建 Client ID／Secret
+> （存於作業系統金鑰環）或改用 Gemini API 金鑰。
 
 **所有金鑰、OAuth 權杖與選填的 Client Secret 只存在作業系統金鑰環**（Windows 認證管理員、macOS Keychain、Secret Service），由 `src-tauri/src/ai.rs` 經 `keyring` 存取（服務名稱 `open-calcsheet-studio-ai`，依設定檔代號隔離成 `<id>`、`oauth:<id>`、`oauth_secret:<id>`）。機密不會寫進 `preferences.json`、專案檔或日誌；App 只能查詢「是否已儲存／帳號／是否過期」，讀不回秘鑰內容。端點、模型、協定與 OAuth 非機密參數則存在 `preferences.json` 的 `aiInstellingen`（相容舊版單筆設定並自動遷移）。
 
@@ -111,19 +143,23 @@ SSE 逐段解析後以 Tauri channel 回傳，所以畫面是逐字出現的。
 | `src/components/ai/agent.ts` | 對話迴圈：呼叫提供者、執行工具、核准、回合上限 |
 | `src/components/ai/beleid.ts` | 哪一步要問、哪一步先看差異；參數摘要與逐行比較 |
 | `src/components/ai/prompt.ts` | 系統提示與 `@` 範圍解析 |
+| `src/components/ai/leveranciers.ts` | 供應商目錄：分組、建議模型、官方 API 金鑰取得連結、本機偵測結果轉供應商 |
 | `src/components/ai/profielen.ts` | 預設與第三方大模型範本、OAuth 範本、設定檔遷移與就緒檢查 |
+| `src/components/ai/AanbiederWizard.tsx` | 三步驟新增供應商精靈（選擇供應商 → 連線 → 選擇模型） |
+| `src/components/ai/OAuthSectie.tsx` | OAuth 登入流程與（收在「進階設定」裡的）原始 OAuth 參數 |
 | `src/components/ai/mcpExtern.ts` | 外部 MCP 伺服器範本、工具命名空間（`mcp__*`）與設定遷移 |
-| `src/store/aiStore.ts` | 面板狀態、多設定檔、OAuth 登入、模型列表、外部 MCP 連線與步驟 |
-| `src/components/ai/AiPaneel.tsx`、`.css` | 面板本體（設定檔管理、模型下拉選單、OAuth 流程、外部 MCP 設定） |
-| `src/tauri/ai.ts`、`src/tauri/mcpExtern.ts` | 前端到 Rust 的介面（對話 channel、OAuth PKCE、模型抓取、外部 MCP 呼叫） |
-| `src-tauri/src/ai.rs`、`src-tauri/src/mcp_client.rs` | 金鑰環、OAuth 2.0 PKCE 與續期、模型抓取、SSE 解析、外部 MCP stdio/HTTP 客戶端 |
+| `src/store/aiStore.ts` | 面板狀態、多供應商、本機偵測與匯入、OAuth 登入、模型列表、外部 MCP 連線與步驟 |
+| `src/components/ai/AiPaneel.tsx`、`.css` | 面板本體（供應商清單、模型下拉選單、OAuth 流程、外部 MCP 設定） |
+| `src/tauri/ai.ts`、`src/tauri/mcpExtern.ts` | 前端到 Rust 的介面（對話 channel、OAuth PKCE、本機偵測、模型抓取、外部 MCP 呼叫） |
+| `src-tauri/src/ai.rs`、`src-tauri/src/mcp_client.rs` | 金鑰環、OAuth 2.0 PKCE 與續期、本機供應商偵測與金鑰匯入、模型抓取、SSE 解析、外部 MCP stdio/HTTP 客戶端 |
 
 ## 驗證
 
 ```bash
-node scripts/check-ai-agent.mjs                     # 93 項：政策、差異、@ 範圍、迴圈、設定檔／OAuth、外部 MCP
+node scripts/check-ai-agent.mjs                     # 104 項：政策、差異、@ 範圍、迴圈、供應商目錄、設定檔／OAuth、外部 MCP
+node scripts/valideer-tw-i18n-keys.mjs ai           # zh-TW 與 en 的 ai 鍵是否對齊
 cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib ai::
 cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib mcp_client::
 ```
 
-未涵蓋：真實提供者的串流、OAuth 瀏覽器實際授權與金鑰環存取（需要真實帳號／金鑰與實機桌面環境），面板版面的目視檢查。
+未涵蓋：真實提供者的串流、OAuth 瀏覽器實際授權與金鑰環存取（需要真實帳號／金鑰與實機桌面環境）、本機模型伺服器偵測（需要實際執行 Ollama／LM Studio），面板版面的目視檢查。

@@ -117,7 +117,7 @@ export const GEMINI_OAUTH: AiOAuthConfig = {
   extraParams: { access_type: "offline", prompt: "consent" },
 };
 
-const OPENROUTER_OAUTH: AiOAuthConfig = {
+export const OPENROUTER_OAUTH: AiOAuthConfig = {
   soort: "openrouter",
   authUrl: "https://openrouter.ai/auth",
   tokenUrl: "https://openrouter.ai/api/v1/auth/keys",

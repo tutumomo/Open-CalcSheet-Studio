@@ -450,3 +450,223 @@
   justify-content: space-between;
   gap: 8px;
 }
+
+/* ── Aanbieders, wizard en de koppenKeuze in de titelbalk ──────────────── */
+
+/* De keuzelijsten in de kop: geen invoerveld, wel een knop van dezelfde hoogte. */
+.ai-kop-kies {
+  max-width: 150px;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-s, 4px);
+  background: none;
+  color: var(--oa-text-secondary);
+  font-size: var(--oa-size-small, 0.88em);
+  padding: 2px 4px;
+  cursor: pointer;
+}
+
+.ai-kop-kies:hover {
+  border-color: var(--oa-border);
+}
+
+/* De lijst met gekoppelde aanbieders. */
+.ai-provider-lijst {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-provider {
+  border: 1px solid var(--oa-border-subtle);
+  border-radius: var(--oa-radius-m, 8px);
+  padding: 8px;
+  background: var(--oa-surface-raised, transparent);
+}
+
+.ai-provider-actief {
+  border-color: var(--oa-accent);
+}
+
+.ai-provider-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.ai-provider-naam {
+  background: none;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: var(--oa-text);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-provider-status {
+  flex: 0 0 auto;
+  font-size: var(--oa-size-small, 0.88em);
+  color: var(--oa-text-muted);
+}
+
+.ai-provider-status-ok {
+  color: var(--oa-success);
+}
+
+.ai-provider-rij {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.ai-provider-rij select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ai-provider-velden {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--oa-border-subtle);
+}
+
+/* De wizard. */
+.ai-wizard {
+  border: 1px solid var(--oa-accent);
+  border-radius: var(--oa-radius-m, 8px);
+  padding: 10px;
+  margin: 8px 0;
+  background: var(--oa-surface-sunken, transparent);
+}
+
+.ai-wizard-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.ai-wizard-titel {
+  font-weight: 600;
+}
+
+.ai-wizard-stappen {
+  display: flex;
+  gap: 4px;
+}
+
+.ai-wizard-stap {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid var(--oa-border);
+  color: var(--oa-text-muted);
+  font-size: 11px;
+  line-height: 16px;
+  text-align: center;
+}
+
+.ai-wizard-stap-actief {
+  border-color: var(--oa-accent);
+  background: var(--oa-accent);
+  color: var(--oa-text-on-accent, #fff);
+}
+
+.ai-wizard-inhoud {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.ai-wizard-zoek {
+  width: 100%;
+}
+
+.ai-wizard-onderwerp {
+  font-weight: 600;
+}
+
+.ai-leverancier-groep {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-groep-kop {
+  font-size: var(--oa-size-small, 0.88em);
+  color: var(--oa-text-muted);
+  margin-top: 4px;
+}
+
+.ai-leverancier {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 6px 8px;
+  border: 1px solid var(--oa-border-subtle);
+  border-radius: var(--oa-radius-s, 4px);
+  background: var(--oa-surface-raised, transparent);
+  color: var(--oa-text);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.ai-leverancier:hover:not(:disabled) {
+  border-color: var(--oa-accent);
+}
+
+.ai-leverancier-naam {
+  font-weight: 500;
+}
+
+.ai-leverancier-hint {
+  font-size: var(--oa-size-small, 0.88em);
+  color: var(--oa-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 100%;
+}
+
+.ai-leverancier-link {
+  color: var(--oa-accent);
+  font-size: var(--oa-size-small, 0.88em);
+}
+
+.ai-model-lijst {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  max-height: 180px;
+  overflow-y: auto;
+}
+
+.ai-model-knop {
+  padding: 4px 8px;
+  border: 1px solid var(--oa-border-subtle);
+  border-radius: var(--oa-radius-s, 4px);
+  background: var(--oa-surface-raised, transparent);
+  color: var(--oa-text);
+  font: inherit;
+  font-size: var(--oa-size-small, 0.88em);
+  cursor: pointer;
+}
+
+.ai-model-knop-actief {
+  border-color: var(--oa-accent);
+  background: var(--oa-accent);
+  color: var(--oa-text-on-accent, #fff);
+}

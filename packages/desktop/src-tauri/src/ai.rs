@@ -2653,6 +2653,298 @@ pub fn ai_stop(staat: tauri::State<'_, AiState>) {
     staat.stop.store(true, Ordering::SeqCst);
 }
 
+// ── Lokale bronnen: draaiende servers en opgeslagen CLI-configuratie ───────
+//
+// De zijbalk laat zien wat er op deze machine al klaarstaat. Detectie is
+// alleen-lezen: er wordt niets geïmporteerd voordat de gebruiker het kiest, en
+// een gevonden sleutel verlaat Rust nooit — naar de voorkant gaat uitsluitend
+// de vlag `heeft_geheim`.
+
+/// Eén gevonden bron. `heeft_geheim` zegt of er een sleutel klaarstaat; de
+/// sleutel zelf gaat nooit mee.
+#[derive(Serialize, Clone, Debug, PartialEq)]
+pub struct LokaalBron {
+    pub id: String,
+    pub naam: String,
+    /// "server" (draait nu) of "config" (opgeslagen CLI-instelling).
+    pub soort: String,
+    pub aanbieder: String,
+    pub endpoint: String,
+    /// Leeg betekent: nog geen model bekend, de gebruiker kiest er een.
+    pub model: String,
+    pub auth_modus: String,
+    pub heeft_geheim: bool,
+}
+
+/// De lokale servers die we herkennen. Allemaal OpenAI-compatibel op `/v1`.
+const LOKALE_SERVERS: [(&str, &str, &str); 5] = [
+    ("ollama", "Ollama", "http://127.0.0.1:11434/v1"),
+    ("lmstudio", "LM Studio", "http://127.0.0.1:1234/v1"),
+    ("llamacpp", "llama.cpp", "http://127.0.0.1:8080/v1"),
+    ("vllm", "vLLM", "http://127.0.0.1:8000/v1"),
+    ("magpie", "Magpie", "http://127.0.0.1:3425/v1"),
+];
+
+fn thuis_map() -> Option<std::path::PathBuf> {
+    std::env::var_os("HOME")
+        .or_else(|| std::env::var_os("USERPROFILE"))
+        .map(std::path::PathBuf::from)
+}
+
+/// Leest een JSON-bestand, maar niet als het onredelijk groot is.
+fn lees_json_bestand(pad: &std::path::Path) -> Option<Value> {
+    let meta = std::fs::metadata(pad).ok()?;
+    if !meta.is_file() || meta.len() > 4 * 1024 * 1024 {
+        return None;
+    }
+    let tekst = std::fs::read_to_string(pad).ok()?;
+    serde_json::from_str(&tekst).ok()
+}
+
+fn lees_tekst_bestand(pad: &std::path::Path) -> Option<String> {
+    let meta = std::fs::metadata(pad).ok()?;
+    if !meta.is_file() || meta.len() > 1024 * 1024 {
+        return None;
+    }
+    std::fs::read_to_string(pad).ok()
+}
+
+fn json_string(value: Option<&Value>) -> Option<String> {
+    let s = value?.as_str()?.trim();
+    (!s.is_empty()).then(|| s.to_string())
+}
+
+/// `sleutel = "waarde"` uit een TOML-regel; genoeg voor de twee velden die we
+/// uit Codex' config.toml halen.
+fn toml_waarde(tekst: &str, sleutel: &str) -> Option<String> {
+    for regel in tekst.lines() {
+        let regel = regel.trim();
+        if regel.starts_with('#') {
+            continue;
+        }
+        let Some(rest) = regel.strip_prefix(sleutel) else {
+            continue;
+        };
+        let Some(rest) = rest.trim_start().strip_prefix('=') else {
+            continue;
+        };
+        let rest = rest.trim();
+        let waarde = rest.trim_matches('"').trim();
+        if !waarde.is_empty() {
+            return Some(waarde.to_string());
+        }
+    }
+    None
+}
+
+/// De CLI-configuraties die we herkennen. Alleen-lezen, alleen vlaggen.
+fn detecteer_lokale_configs() -> Vec<LokaalBron> {
+    let Some(thuis) = thuis_map() else {
+        return Vec::new();
+    };
+    let mut uit = Vec::new();
+
+    // Claude Code: ~/.claude/settings.json → env.ANTHROPIC_*
+    if let Some(settings) = lees_json_bestand(&thuis.join(".claude").join("settings.json")) {
+        let env = settings.get("env");
+        let sleutel = json_string(env.and_then(|e| e.get("ANTHROPIC_API_KEY")))
+            .or_else(|| json_string(env.and_then(|e| e.get("ANTHROPIC_AUTH_TOKEN"))));
+        let endpoint = json_string(env.and_then(|e| e.get("ANTHROPIC_BASE_URL")))
+            .unwrap_or_else(|| "https://api.anthropic.com".to_string());
+        let model = json_string(env.and_then(|e| e.get("ANTHROPIC_MODEL"))).unwrap_or_default();
+        uit.push(LokaalBron {
+            id: "config:claude".into(),
+            naam: "Claude Code".into(),
+            soort: "config".into(),
+            aanbieder: "anthropic".into(),
+            endpoint,
+            model,
+            auth_modus: "apikey".into(),
+            heeft_geheim: sleutel.is_some(),
+        });
+    }
+
+    // Codex: ~/.codex/auth.json + ~/.codex/config.toml
+    let codex_map = thuis.join(".codex");
+    let codex_auth = lees_json_bestand(&codex_map.join("auth.json"));
+    let codex_config = lees_tekst_bestand(&codex_map.join("config.toml"));
+    if codex_auth.is_some() || codex_config.is_some() {
+        let sleutel = codex_auth
+            .as_ref()
+            .and_then(|a| json_string(a.get("OPENAI_API_KEY")));
+        let oauth = codex_auth
+            .as_ref()
+            .and_then(|a| a.get("tokens"))
+            .and_then(|t| json_string(t.get("access_token")));
+        let model = codex_config
+            .as_deref()
+            .and_then(|t| toml_waarde(t, "model"))
+            .unwrap_or_default();
+        let endpoint = codex_config
+            .as_deref()
+            .and_then(|t| toml_waarde(t, "base_url"))
+            .unwrap_or_else(|| "https://api.openai.com".to_string());
+        uit.push(LokaalBron {
+            id: "config:codex".into(),
+            naam: "Codex CLI".into(),
+            soort: "config".into(),
+            aanbieder: "openai".into(),
+            endpoint,
+            model,
+            auth_modus: if sleutel.is_some() { "apikey" } else { "oauth" }.into(),
+            heeft_geheim: sleutel.is_some() || oauth.is_some(),
+        });
+    }
+
+    // opencode: ~/.config/opencode/opencode.json + ~/.local/share/opencode/auth.json
+    let opencode_config = lees_json_bestand(&thuis.join(".config").join("opencode").join("opencode.json"));
+    let opencode_auth = lees_json_bestand(
+        &thuis
+            .join(".local")
+            .join("share")
+            .join("opencode")
+            .join("auth.json"),
+    );
+    if opencode_config.is_some() || opencode_auth.is_some() {
+        let provider = opencode_config
+            .as_ref()
+            .and_then(|c| c.get("provider"))
+            .and_then(|p| p.as_object())
+            .and_then(|p| p.iter().next());
+        let endpoint = provider
+            .and_then(|(_, v)| v.get("options"))
+            .and_then(|o| o.get("baseURL").or_else(|| o.get("baseUrl")))
+            .and_then(|v| json_string(Some(v)))
+            .unwrap_or_else(|| "https://api.openai.com".to_string());
+        let model = opencode_config
+            .as_ref()
+            .and_then(|c| json_string(c.get("model")))
+            .unwrap_or_default();
+        let mut heeft_geheim = provider
+            .and_then(|(_, v)| v.get("options"))
+            .and_then(|o| json_string(o.get("apiKey")))
+            .is_some();
+        if !heeft_geheim {
+            if let Some(auth) = opencode_auth.as_ref().and_then(|a| a.as_object()) {
+                heeft_geheim = auth
+                    .values()
+                    .any(|v| json_string(v.get("key")).is_some());
+            }
+        }
+        uit.push(LokaalBron {
+            id: "config:opencode".into(),
+            naam: "opencode".into(),
+            soort: "config".into(),
+            aanbieder: "openai".into(),
+            endpoint,
+            model,
+            auth_modus: "apikey".into(),
+            heeft_geheim,
+        });
+    }
+
+    uit
+}
+
+/// De sleutel uit een lokale configuratie halen. Blijft binnen Rust.
+fn lees_lokaal_geheim(bron: &str) -> Result<Option<Zeroizing<String>>, String> {
+    let Some(thuis) = thuis_map() else {
+        return Ok(None);
+    };
+    match bron {
+        "config:claude" => {
+            let settings = lees_json_bestand(&thuis.join(".claude").join("settings.json"))
+                .ok_or_else(|| "no Claude Code settings found".to_string())?;
+            let env = settings.get("env");
+            Ok(
+                json_string(env.and_then(|e| e.get("ANTHROPIC_API_KEY")))
+                    .or_else(|| json_string(env.and_then(|e| e.get("ANTHROPIC_AUTH_TOKEN"))))
+                    .map(Zeroizing::new),
+            )
+        }
+        "config:codex" => {
+            let auth = lees_json_bestand(&thuis.join(".codex").join("auth.json"))
+                .ok_or_else(|| "no Codex login found".to_string())?;
+            Ok(json_string(auth.get("OPENAI_API_KEY")).map(Zeroizing::new))
+        }
+        "config:opencode" => {
+            if let Some(config) =
+                lees_json_bestand(&thuis.join(".config").join("opencode").join("opencode.json"))
+            {
+                let uit_config = config
+                    .get("provider")
+                    .and_then(|p| p.as_object())
+                    .and_then(|p| p.values().next())
+                    .and_then(|v| v.get("options"))
+                    .and_then(|o| json_string(o.get("apiKey")));
+                if let Some(sleutel) = uit_config {
+                    return Ok(Some(Zeroizing::new(sleutel)));
+                }
+            }
+            let auth = lees_json_bestand(
+                &thuis
+                    .join(".local")
+                    .join("share")
+                    .join("opencode")
+                    .join("auth.json"),
+            )
+            .ok_or_else(|| "no opencode login found".to_string())?;
+            let sleutel = auth
+                .as_object()
+                .and_then(|a| a.values().find_map(|v| json_string(v.get("key"))));
+            Ok(sleutel.map(Zeroizing::new))
+        }
+        _ => Ok(None),
+    }
+}
+
+/// Korte probe: draait er op deze poort een modelserver?
+fn probeer_server(endpoint: &str) -> bool {
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_millis(600))
+        .timeout_read(Duration::from_millis(1200))
+        .build();
+    match agent.get(&format!("{endpoint}/models")).call() {
+        Ok(resp) => resp.status() == 200,
+        Err(_) => false,
+    }
+}
+
+/// Wat er nu op deze machine klaarstaat. Nooit een sleutel, alleen vlaggen.
+#[tauri::command]
+pub async fn ai_detecteer_lokaal() -> Vec<LokaalBron> {
+    let mut uit = detecteer_lokale_configs();
+    for (id, naam, endpoint) in LOKALE_SERVERS {
+        if probeer_server(endpoint) {
+            uit.push(LokaalBron {
+                id: format!("server:{id}"),
+                naam: naam.into(),
+                soort: "server".into(),
+                aanbieder: "openai".into(),
+                endpoint: endpoint.into(),
+                model: String::new(),
+                auth_modus: "none".into(),
+                heeft_geheim: false,
+            });
+        }
+    }
+    uit
+}
+
+/// De sleutel van een lokale configuratie in de sleutelbos zetten, onder het
+/// profiel dat de gebruiker koos. De sleutel gaat niet naar de voorkant.
+#[tauri::command]
+pub async fn ai_importeer_lokaal(
+    bron: String,
+    profiel: String,
+) -> Result<ProfielAuthStatus, String> {
+    let profiel = profiel_id(&profiel)?;
+    let geheim = lees_lokaal_geheim(&bron)?
+        .ok_or_else(|| "this source has no stored credential".to_string())?;
+    crate::erpnext::bewaar_geheim(DIENST, &profiel, &geheim)?;
+    lees_profiel_status_sync(&profiel)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

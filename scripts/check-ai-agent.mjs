@@ -37,6 +37,14 @@ import {
   vulOAuthAan,
 } from "../packages/desktop/src/components/ai/profielen.ts";
 import {
+  GROEP_VOLGORDE,
+  LEVERANCIERS,
+  groepSleutel,
+  leverancierUitBron,
+  leverancierVoorProfiel,
+  zoekLeveranciers,
+} from "../packages/desktop/src/components/ai/leveranciers.ts";
+import {
   MCP_EXTERN_SJABLONEN,
   bouwExternToolKaart,
   externeToolNaam,
@@ -441,6 +449,73 @@ toets("leesKoppen en schrijfKoppen verwerken extra headers zonder lege regels",
   koppen["X-Api-Version"] === "2026-01" &&
   koppen["Authorization"] === "negeer" &&
   schrijfKoppen({ "X-A": "1", "X-B": "2" }).includes("X-A: 1"));
+
+// ── 5b. De leverancierscatalogus (de wizard) ───────────────────────────────
+console.log("\n5b. De leverancierscatalogus");
+toets("de catalogus dekt de vier groepen",
+  GROEP_VOLGORDE.every((g) => LEVERANCIERS.some((l) => l.groep === g)),
+  GROEP_VOLGORDE.map((g) => [g, LEVERANCIERS.filter((l) => l.groep === g).length]));
+toets("elke aanbieder heeft een naam, een endpoint en een geldig protocol",
+  LEVERANCIERS.every(
+    (l) =>
+      l.naam.trim() !== "" &&
+      (l.groep === "eigen" || l.endpoint.trim() !== "") &&
+      ["anthropic", "openai", "gemini"].includes(l.aanbieder) &&
+      ["apikey", "oauth", "none"].includes(l.authModus) &&
+      Array.isArray(l.modellen),
+  ));
+toets("de id's zijn uniek", new Set(LEVERANCIERS.map((l) => l.id)).size === LEVERANCIERS.length);
+toets("de groepskoppen hebben een i18n-sleutel per groep",
+  GROEP_VOLGORDE.every((g) => /^leverancierGroep[A-Z][a-z]+$/.test(groepSleutel(g))) &&
+  groepSleutel("abonnement") === "leverancierGroepAbonnement");
+
+// Een abonnement moet zonder invoer van de gebruiker kunnen inloggen: een
+// autorisatie- en tokenadres, en een client_id behalve bij OpenRouter (dat
+// werkt met een callback-URL in plaats van een client).
+toets("abonnementen hebben een volledige OAuth-configuratie",
+  LEVERANCIERS.filter((l) => l.groep === "abonnement").every((l) => {
+    const o = l.oauth;
+    if (!o || o.authUrl === "" || o.tokenUrl === "") return false;
+    if (o.soort === "openrouter") return true;
+    return o.clientId.trim() !== "";
+  }),
+  LEVERANCIERS.filter((l) => l.groep === "abonnement").map((l) => [l.id, l.oauth?.clientId]));
+toets("elke sleutelaanbieder wijst naar een officiele https-pagina",
+  LEVERANCIERS.filter((l) => l.groep === "sleutel").every(
+    (l) => typeof l.sleutelUrl === "string" && l.sleutelUrl.startsWith("https://"),
+  ));
+toets("lokale aanbieders vragen geen sleutel en wijzen naar deze machine",
+  LEVERANCIERS.filter((l) => l.groep === "lokaal").every(
+    (l) => l.authModus === "none" && isLokaalEndpoint(l.endpoint),
+  ));
+toets("de catalogus biedt geen Anthropic-abonnement aan (bestaat niet in ai.rs)",
+  !LEVERANCIERS.some((l) => l.groep === "abonnement" && l.aanbieder === "anthropic"));
+
+toets("zoeken filtert op naam, endpoint en model",
+  zoekLeveranciers("ollama").every((l) => l.naam.toLowerCase().includes("ollama")) &&
+  zoekLeveranciers("ollama").length >= 1 &&
+  zoekLeveranciers("bigmodel").some((l) => l.id === "zhipu") &&
+  zoekLeveranciers("grok-3").some((l) => l.id === "xai") &&
+  zoekLeveranciers("  ").length === LEVERANCIERS.length);
+
+const bronAlsAanbieder = leverancierUitBron({
+  id: "config:codex",
+  naam: "Codex CLI",
+  soort: "config",
+  aanbieder: "openai",
+  endpoint: "https://api.openai.com",
+  model: "gpt-5",
+  auth_modus: "apikey",
+  heeft_geheim: true,
+});
+toets("een lokale bron wordt een geldige aanbieder",
+  bronAlsAanbieder.naam === "Codex CLI" &&
+  bronAlsAanbieder.aanbieder === "openai" &&
+  bronAlsAanbieder.authModus === "apikey" &&
+  bronAlsAanbieder.modellen[0] === "gpt-5",
+  bronAlsAanbieder);
+toets("een onbekend profiel valt terug op een eigen endpoint",
+  leverancierVoorProfiel("mijn-eigen", "Mijn eigen", "openai").groep === "eigen");
 
 // ── 6. Externe MCP-servers (stdio / HTTP) ───────────────────────────────────
 console.log("\n6. Externe MCP-servers (stdio / HTTP)");

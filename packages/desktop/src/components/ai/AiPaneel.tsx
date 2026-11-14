@@ -13,7 +13,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAiStore } from "../../store/aiStore.ts";
-import { AI_SJABLONEN, OAUTH_SJABLONEN, leesKoppen, schrijfKoppen, verwachteRedirectUri, type AiProfiel } from "./profielen.ts";
+import { leesKoppen, schrijfKoppen } from "./profielen.ts";
+import { OAuthSectie } from "./OAuthSectie.tsx";
+import { AanbiederWizard } from "./AanbiederWizard.tsx";
 import {
   MCP_EXTERN_SJABLONEN,
   formatArgsTekst,
@@ -23,7 +25,7 @@ import {
   type McpExternServerConfig,
 } from "./mcpExtern.ts";
 import { voorbeeldTekst } from "./beleid.ts";
-import type { AiAanbieder, AiAuthModus, AiOAuthSoort, AiTokenFormaat } from "../../tauri/ai.ts";
+import type { AiAanbieder, AiAuthModus } from "../../tauri/ai.ts";
 import type { McpTransport } from "../../tauri/mcpExtern.ts";
 import type { Stap } from "./agent.ts";
 import "./AiPaneel.css";
@@ -74,359 +76,8 @@ function StapRegel({ stap }: { stap: Stap }) {
   );
 }
 
-function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
-  const { t } = useTranslation("ai");
-  const status = useAiStore((s) => s.statussen[profiel.id]);
-  const oauthLopend = useAiStore((s) => s.oauthLopend);
-  const oauthFout = useAiStore((s) => s.oauthFout);
-  const werkProfielBij = useAiStore((s) => s.werkProfielBij);
-  const werkOAuthBij = useAiStore((s) => s.werkOAuthBij);
-  const startOAuthLogin = useAiStore((s) => s.startOAuthLogin);
-  const startDeviceLogin = useAiStore((s) => s.startDeviceLogin);
-  const rondOAuthHandmatigAf = useAiStore((s) => s.rondOAuthHandmatigAf);
-  const annuleerOAuth = useAiStore((s) => s.annuleerOAuth);
-  const logOAuthUit = useAiStore((s) => s.logOAuthUit);
-  const bewaarClientSecret = useAiStore((s) => s.bewaarClientSecret);
-  const zetHandmatigToken = useAiStore((s) => s.zetHandmatigToken);
-
-  const [handmatigUrl, setHandmatigUrl] = useState("");
-  const [clientSecret, setClientSecret] = useState("");
-  const [accessToken, setAccessToken] = useState("");
-  const [refreshToken, setRefreshToken] = useState("");
-
-  const oauth = profiel.oauth ?? {
-    soort: "pkce" as AiOAuthSoort,
-    authUrl: "",
-    tokenUrl: "",
-    clientId: "",
-    scopes: "openid profile",
-  };
-  const bezig = oauthLopend?.profiel === profiel.id;
-  const aangemeld = status?.heeft_oauth === true;
-
-  return (
-    <div className="ai-oauth-blok">
-      <div className="ai-oauth-status">
-        {aangemeld ? (
-          <>
-            <span className="ai-status-ok">{t("oauthAangemeld")}</span>
-            {(status?.oauth_account || status?.oauth_account_id) && (
-              <span className="ai-hint">
-                {" "}
-                · {t("oauthAccount", { account: status.oauth_account || status.oauth_account_id })}
-              </span>
-            )}
-            {(profiel.projectId || status?.oauth_project_id) && (
-              <div className="ai-hint">
-                {t("oauthProject", { project: profiel.projectId || status?.oauth_project_id })}
-              </div>
-            )}
-            {status?.oauth_verlopen && <div className="ai-hint">{t("oauthVerlopenHint")}</div>}
-          </>
-        ) : (
-          <span className="ai-hint">{t("oauthNietAangemeld")}</span>
-        )}
-      </div>
-
-      <div className="ai-instellingen-rij">
-        <button
-          className="ai-knop ai-knop-primair"
-          disabled={oauthLopend !== null}
-          onClick={() => void startOAuthLogin(false)}
-        >
-          {t("oauthInloggen")}
-        </button>
-        {oauth.copyCodeRedirectUri && (
-          <button
-            className="ai-knop"
-            disabled={oauthLopend !== null}
-            onClick={() => void startOAuthLogin(true)}
-          >
-            {t("oauthInloggenKopieer")}
-          </button>
-        )}
-        {oauth.deviceCode && (
-          <button
-            className="ai-knop"
-            disabled={oauthLopend !== null}
-            onClick={() => void startDeviceLogin()}
-          >
-            {t("oauthInloggenDevice")}
-          </button>
-        )}
-        {aangemeld && (
-          <button className="ai-knop" onClick={() => void logOAuthUit()}>
-            {t("oauthUitloggen")}
-          </button>
-        )}
-      </div>
-
-      {bezig && oauthLopend.device && (
-        <div className="ai-oauth-lopend">
-          <div className="ai-hint">{t("oauthDeviceHint")}</div>
-          <div className="ai-device-code">{oauthLopend.device.userCode}</div>
-          {oauthLopend.waarschuwing && <div className="ai-hint">{oauthLopend.waarschuwing}</div>}
-          <div className="ai-instellingen-rij">
-            <a className="ai-knop" href={oauthLopend.device.verificationUrl} target="_blank" rel="noreferrer">
-              {t("oauthOpenOpnieuw")}
-            </a>
-            <button className="ai-knop" onClick={() => void annuleerOAuth()}>
-              {t("oauthAnnuleer")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {bezig && !oauthLopend.device && (
-        <div className="ai-oauth-lopend">
-          <div className="ai-hint">{t("oauthWachtBrowser")}</div>
-          {oauthLopend.waarschuwing && <div className="ai-hint">{oauthLopend.waarschuwing}</div>}
-          <div className="ai-instellingen-rij">
-            {oauthLopend.url && (
-              <a className="ai-knop" href={oauthLopend.url} target="_blank" rel="noreferrer">
-                {t("oauthOpenOpnieuw")}
-              </a>
-            )}
-            <button className="ai-knop" onClick={() => void annuleerOAuth()}>
-              {t("oauthAnnuleer")}
-            </button>
-          </div>
-          <label className="ai-veld">
-            <span>{t("oauthHandmatigHint")}</span>
-            <input
-              type="text"
-              value={handmatigUrl}
-              spellCheck={false}
-              onChange={(e) => setHandmatigUrl(e.target.value)}
-            />
-          </label>
-          <div className="ai-instellingen-rij">
-            <button
-              className="ai-knop"
-              disabled={handmatigUrl.trim() === ""}
-              onClick={() => {
-                const invoer = handmatigUrl;
-                setHandmatigUrl("");
-                void rondOAuthHandmatigAf(invoer);
-              }}
-            >
-              {t("oauthHandmatigKlaar")}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {oauthFout && <div className="ai-oauth-fout">{oauthFout}</div>}
-
-      <details className="ai-details" open={!aangemeld && oauth.authUrl === ""}>
-        <summary>{t("oauthConfig")}</summary>
-        <div className="ai-details-inhoud">
-          <div className="ai-hint">{t("oauthRedirectHint", { uri: verwachteRedirectUri(oauth) })}</div>
-          <label className="ai-veld">
-            <span>{t("oauthSjabloon")}</span>
-            <select
-              value=""
-              onChange={(e) => {
-                const tpl = OAUTH_SJABLONEN.find((o) => o.id === e.target.value);
-                if (!tpl) return;
-                void werkOAuthBij(profiel.id, {
-                  ...tpl.config,
-                  ...(tpl.config.extraParams ? { extraParams: { ...tpl.config.extraParams } } : {}),
-                });
-              }}
-            >
-              <option value="">{t("oauthSjabloon")}</option>
-              {OAUTH_SJABLONEN.map((o) => (
-                <option key={o.id} value={o.id}>{o.naam}</option>
-              ))}
-            </select>
-          </label>
-          <label className="ai-veld">
-            <span>{t("oauthSoort")}</span>
-            <select
-              value={oauth.soort}
-              onChange={(e) => void werkOAuthBij(profiel.id, { soort: e.target.value as AiOAuthSoort })}
-            >
-              <option value="pkce">{t("oauthSoortPkce")}</option>
-              <option value="openrouter">{t("oauthSoortOpenrouter")}</option>
-            </select>
-          </label>
-          {oauth.soort === "pkce" && (
-            <>
-              <label className="ai-veld">
-                <span>{t("oauthClientId")}</span>
-                <input
-                  type="text"
-                  value={oauth.clientId}
-                  spellCheck={false}
-                  onChange={(e) => void werkOAuthBij(profiel.id, { clientId: e.target.value })}
-                />
-              </label>
-              <label className="ai-veld">
-                <span>{t("oauthClientSecret")}</span>
-                <input
-                  type="password"
-                  value={clientSecret}
-                  spellCheck={false}
-                  autoComplete="off"
-                  onChange={(e) => setClientSecret(e.target.value)}
-                />
-              </label>
-              <div className="ai-instellingen-rij">
-                <button
-                  className="ai-knop"
-                  disabled={clientSecret.trim() === ""}
-                  onClick={() => {
-                    void bewaarClientSecret(clientSecret.trim());
-                    setClientSecret("");
-                  }}
-                >
-                  {t("bewaren")}
-                </button>
-                {status?.heeft_client_secret && (
-                  <button className="ai-knop" onClick={() => void bewaarClientSecret("")}>
-                    {t("sleutelWissen")}
-                  </button>
-                )}
-              </div>
-              {status?.heeft_client_secret && <div className="ai-hint">{t("oauthClientSecretBewaard")}</div>}
-            </>
-          )}
-          <label className="ai-veld">
-            <span>{t("oauthAuthUrl")}</span>
-            <input
-              type="text"
-              value={oauth.authUrl}
-              spellCheck={false}
-              onChange={(e) => void werkOAuthBij(profiel.id, { authUrl: e.target.value })}
-            />
-          </label>
-          <label className="ai-veld">
-            <span>{t("oauthTokenUrl")}</span>
-            <input
-              type="text"
-              value={oauth.tokenUrl}
-              spellCheck={false}
-              onChange={(e) => void werkOAuthBij(profiel.id, { tokenUrl: e.target.value })}
-            />
-          </label>
-          {oauth.soort === "pkce" && (
-            <>
-              <label className="ai-veld">
-                <span>{t("oauthScopes")}</span>
-                <input
-                  type="text"
-                  value={oauth.scopes}
-                  spellCheck={false}
-                  onChange={(e) => void werkOAuthBij(profiel.id, { scopes: e.target.value })}
-                />
-              </label>
-              <label className="ai-veld">
-                <span>{t("oauthCallbackPath")}</span>
-                <input
-                  type="text"
-                  value={oauth.callbackPath ?? "/oauth/callback"}
-                  spellCheck={false}
-                  onChange={(e) => void werkOAuthBij(profiel.id, { callbackPath: e.target.value })}
-                />
-              </label>
-              <label className="ai-veld">
-                <span>{t("oauthRedirectHost")}</span>
-                <select
-                  value={oauth.redirectHost ?? "127.0.0.1"}
-                  onChange={(e) => void werkOAuthBij(profiel.id, { redirectHost: e.target.value })}
-                >
-                  {["127.0.0.1", "localhost"].map((host) => (
-                    <option key={host} value={host}>{host}</option>
-                  ))}
-                </select>
-              </label>
-              <label className="ai-veld">
-                <span>{t("oauthTokenFormat")}</span>
-                <select
-                  value={oauth.tokenFormat ?? "form"}
-                  onChange={(e) => void werkOAuthBij(profiel.id, { tokenFormat: e.target.value as AiTokenFormaat })}
-                >
-                  <option value="form">{t("oauthTokenForm")}</option>
-                  <option value="json">{t("oauthTokenJson")}</option>
-                </select>
-              </label>
-            </>
-          )}
-          <label className="ai-veld">
-            <span>{t("oauthPort")}</span>
-            <input
-              type="number"
-              min={1}
-              max={65535}
-              value={oauth.callbackPort ?? ""}
-              onChange={(e) => {
-                const n = Number(e.target.value);
-                void werkOAuthBij(profiel.id, {
-                  callbackPort: Number.isInteger(n) && n >= 1 && n <= 65535 ? n : undefined,
-                });
-              }}
-            />
-          </label>
-          {profiel.aanbieder === "gemini" && (
-            <label className="ai-veld">
-              <span>{t("oauthProjectId")}</span>
-              <input
-                type="text"
-                value={profiel.projectId ?? ""}
-                spellCheck={false}
-                onChange={(e) => void werkProfielBij(profiel.id, { projectId: e.target.value.trim() || undefined })}
-              />
-            </label>
-          )}
-
-          <details className="ai-details">
-            <summary>{t("oauthHandmatigToken")}</summary>
-            <div className="ai-details-inhoud">
-              <label className="ai-veld">
-                <span>{t("oauthAccessToken")}</span>
-                <input
-                  type="password"
-                  value={accessToken}
-                  spellCheck={false}
-                  autoComplete="off"
-                  onChange={(e) => setAccessToken(e.target.value)}
-                />
-              </label>
-              <label className="ai-veld">
-                <span>{t("oauthRefreshToken")}</span>
-                <input
-                  type="password"
-                  value={refreshToken}
-                  spellCheck={false}
-                  autoComplete="off"
-                  onChange={(e) => setRefreshToken(e.target.value)}
-                />
-              </label>
-              <div className="ai-instellingen-rij">
-                <button
-                  className="ai-knop"
-                  disabled={accessToken.trim() === ""}
-                  onClick={() => {
-                    const at = accessToken.trim();
-                    const rt = refreshToken.trim();
-                    setAccessToken("");
-                    setRefreshToken("");
-                    void zetHandmatigToken(at, rt || undefined);
-                  }}
-                >
-                  {t("oauthTokenBewaren")}
-                </button>
-              </div>
-            </div>
-          </details>
-        </div>
-      </details>
-    </div>
-  );
-}
-
-function Instellingen() {
+/** De velden van het actieve profiel; alleen zichtbaar als de gebruiker ze opent. */
+function ProfielVelden() {
   const { t } = useTranslation("ai");
   const actiefId = useAiStore((s) => s.actiefId);
   const profielen = useAiStore((s) => s.profielen);
@@ -434,17 +85,11 @@ function Instellingen() {
   const modellen = useAiStore((s) => s.modellen);
   const modellenBezig = useAiStore((s) => s.modellenBezig);
   const modellenFout = useAiStore((s) => s.modellenFout);
-  const kiesProfiel = useAiStore((s) => s.kiesProfiel);
   const werkProfielBij = useAiStore((s) => s.werkProfielBij);
-  const voegProfielToe = useAiStore((s) => s.voegProfielToe);
-  const verwijderProfiel = useAiStore((s) => s.verwijderProfiel);
   const bewaarSleutel = useAiStore((s) => s.bewaarSleutel);
   const haalModellenOp = useAiStore((s) => s.haalModellenOp);
 
   const [sleutel, setSleutel] = useState("");
-  const [nieuwOpen, setNieuwOpen] = useState(false);
-  const [sjabloonId, setSjabloonId] = useState(AI_SJABLONEN[0].id);
-  const [nieuwNaam, setNieuwNaam] = useState("");
   const [koppenTekst, setKoppenTekst] = useState("");
 
   const profiel = profielen.find((p) => p.id === actiefId) ?? profielen[0];
@@ -461,65 +106,7 @@ function Instellingen() {
   const modellenLijst = modellen[profiel.id] ?? [];
 
   return (
-    <div className="ai-instellingen">
-      <div className="ai-veld">
-        <div className="ai-veld-kop">
-          <span>{t("profiel")}</span>
-          <div className="ai-veld-acties">
-            <button className="ai-knop-klein" onClick={() => setNieuwOpen(!nieuwOpen)}>
-              {t("profielToevoegen")}
-            </button>
-            {!profiel.ingebouwd && profielen.length > 1 && (
-              <button className="ai-knop-klein" onClick={() => void verwijderProfiel(profiel.id)}>
-                {t("profielVerwijderen")}
-              </button>
-            )}
-          </div>
-        </div>
-        <select value={profiel.id} onChange={(e) => void kiesProfiel(e.target.value)}>
-          {profielen.map((p) => (
-            <option key={p.id} value={p.id}>{p.naam}</option>
-          ))}
-        </select>
-      </div>
-
-      {nieuwOpen && (
-        <div className="ai-nieuw-profiel">
-          <label className="ai-veld">
-            <span>{t("sjabloon")}</span>
-            <select value={sjabloonId} onChange={(e) => setSjabloonId(e.target.value)}>
-              {AI_SJABLONEN.map((s) => (
-                <option key={s.id} value={s.id}>{s.naam}</option>
-              ))}
-            </select>
-          </label>
-          <label className="ai-veld">
-            <span>{t("profielNaam")}</span>
-            <input
-              type="text"
-              value={nieuwNaam}
-              onChange={(e) => setNieuwNaam(e.target.value)}
-            />
-          </label>
-          <div className="ai-instellingen-rij">
-            <button
-              className="ai-knop ai-knop-primair"
-              onClick={() => {
-                const naam = nieuwNaam;
-                setNieuwNaam("");
-                setNieuwOpen(false);
-                void voegProfielToe(sjabloonId, naam);
-              }}
-            >
-              {t("toevoegen")}
-            </button>
-            <button className="ai-knop" onClick={() => setNieuwOpen(false)}>
-              {t("annuleren")}
-            </button>
-          </div>
-        </div>
-      )}
-
+    <div className="ai-provider-velden">
       {!profiel.ingebouwd && (
         <>
           <label className="ai-veld">
@@ -666,6 +253,110 @@ function Instellingen() {
           </div>
         </details>
       )}
+    </div>
+  );
+}
+
+/**
+ * De instellingen: alleen de aanbieders die er écht zijn, met hun status en
+ * hun model. Een nieuwe aanbieder komt er via de wizard; de ruwe velden van
+ * een aanbieder pas als de gebruiker op "設定" klikt.
+ */
+function Instellingen() {
+  const { t } = useTranslation("ai");
+  const profielen = useAiStore((s) => s.profielen);
+  const actiefId = useAiStore((s) => s.actiefId);
+  const statussen = useAiStore((s) => s.statussen);
+  const modellen = useAiStore((s) => s.modellen);
+  const kiesProfiel = useAiStore((s) => s.kiesProfiel);
+  const verwijderProfiel = useAiStore((s) => s.verwijderProfiel);
+  const werkProfielBij = useAiStore((s) => s.werkProfielBij);
+  const haalModellenOp = useAiStore((s) => s.haalModellenOp);
+
+  const [wizardOpen, setWizardOpen] = useState(false);
+  const [openId, setOpenId] = useState<string | null>(null);
+
+  return (
+    <div className="ai-instellingen">
+      <div className="ai-veld-kop">
+        <span>{t("leveranciersTitel")}</span>
+        <div className="ai-veld-acties">
+          <button
+            className="ai-knop-klein"
+            aria-expanded={wizardOpen}
+            onClick={() => setWizardOpen(!wizardOpen)}
+          >
+            {wizardOpen ? t("annuleren") : t("leverancierToevoegen")}
+          </button>
+        </div>
+      </div>
+
+      {wizardOpen && <AanbiederWizard onKlaar={() => setWizardOpen(false)} />}
+
+      <div className="ai-provider-lijst">
+        {profielen.map((p) => {
+          const st = statussen[p.id];
+          const klaar =
+            p.authModus === "none" || st?.heeft_oauth === true || st?.heeft_sleutel === true;
+          const lijst = modellen[p.id] ?? [];
+          const keuzes = p.model !== "" && !lijst.includes(p.model) ? [p.model, ...lijst] : lijst;
+          return (
+            <div key={p.id} className={`ai-provider ${p.id === actiefId ? "ai-provider-actief" : ""}`}>
+              <div className="ai-provider-kop">
+                <button
+                  className="ai-provider-naam"
+                  title={p.endpoint}
+                  onClick={() => void kiesProfiel(p.id)}
+                >
+                  {p.naam}
+                </button>
+                <span className={`ai-provider-status ${klaar ? "ai-provider-status-ok" : ""}`}>
+                  {klaar ? t("leverancierVerbonden") : t("leverancierNietVerbonden")}
+                </span>
+              </div>
+              <div className="ai-provider-rij">
+                <select
+                  aria-label={t("model")}
+                  value={p.model}
+                  onChange={(e) => void werkProfielBij(p.id, { model: e.target.value })}
+                >
+                  {keuzes.length === 0 && <option value="">{t("kiesModel")}</option>}
+                  {keuzes.map((m) => (
+                    <option key={m} value={m}>{m}</option>
+                  ))}
+                </select>
+                <button
+                  className="ai-knop-klein"
+                  disabled={p.endpoint.trim() === ""}
+                  onClick={() => {
+                    void kiesProfiel(p.id);
+                    void haalModellenOp();
+                  }}
+                >
+                  {t("haalModellen")}
+                </button>
+              </div>
+              <div className="ai-instellingen-rij">
+                <button
+                  className="ai-knop-klein"
+                  onClick={() => {
+                    void kiesProfiel(p.id);
+                    setOpenId(openId === p.id ? null : p.id);
+                  }}
+                >
+                  {t("leverancierInstellen")}
+                </button>
+                {!p.ingebouwd && profielen.length > 1 && (
+                  <button className="ai-knop-klein" onClick={() => void verwijderProfiel(p.id)}>
+                    {t("profielVerwijderen")}
+                  </button>
+                )}
+              </div>
+              {openId === p.id && p.id === actiefId && <ProfielVelden />}
+            </div>
+          );
+        })}
+      </div>
 
       <ExterneMcpSectie />
     </div>
@@ -929,12 +620,21 @@ export default function AiPaneel() {
   const verstuur = useAiStore((s) => s.verstuur);
   const stop = useAiStore((s) => s.stop);
   const antwoord = useAiStore((s) => s.antwoord);
+  const modellen = useAiStore((s) => s.modellen);
+  const kiesProfiel = useAiStore((s) => s.kiesProfiel);
+  const werkProfielBij = useAiStore((s) => s.werkProfielBij);
   const wisGesprek = useAiStore((s) => s.wisGesprek);
   const [tekst, setTekst] = useState("");
   const [toonInstellingen, setToonInstellingen] = useState(false);
   const gesprek = useRef<HTMLDivElement>(null);
 
   const actiefProfiel = profielen.find((p) => p.id === actiefId) ?? profielen[0];
+  // De keuzelijst in de kop: de opgehaalde modellen, met het huidige model erbij.
+  const opgehaald = actiefProfiel ? (modellen[actiefProfiel.id] ?? []) : [];
+  const keuzeModellen =
+    actiefProfiel && actiefProfiel.model !== "" && !opgehaald.includes(actiefProfiel.model)
+      ? [actiefProfiel.model, ...opgehaald]
+      : opgehaald;
   const aantalExterneTools = Object.values(mcpStatussen).reduce(
     (som, st) => som + (st.verbonden ? st.tools.length : 0),
     0,
@@ -959,9 +659,28 @@ export default function AiPaneel() {
         <div className="ai-kop-links">
           <span className="ai-titel">{t("titel")}</span>
           {actiefProfiel && (
-            <span className="ai-kop-profiel" title={actiefProfiel.model}>
-              {actiefProfiel.naam}
-            </span>
+            <select
+              className="ai-kop-profiel ai-kop-kies"
+              aria-label={t("leveranciersTitel")}
+              value={actiefProfiel.id}
+              onChange={(e) => void kiesProfiel(e.target.value)}
+            >
+              {profielen.map((p) => (
+                <option key={p.id} value={p.id}>{p.naam}</option>
+              ))}
+            </select>
+          )}
+          {actiefProfiel && keuzeModellen.length > 0 && (
+            <select
+              className="ai-kop-profiel ai-kop-kies"
+              aria-label={t("model")}
+              value={actiefProfiel.model}
+              onChange={(e) => void werkProfielBij(actiefProfiel.id, { model: e.target.value })}
+            >
+              {keuzeModellen.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
           )}
           {aantalExterneTools > 0 && (
             <span className="ai-kop-profiel">

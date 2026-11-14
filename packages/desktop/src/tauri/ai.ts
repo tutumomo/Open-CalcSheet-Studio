@@ -215,6 +215,33 @@ export async function oauthZetToken(
   });
 }
 
+/**
+ * Eén lokaal gevonden bron: een modelserver die nu draait of een opgeslagen
+ * CLI-configuratie. `heeft_geheim` is een vlag; de sleutel zelf blijft in Rust.
+ */
+export interface AiLokaleBron {
+  id: string;
+  naam: string;
+  soort: string;
+  aanbieder: AiAanbieder;
+  endpoint: string;
+  model: string;
+  auth_modus: AiAuthModus;
+  heeft_geheim: boolean;
+}
+
+/** Wat er op deze machine klaarstaat. Leest alleen; er wordt niets overgenomen. */
+export async function detecteerLokaal(): Promise<AiLokaleBron[]> {
+  if (!aiBeschikbaar()) return [];
+  return invoke<AiLokaleBron[]>("ai_detecteer_lokaal");
+}
+
+/** Neem de sleutel van een lokale configuratie over in de sleutelbos van `profiel`. */
+export async function importeerLokaal(bron: string, profiel: string): Promise<AiProfielAuthStatus> {
+  if (!aiBeschikbaar()) throw new Error("the AI assistant needs the desktop app");
+  return invoke<AiProfielAuthStatus>("ai_importeer_lokaal", { bron, profiel });
+}
+
 /** Haal beschikbare modelnamen op bij de aanbieder (`/v1/models` of `/v1beta/models`). */
 export async function listModels(verzoek: AiModelLijstVerzoek): Promise<string[]> {
   if (!aiBeschikbaar()) throw new Error("the AI assistant needs the desktop app");
