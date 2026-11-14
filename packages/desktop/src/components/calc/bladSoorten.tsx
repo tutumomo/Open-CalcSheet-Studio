@@ -57,7 +57,7 @@ export interface BladSoort {
    * bestand. Het anker van een regel staat op papier als `data-inhoud` op die kop.
    * Zonder: alleen de naam van het blad.
    */
-  inhoudsKoppen?: (ex: Exemplaar) => Inhoudskop[];
+  inhoudsKoppen?: (ex: Exemplaar, tekst?: (tekst: string) => string) => Inhoudskop[];
   /** Een eigen keuze op de kaart van dit blad in het paneel Rapport. */
   RapportKeuze?: ComponentType<{ ex: Exemplaar }>;
 }
@@ -85,7 +85,7 @@ const SOORTEN: readonly BladSoort[] = [
     Afdruk: MarkdownPapier,
     useOnderkop: (ex) => [ex.md?.bestandsnaam],
     plek: "hoofdstuk",
-    inhoudsKoppen: (ex) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(ex.md.tekst, ex) : []),
+    inhoudsKoppen: (ex, tekst) => (ex.md && !ex.md.koppenUit ? koppenVoorInhoud(tekst?.(ex.md.tekst) ?? ex.md.tekst, ex) : []),
     RapportKeuze: MarkdownRapportKeuze,
   },
   {
@@ -112,10 +112,14 @@ export function bladSoortVan(ex: { templateId?: string }): BladSoort | undefined
   return SOORTEN.find((s) => s.templateId === ex.templateId);
 }
 
-/** Een blad zoals de opzet van het rapport het leest (rapport/opzet.ts). */
-export function bladVoorOpzet(ex: Exemplaar): Blad {
+/**
+ * Een blad zoals de opzet van het rapport het leest (rapport/opzet.ts).
+ * `tekst` vult de waarden uit andere bladen in (`{#2.R_paal}`), ook in de koppen
+ * die in de inhoudsopgave komen.
+ */
+export function bladVoorOpzet(ex: Exemplaar, tekst?: (tekst: string) => string): Blad {
   const soort = bladSoortVan(ex);
-  return { id: ex.id, naam: ex.naam, plek: soort?.plek, koppen: soort?.inhoudsKoppen?.(ex) };
+  return { id: ex.id, naam: ex.naam, plek: soort?.plek, koppen: soort?.inhoudsKoppen?.(ex, tekst) };
 }
 
 /**

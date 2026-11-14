@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（OCSS 接入 P2-13）：Markdown 表與報告文字可以內插其他計算表的值，語法沿用計算語言的跨表參照並加上大括號：`{#2.R_paal}`（`{#2.M:1}` 取一位小數），值以該表顯示的單位呈現（`450 kN`）。Markdown 的程式碼區塊與行內程式碼不動；找不到值時原樣保留，`sheet_read` 的 `markdown.references` 會列出每個參照的數值、單位或錯誤原因。報告文字沿用既有的 `{專案變數}` 機制，同一段文字可混用兩者；Markdown 表開進報告時，目錄中的標題也會先內插。
+
 - 台灣版（OCSS 接入 P2-14）：計算表會記住「交付時的輸入值」（`sheet_add`／`sheet_set_input` 寫入的值）。之後使用者在 App 內改動欄位，`sheet_get` 的每個欄位會帶 `modified` 與 `original`，`sheet_get`／`sheet_evaluate` 另列 `modifiedInputs`；新工具 `sheet_reset_input`（`POST /sheets/{id}/inputs/reset`）可還原個別或全部欄位，`sheet_set_input` 新增 `design: false`（像使用者一樣改值、不更新交付值）。輸入畫面會標示被改過的欄位、提供逐欄與全部還原及「設為交付值」，若以交付值計算為合格而修改後不合格，會在表單上方明顯提示。交付值存進專案檔（`ocss::blad::ontwerp`）；App 內手動加入、未經 API 填值的表不追蹤。工具數 58 → 59。
 
 - 台灣版（OCSS 接入 P2-11）：新增 `sheet_read`（`GET /api/v1/sheets/{id}/content`）讀出各種表單的內容：試算表每個有值的儲存格（值、公式與計算結果）、節點圖每個節點的輸出與錯誤、Jupyter 每格的程式碼、執行序號（未執行為 `null`）與保存的輸出、Marimo 每格的程式碼與文字輸出、計算表的結構化行；新增 `sheet_run`（`POST /api/v1/sheets/{id}/run`）由 API 觸發 Jupyter／Marimo 在 App 內重跑並存回專案，逾時回 `completed: false`。工具數 56 → 58。

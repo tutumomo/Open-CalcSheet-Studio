@@ -44,6 +44,8 @@ import { readFileSync as leesBestand } from "node:fs";
 import { fileURLToPath as naarPad } from "node:url";
 import { maakApp, maakContext, PROJECT_ID, RAPPORT_ID } from "./lib/mcpproef.mjs";
 import { laadTemplate } from "./lib/refcheck.mjs";
+import { markdownVerwijzingen, rekenTekstVerwijzingen, tekstVerwijzingen, vulMarkdownIn, vulTekstIn } from "../packages/desktop/src/rekenen/tekstInvulling.ts";
+import { vulIn, vervangVerwijzingenInTekst } from "../packages/desktop/src/rapport/invullen.ts";
 import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
@@ -743,6 +745,60 @@ console.log("Opgeleverde invoer (modified, original, sheet_reset_input):");
   meld(Object.keys(JSON.parse(tekst).schemas ?? {}).includes("ocss::blad::ontwerp"), "het attribuut heeft een schema in het bestand");
 
   for (const weg of [id, los]) await roep("sheet_remove", { id: weg });
+}
+
+// ── 5h. Markdown en rapport met waarden uit andere bladen (P2-13) ───────────
+console.log("Waarden uit andere bladen in Markdown en rapport:");
+{
+  const zelfde = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  const bladen = [{ ref: "2", source: "L = 6 m\nq = 12 kN/m\nM = q*L^2/8\nR_paal = 450 kN", waarden: {} }];
+
+  // De verwijzingen zelf.
+  meld(zelfde(tekstVerwijzingen("a {#2.R_paal} b {#2.R_paal} c {#3.M:1}"), [
+    { plek: "{#2.R_paal}", ref: "2", naam: "R_paal" },
+    { plek: "{#3.M:1}", ref: "3", naam: "M", decimalen: 1 },
+  ]), "tekstVerwijzingen: elke plek één keer, met decimalen");
+  meld(zelfde(tekstVerwijzingen("geen verwijzing {projectnaam}"), []), "tekstVerwijzingen: een invulveld van het rapport is geen verwijzing");
+
+  const w = rekenTekstVerwijzingen(tekstVerwijzingen("{#2.R_paal} {#2.M:1} {#2.L:0} {#2.nope} {#9.M}"), { bladen, scope: {} });
+  meld(w.get("{#2.R_paal}").tekst === "450 kN", "de waarde komt met de eenheid van het blad", w.get("{#2.R_paal}").tekst);
+  meld(w.get("{#2.M:1}").tekst === "54.0 kN·m" && w.get("{#2.L:0}").tekst === "6 m", "decimalen: 54.0 en 6, eenheid in beeld", `${w.get("{#2.M:1}").tekst} / ${w.get("{#2.L:0}").tekst}`);
+  meld(w.get("{#2.nope}").tekst === null && /nope/.test(w.get("{#2.nope}").fout), "een onbekende naam levert niets, met de reden", JSON.stringify(w.get("{#2.nope}")));
+  meld(w.get("{#9.M}").tekst === null && w.get("{#9.M}").fout !== undefined, "een onbekend blad levert niets");
+
+  const tekst = "De paal draagt {#2.R_paal}, het moment is {#2.M:1} en {#2.nope}.";
+  meld(vulTekstIn(tekst, w) === "De paal draagt 450 kN, het moment is 54.0 kN·m en {#2.nope}.", "vulTekstIn: wat niet te vullen valt blijft staan", vulTekstIn(tekst, w));
+
+  // Markdown: niet in code, wel ontsnapt.
+  const md = "Waarde: {#2.R_paal}\n\n`{#2.R_paal}` en\n\n```\n{#2.R_paal}\n```\n";
+  const gevuld = vulMarkdownIn(md, w);
+  meld(gevuld.startsWith("Waarde: 450 kN") && gevuld.includes("`{#2.R_paal}`") && gevuld.includes("```\n{#2.R_paal}\n```"), "Markdown: code blijft staan, de rest wordt ingevuld", JSON.stringify(gevuld));
+  meld(zelfde(markdownVerwijzingen(md).map((v) => v.plek), ["{#2.R_paal}"]), "markdownVerwijzingen: alleen buiten code");
+  meld(vulMarkdownIn("x {#2.L}", new Map([["{#2.L}", "6 m_2"]])) === "x 6 m\\_2", "Markdown: een underscore in de waarde wordt ontsnapt");
+  meld(vulMarkdownIn("zonder accolades", w) === "zonder accolades", "Markdown zonder verwijzingen blijft gelijk");
+
+  // Het rapport: dezelfde syntaxis naast {projectnaam}.
+  const invul = { adviseur: "", projectnummer: "P-1", projectnaam: "Toren", opdrachtgever: "", locatie: "", verantwoordelijk: "", uitvoerend: "", verwijzingen: new Map([["{#2.R_paal}", "450 kN"]]) };
+  meld(vulIn("Project {projectnaam}, paal {#2.R_paal}, onbekend {#3.M}.", invul) === "Project Toren, paal 450 kN, onbekend {#3.M}.", "vulIn: invulvelden én bladwaarden", vulIn("Project {projectnaam}, paal {#2.R_paal}, onbekend {#3.M}.", invul));
+  meld(vulIn("{#2.R_paal}", { ...invul, verwijzingen: undefined }) === "{#2.R_paal}", "zonder de kaart blijft de verwijzing staan");
+  meld(vervangVerwijzingenInTekst("a {#2.M:1} b", new Map([["{#2.M:1}", "54.0 kN m"]])) === "a 54.0 kN m b", "vervangVerwijzingenInTekst: ook met decimalen");
+
+  // Door de tool: een Markdown-blad dat een rekenblad aanroept.
+  const reken = await roep("sheet_add", { templateId: "tw-rc-beam", name: "梁" });
+  app.s.exemplaren.find((e) => e.id === reken.data.id).ref = "2";
+  app.omgeving.acties.zetWaarde(reken.data.id, "M_u", "180");
+  const mdToe = await roep("sheet_add", { kind: "markdown", name: "說明", text: "梁寬 b = {#2.b}。\n\n`{#2.b}` 是範例。\n" });
+  const gelezen = await roep("sheet_read", { id: mdToe.data.id });
+  meld(!gelezen.isError && gelezen.data.markdown.text.includes("{#2.b}") && gelezen.data.markdown.filled === "梁寬 b = 300 mm。\n\n`{#2.b}` 是範例。\n", "sheet_read: markdown 附上填好的文字，code 不動", JSON.stringify(gelezen.data.markdown));
+  meld(zelfde(gelezen.data.markdown.references, [{ placeholder: "{#2.b}", ref: "2", name: "b", value: "300 mm", unit: "mm", check: "unchecked" }]), "sheet_read: elke 參照都列出值與單位", JSON.stringify(gelezen.data.markdown.references));
+  await roep("sheet_set_markdown", { id: mdToe.data.id, text: "Geen verwijzingen." });
+  const kaal = await roep("sheet_read", { id: mdToe.data.id });
+  meld(!("filled" in kaal.data.markdown) && zelfde(kaal.data.markdown.references, []), "zonder verwijzingen geen filled en een lege lijst", JSON.stringify(kaal.data.markdown));
+  await roep("sheet_set_markdown", { id: mdToe.data.id, text: "Onbekend: {#9.M} en {#2.nope}." });
+  const stuk = await roep("sheet_read", { id: mdToe.data.id });
+  meld(!("filled" in stuk.data.markdown) && stuk.data.markdown.references.every((r) => r.value === null && typeof r.error === "string"), "onbekende verwijzing: blijft staan (geen filled), met de reden", JSON.stringify(stuk.data.markdown.references));
+
+  for (const id of [mdToe.data.id, reken.data.id]) await roep("sheet_remove", { id });
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────

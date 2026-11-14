@@ -152,7 +152,7 @@ de alleen-lezenstand.
 | `DELETE /sheets/{id}` | `sheet_remove` | wijzigen | **id** |
 | `POST /sheets/{id}/select` | `sheet_select` | beeld | **id** (ook `project`, `report`) |
 | `POST /sheets/{id}/evaluate` | `sheet_evaluate` | lezen | id, numbers, names, lines, conventionalUnits, strict |
-| `GET /sheets/{id}/content` | `sheet_read` | lezen | id, maxCells |
+| `GET /sheets/{id}/content` | `sheet_read` | lezen | id, maxCells (markdown: ook `filled` en `references`) |
 | `POST /sheets/{id}/run` | `sheet_run` | wijzigen | **id**, timeoutSeconds, maxCells |
 | `POST /sheets/{id}/formulas` | `sheet_insert_formula` | wijzigen | **id**, **formulaId**, position, language |
 | `POST /evaluate` | `calc_evaluate` | lezen | **source**, values, useProjectData, maxLines, conventionalUnits, strict |

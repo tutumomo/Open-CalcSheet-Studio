@@ -20,7 +20,7 @@ export default function InhoudLijst() {
   const activeId = useProjectStore((s) => s.activeId);
   const selecteer = useProjectStore((s) => s.selecteer);
   const paginas = useInhoudPaginas((s) => s.paginas);
-  const regels = useMemo(() => inhoudVoorPaneel(rapport, exemplaren.map(bladVoorOpzet)), [rapport, exemplaren]);
+  const regels = useMemo(() => inhoudVoorPaneel(rapport, exemplaren.map((e) => bladVoorOpzet(e))), [rapport, exemplaren]);
   const heeftPaginas = regels.some((r) => paginas[r.anker] !== undefined);
   // De bladen staan onderaan de lijst: het blad waar je aan werkt, schuift in beeld.
   const gekozen = useRef<HTMLButtonElement>(null);

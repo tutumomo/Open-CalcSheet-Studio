@@ -90,6 +90,7 @@
 | beda0b6 之後 | P1-10 長工作 | 完成 | 新檔 `tools/taken.ts`：`calc_evaluate_batch`（`POST /evaluate/batch`，每項等同 `calc_evaluate`，錯誤逐項回報，上限 200）；`job_start`／`job_status`／`job_cancel`（`POST /jobs`、`GET`／`DELETE /jobs/{jobId}`），每項之間 `setTimeout` 讓出事件迴圈，狀態只存記憶體、保留最近 20 個已結束的 job。工具總數 49 → 56 |
 | 094bc1e 之後 | P2-11 各表單讀取與觸發 | 完成 | 新檔 `src/mcp/bladInhoud.ts`（試算表格值＋公式結果、圖表節點輸出、Jupyter 每格輸出與 `executionCount`、Marimo 純文字輸出）與 `tools/inhoud.ts`：`sheet_read`（`GET /sheets/{id}/content`）、`sheet_run`（`POST /sheets/{id}/run`）。notebook 只能在 App 的 iframe 執行：`src/mcp/notebookUitvoer.ts` 讓 `JupyterVenster`／`MarimoVenster` 登記執行器，Jupyter 橋接新增 `voerUit` 訊息（全部重跑後回 `stand`），Marimo 重新載入後輪詢到輸出連續兩次相同；逾時回 `completed: false`，不當成結果。工具總數 56 → 58。**驗證範圍**：讀取部分以真實試算表核心、圖表求解器與 nbformat 資料在 `check-mcp.mjs` 第 5f 節驗證（19 項）；`sheet_run` 的 notebook 路徑只在假環境驗證了工具層（逾時、`completed`、重讀專案），App 內 iframe 實際重跑（JupyterLite／Marimo）尚未實機驗證，需在桌面版建置後手動測一次 |
 | 0a5ae40 之後 | P2-14 互動式計算書（輸入追溯） | 完成（可離線 HTML 未做） | 每張表新增 `ontwerpWaarden`（交付時的輸入值；`store/ontwerpInvoer.ts` 定義「已追蹤／原值／是否修改」，`5` 與 `5.0` 視為相同）。API 寫入（`sheet_add`、`sheet_set_input`）預設更新交付值，GUI 改值不動交付值，差異即 `modified`；`sheet_set_input` 加 `design: false`、新工具 `sheet_reset_input`（`POST /sheets/{id}/inputs/reset`）。`sheet_get` 每欄帶 `modified`／`original`，`sheet_get`／`sheet_evaluate` 回 `modifiedInputs`。專案檔新增 IFCX 屬性 `ocss::blad::ontwerp`（core `ifcx/namespace.ts`、`document.ts`）。輸入畫面（`InvoerPaneel.tsx`）標示被改欄位、逐欄／全部還原、「設為交付值」，並以 `rekenEenmalig` 算出交付值的判定，合格→不合格時在表單上方提示。工具總數 58 → 59。**驗證範圍**：`check-mcp.mjs` 第 5g 節 32 項（規則、API 與 GUI 寫入一致、還原、復原、未追蹤的表、專案檔來回）；輸入畫面的標示與提示只通過型別檢查與三語鍵值檢查，未在實機畫面上目視驗證。規格 14 的「可離線 HTML（標示試算）」為選配，未實作 |
+| 6f3b833 之後 | P2-13 文字內插與跨表參照 | 完成 | 新檔 `src/rekenen/tekstInvulling.ts`（`{#2.R_paal}`、`{#2.M:1}`，用 `verwijzingen.ts` 的同一套跨表計算，值以該表顯示的單位呈現）與 `src/components/calc/useTekstInvulling.ts`（React 版，快取鍵含被引用表與 `@toets` 版本）。Markdown 表在螢幕與列印都先內插（`vulMarkdownIn` 跳過程式碼區塊），報告文字在 `rapport/invullen.ts` 的 `vulIn` 內插，與 `{專案變數}` 並用；Markdown 表在報告目錄中的標題也內插（`bladVoorOpzet(ex, tekst)`）。`sheet_read` 對 Markdown 表多回 `markdown.filled` 與 `markdown.references`（值、單位、錯誤）。工具數不變（59）。**驗證範圍**：`check-mcp.mjs` 第 5h 節 18 項（純函式、Markdown 程式碼不動、跳脫、報告 `vulIn`、工具層）；畫面與紙上的內插只通過型別檢查，未實機目視 |
 
 ## 8. 上游可合併性
 
@@ -108,6 +109,8 @@
 | `src/mcp/tools/taken.ts` | 全新檔案；`tools.ts` 多一行登記 | 不衝突 |
 | `src/mcp/bladInhoud.ts`、`notebookUitvoer.ts`、`tools/inhoud.ts` | 全新檔案 | 不衝突 |
 | `src/store/ontwerpInvoer.ts` | 全新檔案 | 不衝突 |
+| `src/rekenen/tekstInvulling.ts`、`src/components/calc/useTekstInvulling.ts` | 全新檔案 | 不衝突 |
+| `src/rapport/invullen.ts`、`src/components/calc/bladSoorten.tsx`、`src/components/rapport/afdruk/useRapportWeergave.ts`、`MarkdownBladWeergave.tsx` | `Invulwaarden.verwijzingen?`、`bladVoorOpzet` 多一個選用參數、Markdown 先內插再排版 | 皆為選用參數，未用時行為不變；衝突時保留上游邏輯再補這幾處 |
 | `packages/core/src/ifcx/namespace.ts`、`ifcx/document.ts`、`ifc-generator.ts` | 各加一個選用屬性 `ocss::blad::ontwerp`／`ontwerpWaarden`（仿 `varianten` 的寫法，緊接其後） | 上游若在同處加新屬性會有相鄰行衝突，兩邊都留 |
 | `src/store/projectStore.ts`、`projectBestand.ts`、`projectIfcx.ts` | `Exemplaar.ontwerpWaarden?`、`zetWaarde` 多一個選用參數、新增 `zetOntwerp`／`herstelInvoer` | 既有呼叫端不需改；衝突時保留上游邏輯再補回這三處 |
 | `src/components/calc/invoer/InvoerPaneel.tsx`、`InvoerPaneel.css`、三語 `beelden.json` 的 `invoer.*` | 只在表有交付值時多出標示與一列提示；未追蹤的表畫面不變 | 上游改動輸入畫面時逐段合併，`ip-volgt`／`ip-gewijzigd`／`ip-melding` 為本 fork 專用 class |

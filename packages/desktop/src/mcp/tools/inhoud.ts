@@ -13,6 +13,10 @@
 import type { McpBlad, McpContext, McpToolDef, McpToolResultaat } from "../contracts.ts";
 import { graafInhoud, jupyterInhoud, marimoInhoud, werkmapInhoud } from "../bladInhoud.ts";
 import { regels } from "../rekenen.ts";
+import { markdownVerwijzingen, rekenTekstVerwijzingen, vulMarkdownIn } from "../../rekenen/tekstInvulling.ts";
+import { projectScope } from "../../store/projectGegevens.ts";
+import { evalOptiesVan } from "../../store/projectEenheden.ts";
+import { rekentaalIncludes, rekentaalImageUrls } from "../../templates/rekentaal-includes.ts";
 import { LEZEN, WIJZIGEN, bladSoort, bladUit, fout, idOptioneel, idVerplicht, melding, objectSchema, ok, rekenBlad, resultaatJson } from "./hulp.ts";
 
 const STANDAARD_CELLEN = 2000;
@@ -44,8 +48,40 @@ async function inhoudVan(blad: McpBlad, ctx: McpContext, maxCellen: number): Pro
     }
     case "marimo":
       return ok({ ...basis, marimo: blad.marimo ? marimoInhoud(blad.marimo) : null });
-    case "markdown":
-      return ok({ ...basis, markdown: blad.md ? { text: blad.md.tekst } : null });
+    case "markdown": {
+      if (!blad.md) return ok({ ...basis, markdown: null });
+      // `{#2.R_paal}` erbij: de tekst zoals hij in de app staat, en wat er ingevuld is.
+      const stand = ctx.omgeving.stand();
+      const lijst = markdownVerwijzingen(blad.md.tekst);
+      const omg = {
+        bladen: stand.exemplaren.filter((e) => e.ref && e.source.trim()).map((e) => ({ ref: e.ref, source: e.source, waarden: e.waarden })),
+        scope: projectScope(stand.gegevens),
+        opties: { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls },
+        evalOpties: evalOptiesVan(stand.gegevens),
+      };
+      const waarden = rekenTekstVerwijzingen(lijst, omg);
+      const ingevuld = vulMarkdownIn(blad.md.tekst, waarden);
+      return ok({
+        ...basis,
+        markdown: {
+          text: blad.md.tekst,
+          ...(ingevuld !== blad.md.tekst ? { filled: ingevuld } : {}),
+          references: lijst.map((v) => {
+            const w = waarden.get(v.plek);
+            return {
+              placeholder: v.plek,
+              ref: v.ref,
+              name: v.naam,
+              value: w?.tekst ?? null,
+              ...(w?.eenheid ? { unit: w.eenheid } : {}),
+              ...(w?.fout ? { error: w.fout } : {}),
+              // Een waarde uit een ander blad is geen oordeel over dit blad.
+              check: "unchecked",
+            };
+          }),
+        },
+      });
+    }
     case "calculation": {
       const uitkomst = rekenBlad(blad, ctx.omgeving.stand().gegevens);
       if (!uitkomst.ok) return fout("CALC_ERROR", uitkomst.fout);

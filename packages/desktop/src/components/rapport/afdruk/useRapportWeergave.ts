@@ -24,6 +24,9 @@ import type { CanvasUitwerking } from "../../calc/canvasRekenen";
 import type { Resultaat } from "../../calc/bladResultaat";
 import { metToetsingen } from "../../../rekenen/toetsCache";
 import { useToetsVersie } from "../../../rekenen/femToetsing";
+import { useInvulteksten } from "../../calc/useTekstInvulling";
+import { useInvulwaarden } from "../../calc/useTekstInvulling";
+import { vulMarkdownIn } from "../../../rekenen/tekstInvulling";
 
 /*
  * Alles wat de afdruk van het rapport nodig heeft, op één plek verzameld.
@@ -118,8 +121,16 @@ export function useRapportWeergave(): RapportWeergave {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [exemplaren, gegevens, taal, toetsV]);
 
+  // De koppen van een Markdown-blad gaan ook met de ingevulde waarden de
+  // inhoudsopgave in, zodat daar geen `{#2.R_paal}` blijft staan.
+  const mdTekst = useMemo(
+    () => exemplaren.filter((e) => e.md).map((e) => e.md!.tekst).join("\n\n"),
+    [exemplaren],
+  );
+  const mdWaarden = useInvulwaarden(mdTekst, true);
+
   const opzet = useMemo(() => {
-    const lijst = exemplaren.map(bladVoorOpzet);
+    const lijst = exemplaren.map((ex) => bladVoorOpzet(ex, (t) => vulMarkdownIn(t, mdWaarden)));
     const knopen = bouwOpzet(rapport, lijst);
     const metBladen = rapport.opmaak.bladenInInhoud;
     return {
@@ -128,10 +139,16 @@ export function useRapportWeergave(): RapportWeergave {
       inhoudBijlage: metBladen ? bijlageRegels(knopen) : [],
       bijlagen: bijlagenVan(rapport, lijst),
     };
-  }, [rapport, exemplaren]);
+  }, [rapport, exemplaren, mdWaarden]);
+
+  // `{#2.R_paal}` in een rapporttekst: de waarde uit dat blad. Gezocht in het hele
+  // rapport, want de teksten staan over de hele opbouw verspreid.
+  const rapportTekst = useMemo(() => JSON.stringify(rapport), [rapport]);
+  const verwijzingen = useInvulteksten(rapportTekst);
 
   const invul = useMemo<Invulwaarden>(
     () => ({
+      verwijzingen,
       adviseur: bureau.naam,
       projectnummer: gegevens.project_nummer || "",
       projectnaam: gegevens.project_naam || projectNaam,
@@ -140,7 +157,7 @@ export function useRapportWeergave(): RapportWeergave {
       verantwoordelijk: rapport.verantwoordelijk,
       uitvoerend: rapport.uitvoerend,
     }),
-    [bureau.naam, gegevens, projectNaam, rapport.verantwoordelijk, rapport.uitvoerend],
+    [bureau.naam, gegevens, projectNaam, rapport.verantwoordelijk, rapport.uitvoerend, verwijzingen],
   );
 
   const woorden = useMemo(() => ({

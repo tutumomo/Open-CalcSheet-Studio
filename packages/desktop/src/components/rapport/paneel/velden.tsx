@@ -85,7 +85,7 @@ export function OpzetBron({ children }: { children: ReactNode }) {
         loop(k.kinderen);
       }
     };
-    loop(bouwOpzet(rapport, exemplaren.map(bladVoorOpzet)));
+    loop(bouwOpzet(rapport, exemplaren.map((e) => bladVoorOpzet(e))));
     return {
       nummer: (id) => nummers.get(id) ?? "",
       valtWeg: (id) => !nummers.has(id),

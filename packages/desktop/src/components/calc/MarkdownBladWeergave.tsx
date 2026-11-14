@@ -10,6 +10,8 @@ import type { Maten } from "./paginering";
 import { IframeBeelden } from "./iframeBlok";
 import { exporteerMarkdown, kiesMarkdown } from "./markdownBlad";
 import { markdownVoorPapier, markdownVoorScherm } from "./markdownRegels";
+import { vulMarkdownIn } from "../../rekenen/tekstInvulling";
+import { useInvulwaarden } from "./useTekstInvulling";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
 import { UitwerkingHtml } from "./UitwerkingHtml";
 import "./Editor.css";
@@ -59,7 +61,10 @@ export function MarkdownWeergave({ ex }: { ex: Exemplaar }) {
   const { t } = useTranslation("rekentaal");
   const tRef = useRef(t);
   tRef.current = t;
-  const tekst = useDeferredValue(ex.md?.tekst ?? "");
+  const bron = useDeferredValue(ex.md?.tekst ?? "");
+  // `{#2.R_paal}`: de waarde uit een ander blad, zoals die in dat blad staat.
+  const waarden = useInvulwaarden(bron, true);
+  const tekst = useMemo(() => vulMarkdownIn(bron, waarden), [bron, waarden]);
   const beelden = ex.md?.beelden;
   const inhoud = useMemo(() => ({ __html: markdownVoorScherm(tekst, beelden, schoonUitwerking) }), [tekst, beelden]);
   const wortel = useRef<HTMLDivElement>(null);
@@ -148,9 +153,13 @@ export function MarkdownRapportKeuze({ ex }: { ex: Exemplaar }) {
 export function MarkdownPapier({ ex }: { ex: Exemplaar; maten: Maten }) {
   const wortel = useRef<HTMLDivElement>(null);
   const t = usePapier();
+  const waarden = useInvulwaarden(ex.md?.tekst ?? "", true);
   const html = useMemo(
-    () => (ex.md ? markdownVoorPapier(ex.md, { id: ex.id, naam: ex.naam }, schoonUitwerking) : ""),
-    [ex.md, ex.id, ex.naam],
+    () =>
+      ex.md
+        ? markdownVoorPapier({ ...ex.md, tekst: vulMarkdownIn(ex.md.tekst, waarden) }, { id: ex.id, naam: ex.naam }, schoonUitwerking)
+        : "",
+    [ex.md, ex.id, ex.naam, waarden],
   );
   useLayoutEffect(() => {
     for (const img of wortel.current?.querySelectorAll("img") ?? []) {

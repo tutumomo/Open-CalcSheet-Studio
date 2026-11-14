@@ -157,7 +157,10 @@ meldingen plus de bekijk-tabel, van een Jupyter-notebook per cel de bron, het
 `executionCount` (`null` = nooit gedraaid) en de bewaarde uitvoer (tekst,
 uitkomsten, fouten zonder kleurcodes; afbeeldingen alleen als MIME-type), van
 Marimo per cel de code en de uitvoer als tekst, en van een rekenblad de regels
-zoals `sheet_evaluate` met `lines: true`. `sheet_run` laat een Jupyter- of
+zoals `sheet_evaluate` met `lines: true`. Van een Markdown-blad komt de bron onder
+`markdown.text`; noemt die waarden uit andere bladen (`{#2.R_paal}`), dan staat de
+tekst zoals de app hem toont onder `markdown.filled` en elke verwijzing met waarde,
+eenheid of fout in `markdown.references`. `sheet_run` laat een Jupyter- of
 Marimo-blad in de app draaien (het blad gaat open; alleen in de desktop-app) en
 geeft daarna dezelfde inhoud terug; `completed: false` betekent dat de ronde
 niet op tijd klaar was en de uitvoer niet te vertrouwen is. Een graaf,

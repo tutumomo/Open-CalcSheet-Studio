@@ -18,15 +18,24 @@
 export interface Invulwaarden {
   adviseur: string; projectnummer: string; projectnaam: string; opdrachtgever: string;
   locatie: string; verantwoordelijk: string; uitvoerend: string;
+  /**
+   * Waarden uit rekenbladen (`{#2.R_paal}`): de plek zoals hij in de tekst staat,
+   * naar wat er moet komen te staan (rekenen/tekstInvulling.ts). Zonder deze kaart
+   * blijft zo'n verwijzing staan, net als een onbekend invulveld.
+   */
+  verwijzingen?: ReadonlyMap<string, string>;
 }
 
+/** Een invulveld: de namen tussen accolades. `verwijzingen` is geen veld maar de kaart met bladwaarden. */
+export type Invulveld = Exclude<keyof Invulwaarden, "verwijzingen">;
+
 /** De invulvelden in de volgorde waarin het paneel ze onder een tekstblok toont. */
-export const INVULVELDEN: readonly (keyof Invulwaarden)[] = [
+export const INVULVELDEN: readonly Invulveld[] = [
   "adviseur", "projectnummer", "projectnaam", "opdrachtgever",
   "locatie", "verantwoordelijk", "uitvoerend",
 ];
 
-function isInvulveld(naam: string): naam is keyof Invulwaarden {
+function isInvulveld(naam: string): naam is Invulveld {
   return (INVULVELDEN as readonly string[]).includes(naam);
 }
 
@@ -39,11 +48,25 @@ function isInvulveld(naam: string): naam is keyof Invulwaarden {
  * op in het afdrukvoorbeeld in plaats van stil te verdwijnen.
  */
 export function vulIn(tekst: string, w: Invulwaarden): string {
-  return tekst.replace(/\{([A-Za-z]+)\}/g, (heel: string, naam: string) => {
+  const metVelden = tekst.replace(/\{([A-Za-z]+)\}/g, (heel: string, naam: string) => {
     if (!isInvulveld(naam)) return heel;
     const waarde = w[naam].trim();
     return waarde === "" ? "—" : waarde;
   });
+  return w.verwijzingen ? vervangVerwijzingenInTekst(metVelden, w.verwijzingen) : metVelden;
+}
+
+/**
+ * `{#2.R_paal}` en `{#2.R_paal:1}` → de waarde uit het blad. Een verwijzing die
+ * niet in de kaart staat (onbekend blad, een fout in het blad) blijft staan, zodat
+ * een tikfout in het afdrukvoorbeeld opvalt. Staat hier en niet in
+ * rekenen/tekstInvulling.ts, zodat dit bestand zonder de rekenkern te laden blijft.
+ */
+const VERWIJZING_IN_TEKST = /\{#[A-Za-z0-9_]+\.[\p{L}_][\p{L}\p{N}_]*(?::\d{1,2})?\}/gu;
+
+export function vervangVerwijzingenInTekst(tekst: string, verwijzingen: ReadonlyMap<string, string>): string {
+  if (!tekst.includes("{#")) return tekst;
+  return tekst.replace(VERWIJZING_IN_TEKST, (plek: string) => verwijzingen.get(plek) ?? plek);
 }
 
 /** Eén regel van een tekst zoals hij in het rapport komt. */

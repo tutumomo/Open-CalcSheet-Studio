@@ -46,6 +46,8 @@ export interface McpBlad {
   id: string;
   naam: string;
   templateId: string;
+  /** Het kenmerk waaronder andere bladen dit blad aanroepen (`#1.R_paal`). */
+  ref?: string;
   source: string;
   waarden: Record<string, string>;
   /** De opgeleverde invoer (store/ontwerpInvoer.ts); ontbreekt als het blad niets bijhoudt. */

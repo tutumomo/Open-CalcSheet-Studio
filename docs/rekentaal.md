@@ -53,6 +53,13 @@ zijn in deze taal geschreven.
   eigen invoer, ook via via (blad 3 vraagt iets van 2, en 2 van 1). Verandert de invoer
   van blad 2, dan rekent het blad dat ernaar verwijst vanzelf opnieuw. Een kring (1 vraagt
   iets van 2, en 2 van 1) rekent niet rond en geeft een foutmelding.
+- **In gewone tekst:** in een Markdown-blad en in een rapporttekst schrijf je dezelfde
+  verwijzing tussen accolades: `{#2.R_paal}`. Er komt de waarde met eenheid te staan,
+  zoals de uitwerking van dat blad hem toont (`450 kN`); `{#2.M:1}` geeft één decimaal.
+  In Markdown blijft een verwijzing tussen backticks of in een codeblok staan als
+  voorbeeld. Levert de verwijzing niets op (onbekend blad of naam, een fout in het blad),
+  dan blijft ze letterlijk staan, zodat een tikfout opvalt; `sheet_read` noemt per
+  verwijzing de waarde en de reden (`references[].error`).
 - **Waar:** de kern zet `#2.R_paal` bij het inlezen om in de naam `ref__2__R_paal`
   (`packages/core/src/verwijzing.ts`); de app zet de waarde onder die naam in de scope
   (`packages/desktop/src/rekenen/verwijzingen.ts`). Een losse module verwijst nooit naar
