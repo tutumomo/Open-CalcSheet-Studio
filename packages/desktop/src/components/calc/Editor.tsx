@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef } from "react";
 import { useTranslation } from "react-i18next";
 import CodeMirror from "@uiw/react-codemirror";
-import type { EditorView } from "@codemirror/view";
+import { EditorView } from "@codemirror/view";
 import { useEditorViewStore } from "../../store/editorViewStore";
 import { useActieveBron, useZetActieveBron } from "../../store/actiefBlad";
 import { useZoom } from "../../hooks/useZoom";
@@ -72,7 +72,7 @@ export default function Editor() {
     >
       <CodeMirror
         value={code}
-        extensions={[ifcCalcLang()]}
+        extensions={[ifcCalcLang(), EditorView.lineWrapping]}
         onChange={onChange}
         onCreateEditor={onCreateEditor}
         basicSetup={{

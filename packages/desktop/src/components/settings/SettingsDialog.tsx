@@ -17,7 +17,7 @@ import {
   zetErpnextGeheim,
 } from "../../tauri/erpnext";
 import { geheimActies } from "../../tauri/erpnextGeheim";
-import { version as pakketVersie } from "../../../package.json";
+import { useAppVersie } from "../../hooks/useAppVersie";
 import "../ThemedSelect.css";
 import "./SettingsDialog.css";
 import { femStudioLicentie, femStudioStatus, type FemLicentie, type FemStatus } from "../../rekenen/femStudio";
@@ -583,15 +583,12 @@ function UnitsTabContent({
 // ─────────────────────────────────────────────────────────────
 function AboutTabContent() {
   const { t } = useTranslation("settings");
-  const [versie, setVersie] = useState(pakketVersie);
+  // Hetzelfde versienummer als titelbalk, statusbalk en Backstage.
+  const { label: versie } = useAppVersie();
   // FEM Studio pas vragen als deze tab opent: de vraag start de server.
   const [fem, setFem] = useState<FemStatus | null>(null);
   const [femLicentie, setFemLicentie] = useState<FemLicentie | null>(null);
   useEffect(() => {
-    import("@tauri-apps/api/app")
-      .then(({ getVersion }) => getVersion())
-      .then(setVersie)
-      .catch(() => {});
     let weg = false;
     femStudioStatus().then((s) => {
       if (!weg) setFem(s);

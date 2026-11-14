@@ -5,7 +5,7 @@ import { useBestandActies } from "../../hooks/useBestandActies";
 import { useAfdrukken } from "../../store/printStore";
 import { useModuleKiezer } from "../../store/moduleKiezer";
 import { sprite } from "../ribbon/calcIcons";
-import { version as pakketVersie } from "../../../package.json";
+import { useAppVersie } from "../../hooks/useAppVersie";
 import "./Backstage.css";
 
 const ICONS = {
@@ -214,6 +214,8 @@ export default function Backstage({ open, onClose, onOpenSettings, onOpenFile, o
 }
 
 function AboutPanel() {
+  // Hetzelfde versienummer als de titelbalk en de statusbalk: de release-tag.
+  const { label: versieLabel } = useAppVersie();
   const { t } = useTranslation("backstage");
 
   const openExternal = (url: string) => async (e: React.MouseEvent) => {
@@ -253,7 +255,7 @@ function AboutPanel() {
         </div>
         <div className="bs-about-app-info">
           <h1 className="bs-about-app-name">{t("aboutPanel.appName")}</h1>
-          <p className="bs-about-version">{t("aboutPanel.version")} {pakketVersie}</p>
+          <p className="bs-about-version">{t("aboutPanel.version")} {versieLabel}</p>
         </div>
       </div>
       <p className="bs-about-tagline">{t("aboutPanel.tagline")}</p>

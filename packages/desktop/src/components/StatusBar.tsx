@@ -1,12 +1,14 @@
 import { useTranslation } from "react-i18next";
 import { useProjectStore } from "../store/projectStore";
 import { usePrintStore } from "../store/printStore";
-import { version } from "../../package.json";
+import { useAppVersie } from "../hooks/useAppVersie";
 import McpStatusItem from "../mcp/McpStatusItem";
 import "./StatusBar.css";
 
 export default function StatusBar() {
   const { t } = useTranslation();
+  // Eén bron voor het versienummer: de release-tag uit `app_kenmerken`.
+  const { label: versieLabel } = useAppVersie();
   const aantalBladen = useProjectStore((s) => s.exemplaren.length);
   // Zonder printdialoog zie je hier dat de PDF wordt gemaakt, en waar hij is gebleven.
   const pdfPad = usePrintStore((s) => s.pdfPad);
@@ -32,7 +34,7 @@ export default function StatusBar() {
 
       <div className="status-bar-center">
         <span className="status-item-label" style={{ fontSize: "11px" }}>
-          {t("appName")} v{version}
+          {t("appName")} v{versieLabel}
         </span>
       </div>
 

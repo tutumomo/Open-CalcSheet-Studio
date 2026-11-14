@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { getSetting, setSetting } from "../store";
 import Modal from "./Modal";
+import { kenmerken } from "../mcp/kenmerken";
+import { version as pakketVersie } from "../../package.json";
 import "./FeedbackDialog.css";
 
 /*
@@ -87,7 +89,8 @@ export default function FeedbackDialog({ open, onClose }: { open: boolean; onClo
     setStand("bezig");
     setFout(null);
     try {
-      const versie = await import("@tauri-apps/api/app").then(({ getVersion }) => getVersion()).catch(() => "");
+      // Dezelfde tag als de app toont, zodat een melding bij de juiste release hoort.
+      const versie = await kenmerken(pakketVersie).then((k) => k.tag).catch(() => "");
       const velden: Record<string, string> = { app: APP_ID, category: soort, message: berichtTekst };
       if (emailTekst) velden.email = emailTekst;
       if (naam.trim()) velden.fullname = naam.trim();

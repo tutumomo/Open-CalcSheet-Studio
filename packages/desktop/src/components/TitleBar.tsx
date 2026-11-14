@@ -4,6 +4,7 @@ import { useAfdrukken } from "../store/printStore";
 import { useProjectStore } from "../store/projectStore";
 import { useBestandActies } from "../hooks/useBestandActies";
 import Icoon from "./Icoon";
+import { useAppVersie } from "../hooks/useAppVersie";
 import "./TitleBar.css";
 
 interface TitleBarProps {
@@ -26,7 +27,8 @@ function TitleBar({ onSettingsClick, onFeedbackClick, onAiClick, aiOpen = false 
   const kanOpnieuw = useProjectStore((s) => s.toekomst.length > 0);
   const projectNaam = useProjectStore((s) => s.projectNaam);
   const [isMaximized, setIsMaximized] = useState(false);
-  const [appVersion, setAppVersion] = useState("");
+  // Eén bron voor het versienummer: de release-tag uit `app_kenmerken`.
+  const { label: appVersion } = useAppVersie();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const appWindowRef = useRef<any>(null);
 
@@ -36,13 +38,6 @@ function TitleBar({ onSettingsClick, onFeedbackClick, onAiClick, aiOpen = false 
       appWindowRef.current = getCurrentWindow();
     }
     return appWindowRef.current;
-  }, []);
-
-  useEffect(() => {
-    import("@tauri-apps/api/app")
-      .then(({ getVersion }) => getVersion())
-      .then(setAppVersion)
-      .catch(() => setAppVersion(""));
   }, []);
 
   const updateMaximizedState = useCallback(async () => {
