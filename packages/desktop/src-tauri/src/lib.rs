@@ -17,6 +17,8 @@
 //! De ERPNext-koppeling (`erpnext`) haalt de locatie van een project op; het
 //! API-geheim staat in de sleutelbos van het besturingssysteem.
 
+// De AI-assistent in de app: het gesprek met de modelaanbieder (src/ai.rs).
+mod ai;
 // Command-line: --version, --help, --headless, eval, render (src/cli.rs).
 mod cli;
 mod erpnext;
@@ -247,6 +249,8 @@ pub fn run() {
         .manage(jupyter_omgeving::JupyterOmgeving::default())
         // De server van Open FEM Studio voor de toetsing; start bij de eerste aanroep.
         .manage(fem_studio::FemStudio::default())
+        // De stopknop van de AI-zijbalk.
+        .manage(ai::AiState::default())
         .invoke_handler(tauri::generate_handler![
             engine_generate_pdf,
             engine_save_pdf,
@@ -267,6 +271,10 @@ pub fn run() {
             fem_studio::fem_studio_licentie,
             fem_studio::fem_studio_tools,
             fem_studio::fem_studio_aanroep,
+            ai::ai_zet_sleutel,
+            ai::ai_heeft_sleutel,
+            ai::ai_vraag,
+            ai::ai_stop,
         ])
         .build(context)
         .expect("error while building tauri application")

@@ -16,6 +16,7 @@ import enBeelden from "./locales/en/beelden.json";
 import enTekenen from "./locales/en/tekenen.json";
 import enLibrary from "./locales/en/library.json";
 import enGewichten from "./locales/en/gewichten.json";
+import enAi from "./locales/en/ai.json";
 // Dutch
 import nlCommon from "./locales/nl/common.json";
 import nlRibbon from "./locales/nl/ribbon.json";
@@ -29,6 +30,7 @@ import nlBeelden from "./locales/nl/beelden.json";
 import nlTekenen from "./locales/nl/tekenen.json";
 import nlLibrary from "./locales/nl/library.json";
 import nlGewichten from "./locales/nl/gewichten.json";
+import nlAi from "./locales/nl/ai.json";
 // 台灣版（zh-TW）
 import twCommon from "./locales/zh-TW/common.json";
 import twRibbon from "./locales/zh-TW/ribbon.json";
@@ -42,6 +44,7 @@ import twBeelden from "./locales/zh-TW/beelden.json";
 import twTekenen from "./locales/zh-TW/tekenen.json";
 import twLibrary from "./locales/zh-TW/library.json";
 import twGewichten from "./locales/zh-TW/gewichten.json";
+import twAi from "./locales/zh-TW/ai.json";
 
 export const LANGUAGES = [
   { code: "auto", name: "Auto-detect" },
@@ -60,8 +63,8 @@ export const STANDAARD_TAAL = "zh-TW";
 // werkruimte (project, panelen, modulekiezer), rapport (het rapportpaneel),
 // rekentaal (tab Rekentaal, taalreferentie, editor), beelden (parametrische beelden)
 // tekenen (tab Tekenen, de tekeneditor), library (de Library in het projectpaneel) en
-// gewichten (de gewichtenbibliotheek).
-const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "rekentaal", "beelden", "tekenen", "library", "gewichten"];
+// gewichten (de gewichtenbibliotheek) en ai (de AI-zijbalk).
+const ns = ["common", "ribbon", "backstage", "settings", "feedback", "werkruimte", "rapport", "rekentaal", "beelden", "tekenen", "library", "gewichten", "ai"];
 
 i18next
   .use(LanguageDetector)
@@ -71,18 +74,18 @@ i18next
       en: {
         common: enCommon, ribbon: enRibbon, backstage: enBackstage, settings: enSettings, feedback: enFeedback,
         werkruimte: enWerkruimte, rapport: enRapport, rekentaal: enRekentaal, beelden: enBeelden, tekenen: enTekenen, library: enLibrary,
-        gewichten: enGewichten,
+        gewichten: enGewichten, ai: enAi,
       },
       nl: {
         common: nlCommon, ribbon: nlRibbon, backstage: nlBackstage, settings: nlSettings, feedback: nlFeedback,
         werkruimte: nlWerkruimte, rapport: nlRapport, rekentaal: nlRekentaal, beelden: nlBeelden, tekenen: nlTekenen, library: nlLibrary,
-        gewichten: nlGewichten,
+        gewichten: nlGewichten, ai: nlAi,
       },
       // 台灣版
       "zh-TW": {
         common: twCommon, ribbon: twRibbon, backstage: twBackstage, settings: twSettings, feedback: twFeedback,
         werkruimte: twWerkruimte, rapport: twRapport, rekentaal: twRekentaal, beelden: twBeelden, tekenen: twTekenen, library: twLibrary,
-        gewichten: twGewichten,
+        gewichten: twGewichten, ai: twAi,
       },
     },
     ns,

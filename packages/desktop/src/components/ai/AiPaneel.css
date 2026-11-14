@@ -1,0 +1,289 @@
+/* De AI-zijbalk (AiPaneel.tsx): een kolom rechts van de werkruimte.
+
+   Alleen tokens van het ontwerp (openaec/openaec-tokens.css), net als het
+   invoerscherm: het paneel volgt het thema van de app, ook in het donker. */
+
+.ai-paneel {
+  flex: 0 0 384px;
+  align-self: stretch;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--oa-surface, var(--theme-bg, #fff));
+  border-left: 1px solid var(--oa-border);
+  font-family: var(--oa-font-body);
+  font-size: var(--oa-size-body);
+  color: var(--oa-text);
+}
+
+.ai-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px 6px 12px;
+  border-bottom: 1px solid var(--oa-border-subtle);
+}
+
+.ai-titel {
+  font-weight: 600;
+}
+
+.ai-kop-knoppen {
+  display: flex;
+  gap: 4px;
+}
+
+.ai-knop-kaal {
+  background: none;
+  border: 0;
+  padding: 4px 6px;
+  color: var(--oa-text-secondary);
+  font: inherit;
+  cursor: pointer;
+  border-radius: var(--oa-radius-s, 3px);
+}
+
+.ai-knop-kaal:hover:not(:disabled) {
+  background: var(--oa-surface-sunken, rgba(0, 0, 0, 0.06));
+  color: var(--oa-text);
+}
+
+.ai-knop-kaal:disabled {
+  color: var(--oa-text-disabled);
+  cursor: default;
+}
+
+.ai-instellingen {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--oa-border-subtle);
+  background: var(--oa-surface-raised, var(--oa-surface-sunken, rgba(0, 0, 0, 0.03)));
+}
+
+.ai-veld {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  color: var(--oa-text-secondary);
+}
+
+.ai-veld input,
+.ai-veld select {
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-surface, #fff);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-s, 3px);
+  padding: 3px 6px;
+}
+
+.ai-instellingen-rij {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+}
+
+.ai-knop {
+  font: inherit;
+  padding: 3px 10px;
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-s, 3px);
+  background: var(--oa-surface, #fff);
+  color: var(--oa-text);
+  cursor: pointer;
+}
+
+.ai-knop:hover:not(:disabled) {
+  border-color: var(--oa-border-strong);
+}
+
+.ai-knop:disabled {
+  color: var(--oa-text-disabled);
+  cursor: default;
+}
+
+.ai-knop-primair {
+  background: var(--oa-accent);
+  border-color: var(--oa-accent);
+  color: var(--oa-text-on-accent);
+}
+
+.ai-knop-primair:hover:not(:disabled) {
+  background: var(--oa-accent-hover);
+  border-color: var(--oa-accent-hover);
+}
+
+.ai-hint {
+  color: var(--oa-text-muted);
+  font-size: var(--oa-size-small, 0.92em);
+}
+
+.ai-gesprek {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ai-regel-user .ai-tekst {
+  background: var(--oa-surface-sunken, rgba(0, 0, 0, 0.05));
+  border-radius: var(--oa-radius-m, 6px);
+  padding: 6px 9px;
+  white-space: pre-wrap;
+}
+
+.ai-regel-assistant .ai-tekst {
+  white-space: pre-wrap;
+}
+
+.ai-stappen {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin-top: 6px;
+}
+
+.ai-stap-kop {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  width: 100%;
+  text-align: left;
+  background: none;
+  border: 0;
+  padding: 2px 4px;
+  font: inherit;
+  color: var(--oa-text-secondary);
+  cursor: pointer;
+  border-radius: var(--oa-radius-s, 3px);
+}
+
+.ai-stap-kop:hover {
+  background: var(--oa-surface-sunken, rgba(0, 0, 0, 0.05));
+}
+
+.ai-stap-teken {
+  width: 1em;
+  flex: 0 0 auto;
+  font-family: var(--oa-font-mono, monospace);
+}
+
+.ai-stap-naam {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-stap-status {
+  flex: 0 0 auto;
+  font-size: var(--oa-size-small, 0.92em);
+  color: var(--oa-text-muted);
+}
+
+.ai-stap-klaar .ai-stap-teken {
+  color: var(--oa-success);
+}
+
+.ai-stap-fout .ai-stap-teken,
+.ai-stap-fout .ai-stap-status {
+  color: var(--oa-error);
+}
+
+.ai-stap-geweigerd .ai-stap-teken,
+.ai-stap-geweigerd .ai-stap-status {
+  color: var(--oa-warning);
+}
+
+.ai-stap-detail {
+  padding: 2px 4px 6px 24px;
+}
+
+.ai-stap-label {
+  color: var(--oa-text-muted);
+  font-size: var(--oa-size-small, 0.92em);
+  margin-top: 4px;
+}
+
+.ai-stap-detail pre,
+.ai-voorbeeld {
+  margin: 2px 0 0;
+  padding: 6px 8px;
+  max-height: 220px;
+  overflow: auto;
+  background: var(--oa-surface-sunken, rgba(0, 0, 0, 0.05));
+  border-radius: var(--oa-radius-s, 3px);
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 0.9em;
+  white-space: pre;
+}
+
+.ai-stap-fout {
+  margin-top: 4px;
+  color: var(--oa-error);
+}
+
+.ai-goedkeuring {
+  border-top: 2px solid var(--oa-warning);
+  background: var(--oa-warning-tint);
+  color: var(--oa-text);
+  padding: 8px 12px;
+}
+
+.ai-goedkeuring-titel {
+  font-weight: 600;
+}
+
+.ai-goedkeuring-vraag {
+  margin: 2px 0 4px;
+}
+
+.ai-goedkeuring-stap {
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 0.9em;
+  margin-bottom: 6px;
+}
+
+.ai-fout {
+  border-top: 1px solid var(--oa-error);
+  background: var(--oa-error-tint);
+  color: var(--oa-text);
+  padding: 6px 12px;
+}
+
+.ai-voet {
+  border-top: 1px solid var(--oa-border-subtle);
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-invoer {
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-surface, #fff);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-s, 3px);
+  padding: 6px 8px;
+  resize: none;
+  user-select: text;
+  -webkit-user-select: text;
+}
+
+.ai-voet-rij {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}

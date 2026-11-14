@@ -6,6 +6,11 @@ programma's. Beide draaien op **dezelfde brug**: zelfde poort (standaard
 3879), zelfde Bearer-token, alleen op 127.0.0.1, zelfde Origin-weigering en
 zelfde alleen-lezen/pauze uit **Instellingen › API en AI-assistent**.
 
+De **AI-zijbalk** in de app roept dezelfde tools aan, maar dan in-process:
+geen HTTP, geen token. Wat hier staat, kan de assistent dus ook, en andersom
+(zie [mcp.md](mcp.md) en [tw/AI助理.md](tw/AI助理.md)). Voor de REST-API is de
+zijbalk zelf geen route.
+
 - Basisadres: `http://127.0.0.1:3879/api/v1`
 - OpenAPI 3.1: `http://127.0.0.1:3879/api/v1/openapi.json`
 - Header: `Authorization: Bearer <token>` (het token staat op de tab)

@@ -92,13 +92,13 @@ pub fn herkomst(adres: &str) -> Result<String, String> {
 
 /// De ingang in de sleutelbos voor `herkomst`. `dienst` is altijd [`DIENST`], behalve in
 /// de proef.
-fn sleutelbos(dienst: &str, herkomst: &str) -> Result<keyring::Entry, String> {
+pub(crate) fn sleutelbos(dienst: &str, herkomst: &str) -> Result<keyring::Entry, String> {
     keyring::Entry::new(dienst, herkomst).map_err(|e| format!("keychain: {e}"))
 }
 
 /// Het geheim voor `herkomst` uit de sleutelbos, of `None` als er geen is. Het wordt
 /// gewist zodra het uit beeld gaat.
-fn lees_geheim(dienst: &str, herkomst: &str) -> Result<Option<Zeroizing<String>>, String> {
+pub(crate) fn lees_geheim(dienst: &str, herkomst: &str) -> Result<Option<Zeroizing<String>>, String> {
     match sleutelbos(dienst, herkomst)?.get_password() {
         Ok(geheim) => Ok(Some(Zeroizing::new(geheim))),
         Err(keyring::Error::NoEntry) => Ok(None),
@@ -106,7 +106,7 @@ fn lees_geheim(dienst: &str, herkomst: &str) -> Result<Option<Zeroizing<String>>
     }
 }
 
-fn bewaar_geheim(dienst: &str, herkomst: &str, geheim: &str) -> Result<(), String> {
+pub(crate) fn bewaar_geheim(dienst: &str, herkomst: &str, geheim: &str) -> Result<(), String> {
     let geheim = geheim.trim();
     if !geheim.is_empty() && !header_veilig(geheim) {
         return Err("the API secret contains characters that cannot be sent".to_string());

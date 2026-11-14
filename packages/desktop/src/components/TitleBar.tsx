@@ -9,11 +9,15 @@ import "./TitleBar.css";
 interface TitleBarProps {
   onSettingsClick?: () => void;
   onFeedbackClick?: () => void;
+  /** De AI-zijbalk openen of sluiten (store/aiStore.ts). */
+  onAiClick?: () => void;
+  aiOpen?: boolean;
 }
 
-function TitleBar({ onSettingsClick, onFeedbackClick }: TitleBarProps) {
+function TitleBar({ onSettingsClick, onFeedbackClick, onAiClick, aiOpen = false }: TitleBarProps) {
   const { t } = useTranslation();
   const { t: tw } = useTranslation("werkruimte");
+  const { t: tai } = useTranslation("ai");
   const afdrukken = useAfdrukken();
   const { opslaan } = useBestandActies();
   const ongedaan = useProjectStore((s) => s.ongedaan);
@@ -113,6 +117,18 @@ function TitleBar({ onSettingsClick, onFeedbackClick }: TitleBarProps) {
           </button>
           <button className="titlebar-quick-btn" title={`${t("print")} (Ctrl+P)`} aria-label={t("print")} tabIndex={-1} onClick={afdrukken}>
             <Icoon id="file.print" />
+          </button>
+          {/* De AI-zijbalk heeft geen eigen icoon in de Blueprint-sprites; het woord
+              "AI" is hier duidelijker dan een algemeen icoon. */}
+          <button
+            className={`titlebar-quick-btn titlebar-ai-btn${aiOpen ? " actief" : ""}`}
+            title={tai("knop")}
+            aria-label={tai("knop")}
+            aria-pressed={aiOpen}
+            tabIndex={-1}
+            onClick={() => onAiClick?.()}
+          >
+            {tai("knopKort")}
           </button>
           <button className="titlebar-quick-btn" title={t("preferences")} aria-label={t("preferences")} tabIndex={-1} onClick={() => onSettingsClick?.()}>
             <Icoon id="ui.settings" />

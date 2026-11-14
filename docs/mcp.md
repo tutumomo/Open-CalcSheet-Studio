@@ -187,6 +187,16 @@ zoals DXF het wil. Wat geen lijn, cirkel of tekst is (een parametrisch symbool,
 een boog) zou als losse entiteit verkeerd uitkomen: dat wordt geteld in
 `skipped` en niet stil weggelaten zonder melding.
 
+De **AI-zijbalk** in de app gebruikt dezelfde registry, in-process: `voerToolUit`
+met `MCP_TOOLS`, zonder HTTP. Wat een MCP-client kan, kan de assistent dus ook,
+met dezelfde schema's en dezelfde foutcodes; de schakelaars voor pauze en
+alleen-lezen gelden er net zo goed. Elke aanroep is een eigen stap in de
+geschiedenis (dus één keer ongedaan maken), en verwijderen, opslaan, een nieuw
+project en het overschrijven van bestaande inhoud vraagt de gebruiker eerst om
+toestemming — bij overschrijven met het verschil in beeld. De sleutel van de
+aanbieder staat in de sleutelbos van het systeem, nooit in `preferences.json`.
+Zonder venster (`--headless`) laadt de zijbalk niet.
+
 ## Hoe het werkt
 
 ```

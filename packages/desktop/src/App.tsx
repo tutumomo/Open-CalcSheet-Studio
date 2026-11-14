@@ -29,6 +29,7 @@ import { PdfBladInfo, PdfBladWeergave } from "./components/calc/PdfBladWeergave"
 import { SpreadsheetBladInfo, SpreadsheetBladWeergave, SpreadsheetHouder } from "./components/calc/SpreadsheetBladWeergave";
 import { MarkdownBladInfo, MarkdownBron, MarkdownWeergave } from "./components/calc/MarkdownBladWeergave";
 import FeedbackDialog from "./components/FeedbackDialog";
+import AiPaneel from "./components/ai/AiPaneel";
 import { CanvasBladWeergave } from "./components/calc/CanvasBladWeergave";
 import VariantenPaneel from "./components/calc/varianten/VariantenPaneel";
 import { isPdfBlad } from "./store/pdfBijlage";
@@ -49,6 +50,7 @@ import { useCodeVerzoek } from "./store/codeVerzoek";
 import { useRecentFiles } from "./hooks/useRecentFiles";
 import { useSneltoetsen } from "./hooks/useSneltoetsen";
 import { useMcpBrug } from "./mcp/useMcpBrug";
+import { useAiStore } from "./store/aiStore";
 import { useBestandActies } from "./hooks/useBestandActies";
 import { GeenProjectFout, leesProjectBestand } from "./store/projectBestand";
 import { startbestand } from "./tauri/fileOps";
@@ -164,6 +166,8 @@ export default function App() {
   const markeerOpgeslagen = useProjectStore((s) => s.markeerOpgeslagen);
   const actief = exemplaren.find((e) => e.id === activeId) ?? null;
   const source = actief?.source ?? "";
+  const aiOpen = useAiStore((s) => s.open);
+  const zetAiOpen = useAiStore((s) => s.zetOpen);
   const { addRecentFile } = useRecentFiles();
   const { openen } = useBestandActies();
   useSneltoetsen();
@@ -426,7 +430,12 @@ export default function App() {
 
   return (
     <>
-      <TitleBar onSettingsClick={() => openSettings()} onFeedbackClick={() => setFeedbackOpen(true)} />
+      <TitleBar
+        onSettingsClick={() => openSettings()}
+        onFeedbackClick={() => setFeedbackOpen(true)}
+        onAiClick={() => zetAiOpen(!aiOpen)}
+        aiOpen={aiOpen}
+      />
       <Ribbon
         onFileTabClick={() => setBackstageOpen(true)}
         onSettingsClick={openSettings}
@@ -556,6 +565,8 @@ export default function App() {
             </>
           )}
         </div>
+        {/* De AI-zijbalk (P2-15): rechts van de werkruimte, over de volle hoogte. */}
+        <AiPaneel />
       </main>
       {welkomOpen && <Welkom onSluit={() => setWelkomOpen(false)} />}
       <StatusBar />
