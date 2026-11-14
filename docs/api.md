@@ -136,7 +136,8 @@ de alleen-lezenstand.
 
 Een Taiwanees rapport heeft daarnaast `tw`: `tw.handtekening.{naam,vakgebied,nummer,instantie,bureau,datum,beeld,tonen}`
 (het blok van de ondertekenende ingenieur op het voorblad), `tw.kopvoet.{kop,voet}` (doorlopende kop- en voettekst met
-`{titel}`, `{projectnaam}`, `{kenmerk}`, `{datum}`, `{revisie}`) en `tw.nummering.tabellen` (表 4-1 boven de tabellen).
+`{titel}`, `{projectnaam}`, `{kenmerk}`, `{datum}`, `{revisie}`) en `tw.nummering.tabellen` (表 4-1 boven de tabellen)、
+`tw.nummering.figuren`（圖 6-1 寫進繪圖表標題欄；附錄 A 的圖保留 A.x）。
 Leeg betekent: niets op papier, dus een bestaand rapport verandert niet.
 | `POST /undo` | `undo` | wijzigen | — |
 | `POST /redo` | `redo` | wijzigen | — |
