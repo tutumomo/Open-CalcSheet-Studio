@@ -7,6 +7,8 @@
  *    這不能證明手冊值等於 CNS 官方表，只能抓出抄錯位數、欄位錯置。官方表逐列核對尚未完成，
  *    見 docs/tw/規範來源.md §5.11。
  * 2. 方管、圓管：以獨立數值積分（逐條切片）重算面積、慣性矩、塑性模數，與閉合式產生的表比對。
+ *    2b. H 型鋼第 1～19 列：釘死東和鋼鐵型錄（使用者提供，非官方正本）之尺寸、圓角 R、單重，
+ *        並以含圓角切片積分重算 A、Ix、Zx、Iy、Zy。
  * 3. 槽鋼／角鋼：同一系列內，厚度增加則 A、I 單調增加；等邊角鋼 Ix = Iy。
  * 4. 矩陣與查表：矩陣字串經計算核心取值，每個量必須帶正確單位且等於表值。
  * 5. 回歸：H 型鋼仍為 20 列，既有鋼梁／鋼柱模組使用的 id 與欄位不變。
@@ -122,6 +124,65 @@ function integreer(w, h, r, N = 40000) {
     if (!(nabij(A, gA, 0.006) && nabij(I, gI, 0.06) && nabij(Z, gZ, 0.06))) slecht.push(`#${id}`);
   }
   meld(slecht.length === 0, "圓管 15 列：A、I、Z 與數值積分一致", slecht.join(","));
+}
+
+// ── 2b. H 型鋼：型錄尺寸＋圓角 R 逐條切片積分 ─────────────────────────
+// 型錄來源（使用者提供，製造商型錄、非官方 CNS 原件，待使用者覆核）：
+//   東和鋼鐵「H型鋼 中國國家標準(CNS)&日本工業規格(JIS)」（標示 CNS 1490 G1011／JIS G 3192），
+//   https://www.tunghosteel.com/Files/papp/410/ ，擷取 2026-11-14。型錄只列 H×B×t1×t2、R、單重，
+//   A、I、W、Z、i 由本表以幾何（含四個圓角）推得；此處以不同方法（切片積分）重算核對。
+// 第 20 列 RH 900x300x16x28 不在該型錄範圍內，維持舊值（未驗證），不納入本節。
+console.log("\n2b. H 型鋼：型錄尺寸、圓角 R、單重與切片積分");
+{
+  // id → [h, b, tw, tf, R, 單重 kg/m]（型錄原值）
+  const KATALOG = {
+    1: [100, 100, 6, 8, 8, 16.9], 2: [125, 125, 6.5, 9, 8, 23.6], 3: [150, 150, 7, 10, 8, 31.1],
+    4: [175, 175, 7.5, 11, 13, 40.4], 5: [200, 200, 8, 12, 13, 49.9], 6: [250, 250, 9, 14, 13, 71.8],
+    7: [300, 300, 10, 15, 13, 93], 8: [350, 350, 12, 19, 13, 135], 9: [400, 400, 13, 21, 22, 171.7],
+    10: [200, 100, 5.5, 8, 8, 20.9], 11: [250, 125, 6, 9, 8, 29], 12: [300, 150, 6.5, 9, 13, 36.7],
+    13: [350, 175, 7, 11, 13, 49.4], 14: [400, 200, 8, 13, 13, 65.4], 15: [450, 200, 9, 14, 13, 74.9],
+    16: [500, 200, 10, 16, 13, 88.2], 17: [600, 200, 11, 17, 13, 103], 18: [700, 300, 13, 24, 18, 182],
+    19: [800, 300, 14, 26, 18, 207],
+  };
+  /** 圓角在離角點 e（0..R）處的額外寬度（每側） */
+  const hoek = (R, e) => (e < 0 || e > R ? 0 : R - Math.sqrt(Math.max(R * R - (R - e) * (R - e), 0)));
+  /** 繞強軸：沿 y 切片；繞弱軸：沿 x 切片。回傳 A、I、Z（mm 系） */
+  function hSnede(h, b, tw, tf, R, N = 40000) {
+    let A = 0, Ix = 0, Qx = 0;
+    const dy = h / N;
+    for (let i = 0; i < N; i++) {
+      const y = -h / 2 + (i + 0.5) * dy, ay = Math.abs(y);
+      const w = ay > h / 2 - tf ? b : tw + 2 * hoek(R, h / 2 - tf - ay);
+      A += w * dy; Ix += w * dy * y * y; if (y > 0) Qx += w * dy * y;
+    }
+    let Iy = 0, Qy = 0;
+    const dx = b / N;
+    for (let i = 0; i < N; i++) {
+      const x = -b / 2 + (i + 0.5) * dx, ax = Math.abs(x);
+      const hgt = ax <= tw / 2 ? h : 2 * tf + 2 * hoek(R, ax - tw / 2);
+      Iy += hgt * dx * x * x; if (x > 0) Qy += hgt * dx * x;
+    }
+    return { A, Ix, Zx: 2 * Qx, Iy, Zy: 2 * Qy };
+  }
+  const slecht = [], gewichtFout = [], maatFout = [];
+  for (const r of H) {
+    const k = KATALOG[r[0]];
+    if (!k) continue;
+    const [h, b, tw, tf, R, w] = k;
+    if (!(r[2] === h && r[3] === b && r[4] === tw && r[5] === tf && r[6] === R)) maatFout.push(r[1]);
+    if (r[18] !== w) gewichtFout.push(`${r[1]}(${r[18]}≠${w})`);
+    const g = hSnede(h, b, tw, tf, R);
+    // 表值取三位有效數字（A 取 0.01 cm²）：容許 0.6 %
+    const afw = [rel(r[7], g.A / 100), rel(r[8], g.Ix / 1e4), rel(r[10], g.Zx / 1e3), rel(r[12], g.Iy / 1e4), rel(r[14], g.Zy / 1e3)];
+    if (afw.some((x) => !(x <= 0.006))) slecht.push(`${r[1]}(${afw.map((x) => (x * 100).toFixed(2)).join("/")}%)`);
+  }
+  meld(Object.keys(KATALOG).length === 19, "型錄對照 19 列（id 1–19）");
+  meld(maatFout.length === 0, "H 型鋼 19 列：h、b、tw、tf、R 等於型錄值", maatFout.join(","));
+  meld(gewichtFout.length === 0, "H 型鋼 19 列：單重等於型錄值", gewichtFout.join(","));
+  meld(slecht.length === 0, "H 型鋼 19 列：A、Ix、Zx、Iy、Zy 與含圓角切片積分一致（≤ 0.6 %）", slecht.join("; "));
+  // 單重與 A 的關係：型錄單重 ≈ 0.785·A（7850 kg/m³），容許 0.5 %
+  const wA = H.filter((r) => KATALOG[r[0]]).filter((r) => rel(r[7] * 0.785, r[18]) > 0.005).map((r) => r[1]);
+  meld(wA.length === 0, "H 型鋼 19 列：型錄單重與 0.785·A 相差 ≤ 0.5 %", wA.join(","));
 }
 
 // ── 3. 單調性與幾何合理性 ─────────────────────────────────────────────

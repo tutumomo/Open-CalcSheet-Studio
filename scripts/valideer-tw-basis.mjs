@@ -158,8 +158,8 @@ console.log("\n3. 台灣型鋼規格表（twProfielen.ts）");
   toets("RH 400x200 查找成功", rh400 !== undefined);
   toets("RH 400x200 高度 h = 400 mm", rh400?.h === 400);
   toets("RH 400x200 寬度 b = 200 mm", rh400?.b === 200);
-  toets("RH 400x200 斷面積 A = 84.1 cm²", rh400?.A === 84.1);
-  toets("RH 400x200 強軸慣性矩 Ix = 23700 cm⁴", rh400?.Ix === 23700);
+  toets("RH 400x200 斷面積 A = 83.37 cm²", rh400?.A === 83.37);
+  toets("RH 400x200 強軸慣性矩 Ix = 23500 cm⁴", rh400?.Ix === 23500);
 
   // 測試型鋼矩陣查表
   const matrix = twProfielMatrix({ naam: "H_SECTIONS" });
@@ -176,8 +176,8 @@ ${opzoek}
   const ixNode = nodes.find((n) => n.name === "I_x");
   toets("型鋼查表 h: 400 mm", hNode?.result === "400 mm");
   toets("型鋼查表 b: 200 mm", bNode?.result === "200 mm");
-  toets("型鋼查表 A: 84.1 cm²", aNode?.result === "84.1 cm^2");
-  toets("型鋼查表 I_x: 23700 cm⁴", ixNode?.result === "23700 cm^4");
+  toets("型鋼查表 A: 83.37 cm²", aNode?.result === "83.37 cm^2");
+  toets("型鋼查表 I_x: 23500 cm⁴", ixNode?.result === "23500 cm^4");
 }
 
 console.log("\n4. 台灣 MKS 單位在計算語言中的計算");

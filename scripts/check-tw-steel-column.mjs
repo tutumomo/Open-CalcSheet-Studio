@@ -261,12 +261,13 @@ console.log("=== 台灣規範 steel99 熱軋 H 型鋼柱與柱腳模組檢核（
 // -----------------------------------------------------------------------------
 console.log("0. 公式釘死值核對（已驗證庫數值對照）");
 {
-  // 0.1 steel99_Fcr_lrfd: Fy=3.31405 tf/cm², E=2040, KL/r=53.262, Ag=119.8
-  const lc = (53.2623 / Math.PI) * Math.sqrt((325 / TF) / 2040);
+  // 0.1 steel99_Fcr_lrfd: Fy=3.31405 tf/cm², E=2040, KL/r=400/7.55=52.98013, Ag=118.45
+  //     regs_formula → ϕcPn = 274.944 tf（λc = 0.679719、Fcr = 2.730798 tf/cm²）= 2696.28 kN
+  const lc = (52.98013245 / Math.PI) * Math.sqrt((325 / TF) / 2040);
   const fcr = Math.exp(-0.419 * lc ** 2) * (325 / TF);
-  const phiPn_tf = 0.85 * 119.8 * fcr;
+  const phiPn_tf = 0.85 * 118.45 * fcr;
   const phiPn_kN = phiPn_tf * 9.80665;
-  waar("steel99_Fcr_lrfd 數值驗證", Math.abs(phiPn_kN - 2720.8) < 1.0, `phiPn = ${phiPn_kN.toFixed(1)} kN`);
+  waar("steel99_Fcr_lrfd 數值驗證", Math.abs(phiPn_kN - 2696.28) < 0.1, `phiPn = ${phiPn_kN.toFixed(1)} kN`);
 
   // 0.2 steel99_concrete_bearing_Pp: fc=280, A1=2500, A2=4900
   const ratio = Math.min(Math.sqrt(4900 / 2500), 2.0);
@@ -274,8 +275,8 @@ console.log("0. 公式釘死值核對（已驗證庫數值對照）");
   const pp_kN = pp_kgf * 0.00980665;
   waar("steel99_concrete_bearing_Pp 數值驗證", Math.abs(pp_kN - 4901.4) < 1.0, `phiPp = ${pp_kN.toFixed(1)} kN`);
 
-  // 0.3 steel99_solid_weak_axis_Mn: Z=686, W=450, Fy=325/TF
-  const mn_y_tfcm = Math.min(686 * (325 / TF), 1.5 * 450 * (325 / TF));
+  // 0.3 steel99_solid_weak_axis_Mn: Z=683, W=450, Fy=325/TF（1.5·W = 675 < Z → 1.5My 控制）
+  const mn_y_tfcm = Math.min(683 * (325 / TF), 1.5 * 450 * (325 / TF));
   const phiMny_kNm = 0.90 * mn_y_tfcm * 0.0980665;
   waar("steel99_solid_weak_axis_Mn 弱軸彎矩數值驗證", Math.abs(phiMny_kNm - 197.4) < 0.5, `phiMny = ${phiMny_kNm.toFixed(1)} kN·m`);
 }
@@ -295,15 +296,15 @@ console.log("\n1. 預設基準案例（RH 300x300，Pu=700 kN，tp=32 mm）");
     "b": 300,
     "t_w": 10,
     "t_f": 15,
-    "A": 119.8,
-    "I_x": 20400,
+    "A": 118.45,
+    "I_x": 20200,
     "I_y": 6750,
-    "W_x": 1360,
+    "W_x": 1350,
     "W_y": 450,
-    "Z_x": 1510,
-    "Z_y": 686,
+    "Z_x": 1480,
+    "Z_y": 683,
     "i_x": 13.1,
-    "i_y": 7.51,
+    "i_y": 7.55,
     "KLr_max": sol.KLr_max,
     "phiP_n": sol.phiPn_kN,
     "UC_P": sol.UC_P,
@@ -477,6 +478,7 @@ console.log("\n5. 第二套獨立求解器全面掃描（20 斷面 × 多種工�
 // ASD（容許應力設計法，steel99 第（一）篇 6.3；design_method = 2，僅純軸壓）
 // 釘死值（regs_formula steel99_Fa_asd，E = 2040、Fy = 3.31406 tf/cm²）：
 //   KL/r = 53.2623 → Fa = 1.59627 tf/cm²（式 6.3-1，Cc = 110.230）；KL/r = 150 → Fa = 0.466875 tf/cm²（式 6.3-2）
+//   預設 RH 300x300（ry = 7.55 cm、KL = 400 cm）：KL/r = 52.98013 → Fa = 1.59915 tf/cm²
 // 獨立求解器：以 MPa 直接計算 Cc = π√(2E/Fy)（與模板 √(2π²E/Fy) 寫法不同）。
 // ─────────────────────────────────────────────────────────────────────────────
 console.log("\nASD（容許應力設計法，純軸壓）");
@@ -491,7 +493,7 @@ waar("獨立 Fa(150) 對已驗證值 0.466875 tf/cm²", Math.abs(faRef(325, 150)
 {
   const r = doorreken({ design_method: "2", M_ux: "0", M_uy: "0" });
   geenFouten(r, "ASD 純軸壓預設");
-  toets(r, { F_a: 1.59627 * 98.0665, f_a: (700e3) / (119.8e2) }, 1e-5);
+  toets(r, { F_a: 1.59915 * 98.0665, f_a: (700e3) / (118.45e2) }, 1e-5);
   waar("ASD 結尾行註明柱腳未檢核", r.r.voldoet === true && r.tekst.includes("柱腳未檢核"));
 }
 {
