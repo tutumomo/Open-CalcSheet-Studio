@@ -51,7 +51,7 @@ Open CalcSheet Studio 是一套專為結構與土木工程師打造的桌面應�
 - **各取所需的計算表種類**：文字計算、公式畫布、試算表、節點圖、圖紙、筆記本、Markdown 與 PDF，於同一個專案中並存。
 - **改動數值，檢核即時連動**：打字時即時重算，圖面與 3D 模型亦能由計算表數值驅動尺寸。
 - **開放資料格式**：專案檔採用 IFCX，並可匯出 IFC4x3。
-- **與 AI 助手協同工作**：內建 MCP 伺服器與 REST API，僅於本機電腦（`127.0.0.1`）透過安全權杖運作。
+- **內建 AI 助理與 MCP 整合**：桌面側邊欄支援 Anthropic、OpenAI (ChatGPT)、Google Gemini、OpenRouter、DeepSeek、Ollama／LM Studio 等第三方或自架大模型（支援 API 金鑰、OAuth 2.0 PKCE／裝置代碼登入與即時抓取模型清單），所有寫入專案的操作皆須經使用者確認並保留差異預覽；另提供本機 MCP 伺服器與 REST API（`127.0.0.1`），受安全權杖保護。
 
 ## 靈感來源：Calcpad
 
@@ -166,7 +166,10 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 ## MCP 與 AI 助手
 
-應用程式內建 MCP 伺服器與 REST API，提供相同的 60 項工具：開啟與儲存專案、新增計算表、填入輸入參數、執行計算、匯出與列印。僅於本機電腦（`127.0.0.1`）監聽並受安全權杖保護。可在**設定 › API 與 AI 助手**中關閉、設為唯讀或暫停。詳見 [MCP 說明文件](docs/mcp.md)與 [REST API 文件](docs/api.md)。
+應用程式內建 **AI 助理側邊欄**與本機 **MCP 伺服器／REST API**：
+
+- **AI 助理側邊欄**（工具列「**AI**」按鈕）：支援 **Anthropic (Claude)**、**OpenAI (ChatGPT)**、**Google Gemini**，以及可自行新增的**第三方／本機大模型**（OpenRouter、DeepSeek、Groq、xAI、Mistral、智譜 Z.AI、Moonshot、Ollama、LM Studio、magpie 或任何 OpenAI／Anthropic／Gemini 相容端點，支援自訂 HTTP 標頭與「抓取模型列表」下拉選單）。認證方式支援 **API 金鑰**、**OAuth 2.0 登入**（含 OpenAI localhost PKCE 與裝置代碼、OpenRouter PKCE、Google Gemini Code Assist `/oauth2callback` 及自訂 PKCE／`code#state` 完成流程）與**無須驗證**；所有金鑰、OAuth Token 與 Client Secret 皆僅存於作業系統金鑰環。助理讀取或修改計算表皆透過既有工具，寫入前會顯示差異並要求確認。詳見 [AI 助理說明文件](docs/tw/AI助理.md)。
+- **MCP 伺服器與 REST API**：提供相同的 60 項工具（開啟與儲存專案、新增計算表、填入輸入參數、執行計算、匯出與列印），僅於本機電腦（`127.0.0.1`）監聽並受安全權杖保護。可在**設定 › API 與 AI 助手**中關閉、設為唯讀或暫停。詳見 [MCP 說明文件](docs/mcp.md)與 [REST API 文件](docs/api.md)。
 
 也可完全不開視窗執行：`--headless` 只跑 API 與 MCP 伺服器，`--version`／`--help` 不啟動圖形介面，`eval <檔案>` 與 `render <檔案> --pdf <輸出>` 讓 CI 與腳本直接計算與產出 PDF；`GET /api/v1/health` 免權杖回報版本與 edition，可分辨台灣版與上游版。詳見 [無頭模式與命令列](docs/tw/無頭模式與CLI.md)。
 
