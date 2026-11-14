@@ -449,7 +449,7 @@ console.log("\n10. 第二套獨立求解器掃描（SI 單位、Mcr 兩種算法
 console.log("\nASD（容許應力設計法）");
 function asdRef(p, fyMPa, Lb_m, M = 220, V = 150) {
   const Fy = fyMPa / 98.0665; // tf/cm²
-  const Lc_mm = Math.min((20 * p.b) / Math.sqrt(Fy), (1400 * 10 * (p.b * p.tf)) / (p.h * Fy)); // 20bf/√Fy（cm→mm 互消），1400·Af/(d·Fy)·10
+  const Lc_mm = Math.min((20 * p.b) / Math.sqrt(Fy), (1400 * (p.b * p.tf)) / (p.h * Fy)); // 20bf/√Fy（cm→mm 互消），1400·Af/(d·Fy)（cm→mm：Af 以 mm²/100、d 以 mm/10，×10 與 ÷10 互消）
   const hw = (p.h - 2 * p.tf) / p.tw;
   const compact = p.b / (2 * p.tf) <= 17 / Math.sqrt(Fy) && hw <= 170 / Math.sqrt(Fy);
   // 7.2.3：Lb > Lc 時壓力外緣 Fb（mm 系重寫；式 7.2-6～7.2-8 之係數以 tf/cm² 定義，長度比無因次）

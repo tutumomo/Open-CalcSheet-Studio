@@ -30,10 +30,17 @@
  * 8. 柱腳水平剪力與拉剪互制（10.10.2、表 10.3-3）：
  *    摩擦剪力傳遞 ϕVn = 0.75·0.9·Pu（灌漿埋入接觸面）；或錨栓承壓剪力 ϕVn = 4·0.75·Fnv·Ab。
  *
- * 9. 容許應力設計法（ASD，第（一）篇；選單 design_method = 2）：僅檢核鋼柱構材之純軸壓。
+ * 9. 容許應力設計法（ASD，第（一）篇；選單 design_method = 2）：檢核鋼柱構材之軸壓與梁柱互制。
  *    Fa（6.3，已驗證 steel99_Fa_asd）：Cc = √(2π²E/Fy)；KL/r < Cc：Fa = [1 − (KL/r)²/(2Cc²)]Fy / [5/3 + 3/8·(KL/r)/Cc − 1/8·((KL/r)/Cc)³]；
  *    KL/r ≥ Cc：Fa = 12π²E/[23(KL/r)²]；fa = P/A ≤ Fa。E 取 steel99 1.7 之 2040 tf/cm²。
- *    ASD 梁柱互制（8.2-1～8.2-3）未入已驗證庫，Mx 或 My 不為零即拒算；柱腳（基板、錨栓）為 LRFD 專屬，ASD 下不檢核並於結尾註明。
+ *    梁柱互制（8.2，已驗證 steel99_asd_interaction_821）：ra = fa/Fa；ra ≤ 0.15 取式 8.2-3 ra + fbx/Fbx + fby/Fby；
+ *    否則取式 8.2-1 ra + Cmx·fbx/[(1 − fa/F'ex)·Fbx] + Cmy·fby/[(1 − fa/F'ey)·Fby] 與式 8.2-2 fa/(0.6Fy) + fbx/Fbx + fby/Fby 之較大者。
+ *    F'e = 12π²E/[23(KL/r)²]（8.2-4，已驗證 steel99_Fe_prime_824），強軸彎曲用 (KL/r)x、弱軸彎曲用 (KL/r)y；fa ≥ F'e 判不合格。
+ *    Cm 由使用者輸入（8.2：可側移 0.85；含斜撐無橫向載重 0.6 − 0.4·M1/M2；有橫向載重 0.85／1.0，已驗證 steel99_Cm_asd_825，範圍 0.2～1.0）。
+ *    Fbx：Lb ≤ Lc 且結實斷面取 0.66Fy（7.2.1）；Lb > Lc 取 7.2.3 式 7.2-6～7.2-8（已驗證 steel99_Fb_ltb_asd_723，rT 由名義尺寸推算，Cb 沿用輸入）。
+ *    Fby = 0.75Fy（7.3.1，已驗證 steel99_Fb_weak_axis_731，限雙對稱 I 型結實斷面且 Fy ≤ 4.55 tf/cm²）。
+ *    有彎矩時須為結實斷面（表 4.5-1 λ ≤ λp），非結實斷面一律判不合格（半結實之 7.3.2／7.2.2 式本模組不採用）。
+ *    純軸壓（Mx = My = 0）結果與先前相同。柱腳（基板、錨栓）為 LRFD 專屬，ASD 下不檢核並於結尾註明。
  *    寬厚比沿用表 4.5-1（steel99_wide_thickness_T451），ASD 6.3 要求結實或半結實斷面，即 λ ≤ λr。
  *
  * 結尾行：「控制 UC = … → 鋼柱與柱腳檢核合格／不合格」；無效輸入標「總結：無效輸入，未檢核」。
@@ -41,7 +48,7 @@
 
 export const twSteelColumn = `"鋼結構熱軋 H 型鋼柱與柱腳設計（steel99 LRFD／ASD）
 
-'<i>依據內政部《鋼構造建築物鋼結構設計技術規範》（99年9月16日版）第（二）篇極限設計法（LRFD）進行 H 型鋼柱構材之軸壓、長細比、梁柱互制，以及露出式柱腳之混凝土承壓、基板厚度（AISC DG1 懸臂法）與錨栓抗拉／抗剪檢核。選 ASD（第（一）篇）時僅檢核純軸壓柱構材（式 6.3-1、6.3-2），柱腳不檢核。</i><span class="alleen-scherm"></span>
+'<i>依據內政部《鋼構造建築物鋼結構設計技術規範》（99年9月16日版）第（二）篇極限設計法（LRFD）進行 H 型鋼柱構材之軸壓、長細比、梁柱互制，以及露出式柱腳之混凝土承壓、基板厚度（AISC DG1 懸臂法）與錨栓抗拉／抗剪檢核。選 ASD（第（一）篇）時檢核柱構材軸壓（式 6.3-1、6.3-2）與梁柱互制（式 8.2-1～8.2-3），柱腳不檢核。</i><span class="alleen-scherm"></span>
 
 #hide
 kleur(u) = if(u > 1; "#b91c1c"; if(u > 0.9; "#b45309"; "#047857"))
@@ -53,7 +60,7 @@ ru(u) = ceil(u*100)/100
 
 @select design_method "設計法（全案擇一，不可混用）"
   極限設計法 LRFD（steel99 第（二）篇） = 1
-  容許應力設計法 ASD（steel99 第（一）篇，僅純軸壓柱構材） = 2
+  容許應力設計法 ASD（steel99 第（一）篇，柱構材軸壓與梁柱互制，柱腳不檢核） = 2
 @end
 
 '<h6>材料規格與係數（steel99 1.7、10.3、10.9）</h6>
@@ -105,6 +112,8 @@ K_x = ?{1.0}', 強軸有效長度係數 Kx<span class="alleen-scherm">（依 §4
 K_y = ?{1.0}', 弱軸有效長度係數 Ky<span class="alleen-scherm">（依構架穩定性與柱端束制填入）</span><span class="kolom-3"></span>'
 L_b = ?{4.0}*(m)', 側向無支撐長度 Lb（弱軸側撐間距）<span class="kolom-3"></span>'
 C_b = ?{1.0}', 側向扭轉挫屈彎矩梯度修正因數 Cb（均勻彎矩取 1.0）<span class="kolom-3"></span>'
+C_mx = ?{0.85}', ASD 強軸梁柱修正係數 Cmx<span class="alleen-scherm">（8.2：可側移構架 0.85；含斜撐無橫向載重 0.6 − 0.4·M1/M2；僅 ASD 使用，範圍 0.2～1.0）</span><span class="kolom-3"></span>'
+C_my = ?{0.85}', ASD 弱軸梁柱修正係數 Cmy<span class="alleen-scherm">（同 Cmx，僅 ASD 使用，範圍 0.2～1.0）</span><span class="kolom-3"></span>'
 
 '<h6>設計載重需求（LRFD 取因數化載重；ASD 取服務載重組合，steel99 2.2）</h6>
 P_u = ?{700}*(kN)', 設計軸壓力 Pu（受壓為正；ASD 時為服務載重軸力 P）<span class="kolom-3"></span>'
@@ -202,7 +211,7 @@ ok_ky = K_y > 0
 ok_plate = bool(B_p > b) * bool(N_p > h) * bool(t_p > 0 mm)
 ok_ped = bool(B_ped ≥ B_p) * bool(N_ped ≥ N_p)
 ok_bolt = bool(b_x > 0 mm) * bool(b_y > 0 mm) * bool(d_b ≥ 16 mm) * bool(h_ef > 0 mm)
-ok_asd = if(design_method ≡ 2; bool(abs(M_ux) < 0.001 kN*m) * bool(abs(M_uy) < 0.001 kN*m); 1)
+ok_asd = if(design_method ≡ 2; max(bool(abs(M_ux) < 0.001 kN*m) * bool(abs(M_uy) < 0.001 kN*m); bool(C_mx ≥ 0.2) * bool(C_mx ≤ 1.0) * bool(C_my ≥ 0.2) * bool(C_my ≤ 1.0) * bool(C_b ≥ 1.0) * bool(C_b ≤ 2.3) * bool(L_b > 0 m) * bool(L_b ≤ L_col)); 1)
 ok_meth = bool(design_method ≡ 1) + bool(design_method ≡ 2)
 ok_foot = if(design_method ≡ 2; 1; bool(ok_fy_bp)*bool(ok_fc)*bool(ok_plate)*bool(ok_ped)*bool(ok_bolt))
 ok_geom = bool(ok_asd)*bool(ok_meth)*bool(ok_fy)*bool(ok_h)*bool(ok_b)*bool(ok_tw)*bool(ok_tf)*bool(ok_col_L)*bool(ok_kx)*bool(ok_ky)*bool(ok_foot)
@@ -506,10 +515,46 @@ C_w', 翹曲常數 Cw（雙對稱 I 型閉合式）<span class="kolom-2"></span>
     f_a = P_u / A to MPa
     P_allow = Fa_t * (A / (1 cm^2)) * (9.80665 kN)
     UC_P = f_a / F_a
-    UC_load = UC_P
-    UC_max_raw = if(bool(is_nonslender ≡ 1)*bool(ok_klr); UC_load; max(UC_load; 1.05))
+
+    pure = bool(abs(M_ux) < 0.001 kN*m) * bool(abs(M_uy) < 0.001 kN*m)
+    fa_t = f_a / tf_cm2
+    f_bx = abs(M_ux) / W_x to MPa
+    f_by = abs(M_uy) / W_y to MPa
+    fbx_t = f_bx / tf_cm2
+    fby_t = f_by / tf_cm2
+    Lc_cm = min(20 * (bmm / 10) / sqrt(Fy_t); 1400 / (((hmm / 10) / ((bmm / 10) * (tfmm / 10))) * Fy_t))
+    L_c = Lc_cm * cm to m
+    is_lc = bool(L_b ≤ L_c)
+    Lb_cm = max(L_b / (1 cm); 1)
+    Af_c = (bmm / 10) * (tfmm / 10)
+    AwT_c = ((hmm - 2 * tfmm) / 10) * (twmm / 10) / 6
+    IT_c = (tfmm / 10) * (bmm / 10)^3 / 12 + ((hmm - 2 * tfmm) / 60) * (twmm / 10)^3 / 12
+    rT_c = sqrt(IT_c / (Af_c + AwT_c))
+    lr_T = Lb_cm / rT_c
+    lim_T = sqrt(35800 * C_b / Fy_t)
+    Fb1_t = if(lr_T ≤ lim_T; (2/3 - Fy_t * lr_T^2 / (107600 * C_b)) * Fy_t; 12000 * C_b / lr_T^2)
+    Fb3_t = 840 * C_b * Af_c / (Lb_cm * (hmm / 10))
+    Fbx_t = if(is_lc ≡ 1; 0.66 * Fy_t; min(max(Fb1_t; Fb3_t); 0.6 * Fy_t))
+    Fby_t = 0.75 * Fy_t
+    Fex_t = 12 * pi^2 * E_t / (23 * KLr_x^2)
+    Fey_t = 12 * pi^2 * E_t / (23 * KLr_y^2)
+    F_bx = Fbx_t * tf_cm2
+    F_by = Fby_t * tf_cm2
+    F_ex = Fex_t * tf_cm2
+    F_ey = Fey_t * tf_cm2
+    ra_c = fa_t / Fa_t
+    eq3_c = ra_c + fbx_t / Fbx_t + fby_t / Fby_t
+    eq1_c = ra_c + C_mx * fbx_t / ((1 - fa_t / Fex_t) * Fbx_t) + C_my * fby_t / ((1 - fa_t / Fey_t) * Fby_t)
+    eq2_c = fa_t / (0.6 * Fy_t) + fbx_t / Fbx_t + fby_t / Fby_t
+    ok_fe = bool(ra_c ≤ 0.15) + bool(ra_c > 0.15) * bool(fa_t < Fex_t) * bool(fa_t < Fey_t)
+    UC_int_raw = if(ok_fe ≡ 1; if(ra_c ≤ 0.15; eq3_c; max(eq1_c; eq2_c)); 9.99)
+    UC_int = if(pure ≡ 1; UC_P; UC_int_raw)
+    ok_cpt = if(pure ≡ 1; 1; is_compact)
+    UC_load = UC_int
+    ok_sec = bool(is_nonslender ≡ 1) * bool(ok_cpt ≡ 1)
+    UC_max_raw = if(bool(ok_sec ≡ 1)*bool(ok_klr); UC_load; max(UC_load; 1.05))
     UC_max = ru(UC_max_raw)
-    ok_all = bool(is_nonslender ≡ 1) * bool(ok_klr) * bool(UC_load ≤ 1.0)
+    ok_all = bool(ok_sec ≡ 1) * bool(ok_klr) * bool(UC_load ≤ 1.0)
     #show
 
     KLr_x', 強軸長細比 (KL/r)x = Kx·L / rx<span class="kolom-2"></span>'
@@ -521,6 +566,44 @@ C_w', 翹曲常數 Cw（雙對稱 I 型閉合式）<span class="kolom-2"></span>
     P_allow', 容許軸壓力 Pallow = Fa·A<span class="kolom-2"></span>'
     UC_P = f_a / F_a', 軸壓應力檢核比 UC_P = fa / Fa<span class="kolom-2"></span>'
     '柱軸壓檢核（ASD）：UC = <b>'ru(UC_P)'</b> <b>'oordeel(UC_P)'</b>（'f_a' ≤ 'F_a'）<span class="alleen-scherm"></span>
+
+    #if pure ≡ 1
+        '設計彎矩為零，僅檢核純軸壓，無梁柱互制。<span class="alleen-scherm"></span>
+    #else
+        # 5. 梁柱互制檢核（steel99 第（一）篇 8.2，ASD）
+
+        #if is_compact ≡ 1
+            '斷面為結實斷面（表 4.5-1），強軸取 Fbx（7.2.1／7.2.3），弱軸取 Fby = 0.75Fy（7.3.1）。<span class="alleen-scherm"></span>
+        #else
+            '<b>斷面非結實斷面</b>：有彎矩時 ASD 僅採結實斷面之 Fb，本模組不採半結實之 7.3.2 等式，一律判不合格。<span class="alleen-scherm"></span>
+        #end if
+        L_c', 側向未支撐間距上限 Lc = min(20·bf/√Fy, 1400/((d/Af)·Fy))（7.2.1(3)）<span class="kolom-2"></span>'
+        L_b', 受壓翼板側向無支撐長度 Lb<span class="kolom-2"></span>'
+        #if is_lc ≡ 1
+            '<b>Lb ≤ Lc</b>，強軸取 Fbx = 0.66Fy（7.2.1）。<span class="alleen-scherm"></span>
+        #else
+            '<b>Lb > Lc</b>，強軸 Fbx 依 7.2.3 式 7.2-6～7.2-8，取 min(max(Fb1, Fb3), 0.6Fy)。<span class="alleen-scherm"></span>
+            lr_T', 長細比 Lb/rT（rT 由名義尺寸推算，略去圓角）<span class="kolom-2"></span>'
+            lim_T', 式 7.2-6／7.2-7 分界 √(35800·Cb/Fy)<span class="kolom-2"></span>'
+        #end if
+        f_bx', 強軸計算彎曲應力 fbx = Mx / Sx<span class="kolom-2"></span>'
+        F_bx', 強軸容許彎曲應力 Fbx<span class="kolom-2"></span>'
+        f_by', 弱軸計算彎曲應力 fby = My / Sy<span class="kolom-2"></span>'
+        F_by', 弱軸容許彎曲應力 Fby = 0.75Fy（7.3.1）<span class="kolom-2"></span>'
+        F_ex', 強軸彎曲平面 F′ex = 12π²E / [23(KL/r)x²]（8.2-4）<span class="kolom-2"></span>'
+        F_ey', 弱軸彎曲平面 F′ey = 12π²E / [23(KL/r)y²]（8.2-4）<span class="kolom-2"></span>'
+        ra_c', 軸壓比 ra = fa / Fa（≤ 0.15 得用式 8.2-3）<span class="kolom-2"></span>'
+        eq3_c', 式 8.2-3：ra + fbx/Fbx + fby/Fby<span class="kolom-2"></span>'
+        eq1_c', 式 8.2-1：ra + Cmx·fbx / [(1 − fa/F′ex)·Fbx] + Cmy·fby / [(1 − fa/F′ey)·Fby]<span class="kolom-2"></span>'
+        eq2_c', 式 8.2-2：fa/(0.6Fy) + fbx/Fbx + fby/Fby<span class="kolom-2"></span>'
+        #if ok_fe ≡ 1
+            UC_int', 互制檢核比（ra ≤ 0.15 取式 8.2-3，否則取式 8.2-1 與 8.2-2 較大者）<span class="kolom-2"></span>'
+        #else
+            '<b>fa ≥ F′e（構材已達尤拉挫屈，式 8.2-1 分母 ≤ 0），判不合格。</b><span class="alleen-scherm"></span>
+            UC_int', 互制檢核比（以 9.99 表示不合格）<span class="kolom-2"></span>'
+        #end if
+        '梁柱互制檢核（ASD）：UC = <b>'ru(UC_int)'</b> <b>'oordeel(UC_int)'</b><span class="alleen-scherm"></span>
+    #end if
     '柱腳（混凝土承壓、基板、錨栓）為 LRFD 專屬檢核，ASD 下未檢核，須另行設計。<span class="alleen-scherm"></span>
 
     UC_max'<span class="alleen-afdruk"></span>'
@@ -531,6 +614,6 @@ C_w', 翹曲常數 Cw（雙對稱 I 型閉合式）<span class="kolom-2"></span>
     #end if
     #end if
 #else
-    '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、混凝土抗壓強度、柱長細比、基板尺寸或錨栓配置無效或超出範圍；ASD 僅支援純軸壓（Mx = My = 0，ASD 互制式未入已驗證庫）。
+    '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、混凝土抗壓強度、柱長細比、基板尺寸或錨栓配置無效或超出範圍；ASD 另須 Cmx、Cmy 在 0.2～1.0、Cb 在 1.0～2.3、0 < Lb ≤ L。
 #end if
 `;

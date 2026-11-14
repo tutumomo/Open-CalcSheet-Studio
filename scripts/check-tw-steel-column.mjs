@@ -475,7 +475,7 @@ console.log("\n5. 第二套獨立求解器全面掃描（20 斷面 × 多種工�
 
 
 // ─────────────────────────────────────────────────────────────────────────────
-// ASD（容許應力設計法，steel99 第（一）篇 6.3；design_method = 2，僅純軸壓）
+// ASD（容許應力設計法，steel99 第（一）篇 6.3、8.2；design_method = 2，軸壓與梁柱互制）
 // 釘死值（regs_formula steel99_Fa_asd，E = 2040、Fy = 3.31406 tf/cm²）：
 //   KL/r = 53.2623 → Fa = 1.59627 tf/cm²（式 6.3-1，Cc = 110.230）；KL/r = 150 → Fa = 0.466875 tf/cm²（式 6.3-2）
 //   預設 RH 300x300（ry = 7.55 cm、KL = 400 cm）：KL/r = 52.98013 → Fa = 1.59915 tf/cm²
@@ -521,10 +521,127 @@ waar("獨立 Fa(150) 對已驗證值 0.466875 tf/cm²", Math.abs(faRef(325, 150)
   waar("ASD 軸力過大 → 不合格", r.r.voldoet === false && r.r.uc > 1 && !r.tekst.includes("檢核合格"));
   const r2 = doorreken({ design_method: "2", M_ux: "0", M_uy: "0", L_col: "16", L_b: "16" });
   waar("ASD KL/r > 200 → 不合格", r2.r.voldoet === false && r2.r.uc > 1);
-  for (const [名, w] of [["ASD 有彎矩（互制式未入庫）", { design_method: "2" }], ["設計法代碼無效", { design_method: "0" }]]) {
+  for (const [名, w] of [["設計法代碼無效", { design_method: "0" }]]) {
     const q = doorreken(w);
     waar(`${名} → 拒算`, nietGetoetst(q) && q.uit.UC_max === undefined);
   }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// ASD 梁柱互制（steel99 8.2；已驗證 steel99_asd_interaction_821、steel99_Fe_prime_824、steel99_Fb_ltb_asd_723、steel99_Fb_weak_axis_731）
+// 釘死值（regs_formula，預設 RH 300x300x10x15、Fy = 3.3140777 tf/cm²、L = Lb = 4 m、K = 1、Cb = 1、Cmx = Cmy = 0.85、P = 700 kN、Mx = 120、My = 20 kN·m）：
+//   Wx = 1350、Wy = 450 cm³、A = 118.45 cm²、rT = 8.2576870 cm（Af = 45、腹板 1/3 = 27·1/6 → 由名義尺寸）、Lc = 329.587 cm < Lb = 400 cm
+//   fa = 0.6026183、fbx = 0.9064144、fby = 0.4532072 tf/cm²；Fa = 1.59915（KL/r = 52.98013）
+//   Fbx（7.2.3）= 1.98845 = 0.6Fy 控制（Fb1 = 1.969879、Fb3 = 3.15）；Fby = 0.75Fy = 2.48556
+//   F'ex = 11.2669（KL/r = 30.53435）、F'ey = 3.74246（KL/r = 52.98013）
+//   式 8.2-1 = 0.970927（控制）、式 8.2-2 = 0.941236、式 8.2-3 = 1.015012、ra = 0.376837
+//   ra ≤ 0.15（fa = 0.2、P = 232.3195 kN）：式 8.2-3 = 0.763242（控制）、ra = 0.125066
+// 獨立求解器：MPa／mm 重寫，Cc、Fe′、Fb 以不同單位與寫法計算。
+// ─────────────────────────────────────────────────────────────────────────────
+console.log("\nASD 梁柱互制");
+function asdColRef(p, fyMPa, L_m, Lb_m, P, Mx, My, Cb = 1, Cmx = 0.85, Cmy = 0.85) {
+  const Fy = fyMPa / 98.0665, E = 2040 * 98.0665;
+  const klrX = (L_m * 1000) / (p.ix * 10), klrY = (L_m * 1000) / (p.iy * 10);
+  const klr = Math.max(klrX, klrY), Fa = faRef(fyMPa, klr);
+  const fa = (P * 1e3) / (p.A * 100);
+  const fbx = (Math.abs(Mx) * 1e6) / (p.Wx * 1e3), fby = (Math.abs(My) * 1e6) / (p.Wy * 1e3);
+  const hw = p.h - 2 * p.tf;
+  const compact = p.b / 2 / p.tf <= 16 / Math.sqrt(Fy) && hw / p.tw <= 50 / Math.sqrt(Fy);
+  const nonslender = p.b / 2 / p.tf <= 25 / Math.sqrt(Fy) && hw / p.tw <= 100 / Math.sqrt(Fy);
+  const Lc = Math.min((20 * p.b) / Math.sqrt(Fy), (1400 * p.b * p.tf) / (p.h * Fy)); // mm
+  const Af = p.b * p.tf;
+  const rT = Math.sqrt((p.tf * p.b ** 3 / 12 + (hw / 6) * p.tw ** 3 / 12) / (Af + (hw * p.tw) / 6));
+  const L_mm = Math.max(Lb_m * 1000, 10), lr = L_mm / rT;
+  const Fb1 = lr <= Math.sqrt((35800 * Cb) / Fy) ? (2 / 3 - (Fy * lr * lr) / (107600 * Cb)) * Fy : (12000 * Cb) / (lr * lr);
+  const Fb3 = (840 * Cb * Af) / (L_mm * p.h);
+  const Fbx = Lb_m * 1000 <= Lc ? 0.66 * fyMPa : Math.min(Math.max(Fb1, Fb3), 0.6 * Fy) * 98.0665;
+  const Fby = 0.75 * fyMPa;
+  const Fex = (12 * Math.PI ** 2 * E) / (23 * klrX * klrX), Fey = (12 * Math.PI ** 2 * E) / (23 * klrY * klrY);
+  const ra = fa / Fa;
+  const eq3 = ra + fbx / Fbx + fby / Fby;
+  const eq1 = ra + (Cmx * fbx) / ((1 - fa / Fex) * Fbx) + (Cmy * fby) / ((1 - fa / Fey) * Fby);
+  const eq2 = fa / (0.6 * fyMPa) + fbx / Fbx + fby / Fby;
+  const pure = Math.abs(Mx) < 0.001 && Math.abs(My) < 0.001;
+  const feOk = ra <= 0.15 || (fa < Fex && fa < Fey);
+  const uc = pure ? ra : !feOk ? 9.99 : ra <= 0.15 ? eq3 : Math.max(eq1, eq2);
+  const ok = nonslender && (pure || compact) && klr <= 200;
+  return { uc, ok, want: ok && uc <= 1, Fbx, Fby, Fex, Fey, ra, eq1, eq2, eq3, lc: Lb_m * 1000 <= Lc, compact };
+}
+{
+  const r = doorreken({ design_method: "2" });
+  geenFouten(r, "ASD 互制預設");
+  toets(r, { F_bx: 1.98845 * 98.0665, F_by: 2.48556 * 98.0665, F_ex: 11.2669 * 98.0665, F_ey: 3.74246 * 98.0665,
+    ra_c: 0.376837, eq3_c: 1.015012, eq1_c: 0.970927, eq2_c: 0.941236, UC_int: 0.970927 }, 2e-5);
+  // 預設 RH 300x300x10x15、Fy = 325 MPa：翼板 λ = 10 > 16/√Fy = 8.79，非結實斷面 → 有彎矩時 ASD 一律不合格（UC 取 1.05 下限），
+  // 即使互制比 0.97 ≤ 1 亦然；互制比本身仍顯示並與已驗證值一致。
+  waar("ASD 互制預設（非結實斷面、互制比 0.970927）→ 不合格，且文中說明非結實", r.r.voldoet === false && Math.abs(r.r.uc - 1.05) < 1e-9 && r.tekst.includes("非結實斷面"), JSON.stringify(r.r));
+  // 結實斷面（Fy = 235 MPa：λf = 10 ≤ 16/√2.3964 = 10.34、λw = 27 ≤ 32.3）：與獨立求解器一致且合格
+  const p7 = TW_PROFIELEN.find((x) => x.id === 7);
+  const rc = doorreken({ design_method: "2", f_y_in: "235", P_u: "400", M_ux: "60", M_uy: "10" });
+  const ec = asdColRef(p7, 235, 4, 4, 400, 60, 10);
+  waar("ASD 互制（Fy = 235、結實斷面）與獨立求解器一致且合格", ec.compact && ec.want && rc.r.voldoet === true && Math.abs(rc.uit.UC_int - ec.uc) < 1e-6 && Math.abs(rc.r.uc - Math.ceil(ec.uc * 100) / 100) < 1e-9, `${JSON.stringify(rc.r)} ref=${ec.uc}`);
+  const r15 = doorreken({ design_method: "2", f_y_in: "235", P_u: "150" });
+  waar("ASD ra ≤ 0.15（Fy = 235）→ 取式 8.2-3 且合格", r15.uit.ra_c <= 0.15 && Math.abs(r15.uit.UC_int - r15.uit.eq3_c) < 1e-9 && r15.r.voldoet === true, JSON.stringify(r15.r));
+  const r15b = doorreken({ design_method: "2", P_u: "232.3195" });
+  toets(r15b, { ra_c: 0.125066, eq3_c: 0.763242, UC_int: 0.763242 }, 2e-5);
+  // Lb ≤ Lc：Fbx = 0.66Fy
+  const rl = doorreken({ design_method: "2", L_b: "3.0" });
+  toets(rl, { F_bx: 0.66 * 325 }, 1e-9);
+  // 純軸壓與互制式在彎矩為零時一致
+  const r0 = doorreken({ design_method: "2", M_ux: "0", M_uy: "0" });
+  waar("ASD 彎矩為零 → UC_max 等於 UC_P 進位值，且不顯示互制檢核", Math.abs(r0.uit.UC_max - Math.ceil(r0.uit.UC_P * 100) / 100) < 1e-9 && !r0.tekst.includes("梁柱互制檢核（ASD）"));
+}
+{
+  let n = 0, bad = 0, pass = 0, fail = 0, lcN = 0, ltbN = 0, ncN = 0;
+  for (const p of TW_PROFIELEN) {
+    if (!p.naam.startsWith("RH")) continue;
+    for (const fy of [235, 325, 345])
+      for (const L of [3, 5])
+        for (const [P, Mx, My] of [[150, 30, 5], [600, 120, 20], [1500, 250, 60]])
+          for (const Lbf of [0.5, 1]) {
+            const Lb = L * Lbf;
+            const e = asdColRef(p, fy, L, Lb, P, Mx, My);
+            const r = doorreken({ design_method: "2", section_id: String(p.id), f_y_in: String(fy), L_col: String(L), L_b: String(Lb), P_u: String(P), M_ux: String(Mx), M_uy: String(My) });
+            n++;
+            e.lc ? lcN++ : ltbN++;
+            if (!e.compact) ncN++;
+            const ok = Math.abs(r.uit.UC_int - e.uc) <= 1e-6 * Math.max(1, e.uc);
+            if (!ok || r.r.voldoet !== e.want) bad++;
+            e.want ? pass++ : fail++;
+          }
+  }
+  waar(`ASD 互制掃描 ${n} 組與獨立求解器一致（合格 ${pass}、不合格 ${fail}；Lb ≤ Lc ${lcN}、Lb > Lc ${ltbN}、非結實 ${ncN}）`,
+    bad === 0 && pass > 20 && fail > 20 && lcN > 20 && ltbN > 20, `${bad} 組不符`);
+}
+{
+  // 負向案例
+  const a = doorreken({ design_method: "2", P_u: "1200", M_ux: "300", M_uy: "60" });
+  waar("ASD 互制過載 → 不合格", a.r.voldoet === false && a.r.uc > 1 && !a.tekst.includes("檢核合格"), JSON.stringify(a.r));
+  // 非結實斷面（RH 400x400、Fy 440 → 翼板 λ = 9.5 > 16/√4.487 = 7.55）有彎矩：不得判合格
+  const nc = doorreken({ design_method: "2", section_id: "9", f_y_in: "440", P_u: "100", M_ux: "10", M_uy: "1" });
+  waar("ASD 非結實斷面有彎矩 → 不合格（不誤判合格）", nc.r.voldoet === false && nc.r.uc > 1, JSON.stringify(nc.r));
+  // 同一斷面純軸壓不受影響
+  const pa = doorreken({ design_method: "2", section_id: "9", f_y_in: "440", P_u: "100", M_ux: "0", M_uy: "0" });
+  {
+    const p9 = TW_PROFIELEN.find((x) => x.id === 9);
+    const e9 = asdColRef(p9, 440, 4, 4, 100, 0, 0);
+    waar("ASD 非結實斷面純軸壓仍依原邏輯（不要求結實，與獨立求解器一致）", Math.abs(pa.uit.UC_P - e9.ra) < 1e-6 && pa.r.voldoet === e9.want && e9.want === true, `${JSON.stringify(pa.r)} ref=${e9.ra}`);
+  }
+  // fa ≥ F'e：構件已達尤拉挫屈，UC 取 9.99 → 不合格
+  const eu = doorreken({ design_method: "2", L_col: "12", L_b: "12", P_u: "1200", M_ux: "10", M_uy: "1" });
+  waar("ASD fa ≥ F′e（細長柱）→ 不合格", eu.r.voldoet === false && eu.r.uc > 1, JSON.stringify(eu.r));
+  for (const [名, w] of [
+    ["ASD Cmx = 1.2（超出 0.2～1.0）", { design_method: "2", C_mx: "1.2" }],
+    ["ASD Cmy = 0.1（低於 0.2）", { design_method: "2", C_my: "0.1" }],
+    ["ASD Cb = 2.5（超出 2.3）", { design_method: "2", C_b: "2.5" }],
+    ["ASD Lb > L（有彎矩）", { design_method: "2", L_b: "5" }],
+  ]) {
+    const q = doorreken(w);
+    waar(`${名} → 拒算`, nietGetoetst(q) && q.uit.UC_max === undefined);
+  }
+  // 純軸壓不因 Cm、Cb、Lb 之輸入而拒算
+  const q0 = doorreken({ design_method: "2", M_ux: "0", M_uy: "0", C_mx: "5", L_b: "9" });
+  waar("ASD 純軸壓不受 Cm、Lb 檢查影響", !nietGetoetst(q0));
 }
 
 console.log(`\n=== 檢核總結：共 ${getest} 項檢查，失敗 ${fouten} 項 ===`);

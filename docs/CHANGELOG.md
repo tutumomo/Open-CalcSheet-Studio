@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（鋼柱 ASD 梁柱互制）：`tw-steel-column` 容許應力法新增梁柱互制檢核（steel99 式 8.2-1～8.2-3，含 F′e 與強軸 Lb > Lc 之 7.2.3 容許應力），新增 Cmx、Cmy 輸入（僅 ASD 使用）；先前 ASD 柱有彎矩即拒算。有彎矩時僅採結實斷面，非結實一律判不合格；純軸壓與柱腳（ASD 不檢核）維持不變。既有表單請以「Bladen bijwerken」更新。
+
 - 台灣版（鋼梁 ASD）：`tw-steel-beam` 容許應力法新增側向未支撐長度 Lb > Lc 之檢核，依 steel99 7.2.3 式 7.2-6～7.2-8 計算壓力外緣容許撓曲應力（不大於 0.6Fy），先前此情況一律拒算。
 
 - 台灣版（CNS 1490 H 型鋼表）：依使用者提供之東和鋼鐵 H 型鋼型錄（標示 CNS 1490 G1011／JIS G 3192；製造商型錄，非官方正本）更正 H 型鋼表第 1～19 列之圓角 R 與單重，斷面積、慣性矩、斷面模數、塑性模數、迴轉半徑改以含圓角之幾何推算（舊表最多高約 3 %）。鋼梁、鋼柱計算表內嵌斷面表同步更新，既有表單請以「Bladen bijwerken」更新；RH 400×200 預設鋼梁之控制 UC 由 0.63 變為 0.64。RH 900×300×16×28 不在型錄內，維持未驗證。
