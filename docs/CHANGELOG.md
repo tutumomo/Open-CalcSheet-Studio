@@ -7,6 +7,9 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（計算表編輯器）：長行不再需要橫向捲動，超出視窗寬度時自動換行（CodeMirror `EditorView.lineWrapping`）。
+- 台灣版（版本號）：標題列、狀態列、Backstage「關於」、設定「關於」與意見回饋一律取自 `app_kenmerken` 的 release tag（例 `v2026.46.2-tw.13`），不再有的地方顯示 `2026.46.2`、有的地方顯示 `-tw.N`。
+
 - 台灣版（AI 助理 › 輸出長度與輸入法）：單次回覆上限從寫死的 4096 tokens 改為 **預設 16384、可設定 256～64000**（Rust 端一併夾限），長計算書與表格不再被截斷；對話歷史超過 200000 字元時只保留最近往來。中文／日文輸入法選字期間按 Enter 不再誤送訊息。
 - 台灣版（左側專案樹寬度）：專案樹可拖曳右緣調整寬度（180～480 px，且不超過視窗寬度 35%），雙擊回預設 240 px，方向鍵微調；寬度會記住，視窗變小時自動拉回範圍內。
 
