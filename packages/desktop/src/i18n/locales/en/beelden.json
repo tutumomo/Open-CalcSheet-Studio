@@ -556,7 +556,9 @@
     "kop": "Barrel and cover",
     "velden": {
       "chamfer": "Haunch c",
-      "cover": "Soil cover Hc"
+      "cover": "Soil cover Hc",
+      "barrels": "Number of barrels n",
+      "gap": "Gap between barrels s_gap"
     },
     "noot": "Loads, materials, reinforcement and hydraulic checks are in the sheet; the view does not calculate.",
     "doorsnede": "Section with soil cover",

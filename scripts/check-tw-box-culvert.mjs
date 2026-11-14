@@ -8,8 +8,20 @@
  *   2. 第二套獨立求解器：撓角變位法（slope-deflection，不計軸向變形）閉合解，
  *      與範本內 raamwerk 剛架結果交叉比對（加大 EA 時須吻合至 1e-5；實際 EA 時差異 < 1%）
  *   3. 參數變化案例（淺覆土衝擊、輪重分佈區重疊、深覆土不計活載重、載重等級 1.25 倍、無車載）
- *   4. 負向測試與安全防護（無效幾何、覆土 ≤ 0.60 m 有車載、排水容量不足、承載力不足、
- *      鋼筋間距過大、加腋過小、剪力不足、抗浮不足、最小流體壓力控制）
+ *   4. 多孔箱涵與地震土壓（hwbridge §4.4 多孔活載重可忽略、孔數與孔間回填土、從屬寬度放大；
+ *      公路橋梁耐震設計規範 §8.2 地震土壓：條文式與 Mononobe–Okabe 常用式，
+ *      以第二套獨立求解器 seismicKEA 交叉比對 K_EA 與地震土壓）
+ *   5. 負向測試與安全防護（無效幾何、覆土 ≤ 0.60 m 有車載、排水容量不足、承載力不足、
+ *      鋼筋間距過大、加腋過小、剪力不足、抗浮不足、最小流體壓力控制、
+ *      孔數／孔間寬度／地震參數無效時拒算）
+ *
+ * 多孔箱涵與地震土壓手算基準：
+ *   B_total = n·(B_clear + 2t_wall) + (n−1)·s_gap；從屬寬度 w_trib = B_c + s_gap；
+ *   f_tr = w_trib/B_c（單孔為 1，3 孔孔間 0.5 m → 3.8/3.3 = 1.1515）
+ *   §4.4 多孔箱涵：覆土超過兩端支承面距離 L_culvert 時不計活載重
+ *   §8.2：k_h = 0.2·S_II,S；θ0 = arctan(k_h)；K_EA 依 §8-3（條文式）或 Mononobe–Okabe 常用式；
+ *         p_EA = K_EA·(q′ + γ·z) − 2c·√K_EA，且不得小於 4.7 kN/m³ 之流體壓力
+ *         （φ = 30°、δ = 0、θ = 0、k_h = 0.2 → K_EA = 0.47326，p_EA,top = 20.6935 kN/m²）
  *
  * 手算基準（與範本獨立推導）：
  *   B_c = 3.0 + 0.3 = 3.3 m；H_c = 2.0 + (0.35 + 0.40)/2 = 2.375 m
@@ -115,6 +127,13 @@ meld(tekst.includes("4.7 * z_top") && tekst.includes("4.7 * z_bot"), "§3.20 土
 meld(tekst.includes("K0_soil * gamma_s * 0.60"), "§3.20 活載重超載不小於 60 cm 填土");
 meld(tekst.includes("gamma_LF = 1.3") && tekst.includes("beta_L = 1.67") && tekst.includes("beta_E = 1.0"), "§3.23 表 3.3 第 VIII 組 γ = 1.3、(L+I) 1.67、β_E = 1.0");
 meld(tekst.includes("M_v_top_mid + 0.5 * M_h_top_mid") && tekst.includes("M_v_bot_mid + 0.5 * M_h_bot_mid"), "§3.20 正彎矩至多取側壓彎矩之半");
+meld(tekst.includes("n_barrels ≥ 2 and H_cover > L_culvert"), "§4.4 多孔箱涵覆土超過兩端支承面距離時不計活載重");
+meld(tekst.includes("B_total = n_barrels * (B_clear + 2 * t_wall) + (n_barrels - 1) * s_gap"), "多孔箱涵全寬 B_total");
+meld(tekst.includes("f_tr = w_trib / B_c"), "單孔垂直載重放大係數 f_tr（從屬寬度／計算跨度）");
+meld(tekst.includes("kh_ea = if(kh_seis > 0; kh_seis; 0.2 * S_II_S)"), "§8.2 地震土壓 k_h = 0.2·S_II,S");
+meld(tekst.includes("KEA_c = if(denA > 0; numA / denA; -1)"), "§8-3 地震土壓力係數 K_EA（條文式／MO 常用式）");
+meld(tekst.includes("2 * c_soil * sqKEA_c"), "§8-2 地震土壓含黏著力項 −2c·√K_EA");
+meld(tekst.includes("p_L_lat = if(truck_type == 0 or seis_form ≡ 1; 0.0; K0_soil * gamma_s * 0.60)"), "地震工況不重複疊加活載重超載壓力");
 
 // ── 1. 預設基準案例 ───────────────────────────────────────────────────
 console.log("\n1. 預設基準案例（覆土 1.0 m，HS20-44）");
@@ -229,8 +248,93 @@ console.log("\n3. 參數變化案例");
   meld(!draai(t).res.nietGetoetst, "無車載、覆土 0.5 m 仍可檢核");
 }
 
-// ── 4. 負向測試與安全防護 ─────────────────────────────────────────────
-console.log("\n4. 負向測試與安全防護");
+// ── 4. 多孔箱涵與地震土壓 ─────────────────────────────────────────────
+console.log("\n4. 多孔箱涵與地震土壓（hwbridge §4.4、公路橋梁耐震設計規範 §8.2）");
+
+/** 第二套獨立求解器：地震土壓力係數 K_EA（條文式與 Mononobe–Okabe 常用式） */
+function seismicKEA(phi, delta, theta, kh, moForm) {
+  const rad = (x) => (x * Math.PI) / 180;
+  const th0 = (Math.atan(kh) * 180) / Math.PI;
+  const numA = Math.cos(rad(phi - th0 - theta)) ** 2;
+  const s1A = Math.sin(rad(phi + delta));
+  const s2A = phi - th0 < 0 ? 0 : Math.sin(rad(phi - th0));
+  const c1A = Math.cos(rad(theta + th0 + delta));
+  const c2A = Math.cos(rad(theta));
+  const wA = c1A > 0 && c2A > 0 ? Math.max(0, (s1A * s2A) / (c1A * c2A)) : 0;
+  const denA =
+    moForm === 1
+      ? Math.cos(rad(th0)) * Math.cos(rad(theta)) ** 2 * c1A * (1 + Math.sqrt(wA)) ** 2
+      : Math.cos(rad(th0)) ** 2 * Math.cos(rad(theta)) ** 2 * c1A * (1 + Math.sqrt(wA));
+  return numA / denA;
+}
+
+{
+  // 雙孔共用隔壁：單孔從屬寬度仍為 B_c，垂直載重與單孔相同；總排水容量加倍
+  const { uit, res } = draai(vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 2'-"), true);
+  checkNabij("n=2 B_total", uit.B_total, 2 * 3.6, 1e-9);
+  checkNabij("n=2 w_trib", uit.w_trib, 3.3, 1e-9);
+  checkNabij("n=2 f_tr", uit.f_tr, 1, 1e-9);
+  checkNabij("n=2 w_u_top", uit.w_u_top, 99.68192, 1e-9);
+  checkNabij("n=2 Q_cap", uit.Q_cap, ru(2 * 21.7665), 1e-9);
+  meld(res.uc === basis.res.uc && res.voldoet === true, `雙孔共用隔壁控制 UC 不變（${res.uc}）`);
+}
+{
+  // 三孔、孔間回填土 0.5 m：從屬寬度放大，頂版載重與剪力隨之增加
+  const t3 = vervang(vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 3'-"), "s_gap = 0.00'm", "s_gap = 0.50'm");
+  const { uit } = draai(t3, true);
+  const f = 3.8 / 3.3;
+  checkNabij("n=3 B_total", uit.B_total, 3 * 3.6 + 2 * 0.5, 1e-9);
+  checkNabij("n=3 f_tr", uit.f_tr, f, 1e-9);
+  checkNabij("n=3 w_u_top", uit.w_u_top, 1.3 * (8.4 + f * (29 + 1.67 * 23.52)), 1e-9);
+  checkNabij("n=3 Q_cap", uit.Q_cap, ru(3 * 21.7665), 1e-9);
+}
+{
+  // 地震土壓（條文式 §8-3／§8-2）：φ = 30°、δ = 0、θ = 0、k_h = 0.2·S_II,S
+  const { uit } = draai(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), true);
+  const kea = seismicKEA(30, 0, 0, 0.2, 1);
+  checkNabij("seis K_EA", uit.KEA_c, kea, 1e-9);
+  checkNabij("seis k_h", uit.kh_ea, 0.2, 1e-9);
+  checkNabij("seis th0", uit.th0_ea, (Math.atan(0.2) * 180) / Math.PI, 1e-9);
+  checkNabij("seis q'", uit.q_prime_seis, 10 + 19 * 0.6, 1e-9);
+  checkNabij("seis p_top", uit.p_seis_top_calc, Math.max(kea * (21.4 + 19 * 1.175), 4.7 * 1.175), 1e-9);
+  checkNabij("seis p_bot", uit.p_seis_bot_calc, Math.max(kea * (21.4 + 19 * 3.55), 4.7 * 3.55) + 9.81 * 2.05, 1e-9);
+  checkNabij("seis p_u_bot", uit.p_u_bot, 1.3 * uit.p_seis_bot_calc, 1e-9);
+  checkNabij("seis p_u_top", uit.p_u_top, 1.3 * uit.p_seis_top_calc, 1e-9);
+  meld(uit.p_seis_bot_calc > 54.49 && uit.p_L_lat === 0, "地震工況底版側壓大於靜土壓工況，且不重複疊加活載重超載壓力");
+}
+{
+  // δ = φ = 30°、c = 5 kN/m²、S_II,S = 1.5（k_h = 0.3）
+  const ts = vervang(
+    vervang(
+      vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "delta_w = 0'deg", "delta_w = 30'deg"),
+      "c_soil = 0'kN/m^2",
+      "c_soil = 5.0'kN/m^2",
+    ),
+    "S_II_S = 1.0'-",
+    "S_II_S = 1.5'-",
+  );
+  const { uit } = draai(ts, true);
+  const kea = seismicKEA(30, 30, 0, 0.3, 1);
+  checkNabij("seis δ=φ K_EA", uit.KEA_c, kea, 1e-9);
+  checkNabij("seis δ=φ k_h", uit.kh_ea, 0.3, 1e-9);
+  checkNabij("seis δ=φ p_bot", uit.p_seis_bot_calc, Math.max(kea * (21.4 + 19 * 3.55) - 2 * 5 * Math.sqrt(kea), 4.7 * 3.55) + 9.81 * 2.05, 1e-9);
+}
+{
+  // Mononobe–Okabe 常用式（mo_form = 2）
+  const { uit } = draai(vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "mo_form = 1'-", "mo_form = 2'-"), true);
+  checkNabij("MO K_EA", uit.KEA_c, seismicKEA(30, 0, 0, 0.2, 2), 1e-9);
+}
+{
+  // 多孔箱涵活載重可忽略（§4.4）：覆土超過兩端支承面距離 L_culvert
+  const { uit } = draai(vervang(vervang(vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 2'-"), "H_cover = 1.00'm", "H_cover = 25.00'm"), "L_culvert = 20.00'm", "L_culvert = 20.00'm"), true);
+  checkNabij("n=2 H=25 LL_negligible", uit.LL_negligible, 1, 1e-12);
+  checkNabij("n=2 H=25 q_truck", uit.q_truck, 0, 1e-12);
+  const { uit: u2 } = draai(vervang(vervang(vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 2'-"), "H_cover = 1.00'm", "H_cover = 25.00'm"), "L_culvert = 20.00'm", "L_culvert = 30.00'm"), true);
+  checkNabij("n=2 H=25 L=30 LL_negligible", u2.LL_negligible, 0, 1e-12);
+}
+
+// ── 5. 負向測試與安全防護 ─────────────────────────────────────────────
+console.log("\n5. 負向測試與安全防護");
 function moetFalen(label, tpl, ucNaam) {
   const { uit, res } = draai(tpl, true);
   const ucOk = ucNaam ? uit[ucNaam] > 1 : true;
@@ -251,6 +355,30 @@ moetFalen("容許承載力 40 kN/m²", vervang(twBoxCulvert, "qa_allow = 220.0'k
 moetFalen("頂版鋼筋間距 300 mm", vervang(twBoxCulvert, "s_top = 150'mm", "s_top = 300'mm"), "UC_s_top");
 moetFalen("加腋 0.10 m", vervang(twBoxCulvert, "c_chamfer = 0.20'm", "c_chamfer = 0.10'm"), "UC_chamfer");
 moetFalen("頂版厚 0.25 m（剪力不足）", vervang(twBoxCulvert, "t_top = 0.35'm", "t_top = 0.25'm"), "UC_V_top");
+moetWeigeren("孔數 7（> 6）", vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 7'-"));
+moetWeigeren("孔數 2.5（非整數）", vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 2.5'-"));
+moetWeigeren("孔間回填土寬度為負", vervang(twBoxCulvert, "s_gap = 0.00'm", "s_gap = -0.50'm"));
+moetWeigeren("涵身長度非正", vervang(twBoxCulvert, "L_culvert = 20.00'm", "L_culvert = 0.00'm"));
+moetWeigeren("地震土壓形式未定義", vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 2'-"));
+moetWeigeren("地震工況 S_II,S = 0", vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "S_II_S = 1.0'-", "S_II_S = 0'-"));
+moetWeigeren("地震工況 θ = 60°", vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "theta_w = 0'deg", "theta_w = 60'deg"));
+moetWeigeren("地震工況 δ = 60°", vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "delta_w = 0'deg", "delta_w = 60'deg"));
+moetWeigeren("地震工況地震土壓公式未定義", vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "mo_form = 1'-", "mo_form = 3'-"));
+moetFalen(
+  "地震土壓過大（S_II,S = 3.0）",
+  vervang(vervang(twBoxCulvert, "seis_form = 0'-", "seis_form = 1'-"), "S_II_S = 1.0'-", "S_II_S = 3.0'-"),
+  "UC_V_wall",
+);
+moetFalen(
+  "多孔箱涵地盤承載力不足（3 孔、孔間 1.5 m、qa = 60 kN/m²）",
+  vervang(vervang(vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 3'-"), "s_gap = 0.00'm", "s_gap = 1.50'm"), "qa_allow = 220.0'kN/m^2", "qa_allow = 60.0'kN/m^2"),
+  "UC_bearing",
+);
+moetFalen(
+  "多孔箱涵排水容量不足（4 孔、Q = 100 m³/s）",
+  vervang(vervang(vervang(twBoxCulvert, "n_barrels = 1'-", "n_barrels = 4'-"), "Q_design = 12.00'm^3/s", "Q_design = 100.00'm^3/s"), "s_gap = 0.00'm", "s_gap = 0.20'm"),
+  "UC_Q",
+);
 moetFalen(
   "淺覆土高水位（抗浮不足）",
   vervang(vervang(twBoxCulvert, "H_cover = 1.00'm", "H_cover = 0.70'm"), "H_gw = 1.50'm", "H_gw = 0.00'm"),

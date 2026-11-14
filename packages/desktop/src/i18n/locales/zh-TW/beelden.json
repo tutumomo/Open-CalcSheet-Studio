@@ -556,7 +556,9 @@
     "kop": "涵身與覆土",
     "velden": {
       "chamfer": "倒角 c",
-      "cover": "覆土厚度 Hc"
+      "cover": "覆土厚度 Hc",
+      "barrels": "孔數 n",
+      "gap": "孔間寬度 s_gap"
     },
     "noot": "載重、材料、配筋與水理檢核位於計算表中；視圖不做計算。",
     "doorsnede": "涵身斷面（含覆土）",

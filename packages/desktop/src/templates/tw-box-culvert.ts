@@ -1,6 +1,6 @@
 export const twBoxCulvert = `"鋼筋混凝土箱涵設計與檢核（hwbridge / rc112）
 
-'<i>依據交通部《公路橋梁設計規範》（98年12月版，hwbridge）第 3.6 節 HS20-44 標準貨車、第 3.13 節涵洞衝擊係數、第 3.20 節土壓力、第 3.23 節表 3.3 強度設計法第 VIII 組（涵洞）載重組合、第 4.4 節透過填土之輪重分佈，以及內政部《建築物混凝土結構設計規範》（112年8月版，rc112）之強度折減係數與斷面強度，檢核單孔鋼筋混凝土箱涵：平面剛架 raamwerk 求解頂版、底版與側牆內力，再檢核抗彎 φMn、剪力 φVc、側牆軸壓、最少配筋量與鋼筋間距；另檢核 45° 內角加腋、滿流排水容量（曼寧公式）、地盤承載力與抗浮安全係數。適用範圍：單孔、覆土深度 &gt; 0.60 m（覆土較淺時須依 hwbridge 第 4.3 節以集中輪重設計版，本表不適用）。</i><span class="alleen-scherm"></span>
+'<i>依據交通部《公路橋梁設計規範》（98年12月版，hwbridge）第 3.6 節 HS20-44 標準貨車、第 3.13 節涵洞衝擊係數、第 3.20 節土壓力、第 3.23 節表 3.3 強度設計法第 VIII 組（涵洞）載重組合、第 4.4 節透過填土之輪重分佈，以及內政部《建築物混凝土結構設計規範》（112年8月版，rc112）之強度折減係數與斷面強度，檢核單孔鋼筋混凝土箱涵：平面剛架 raamwerk 求解頂版、底版與側牆內力，再檢核抗彎 φMn、剪力 φVc、側牆軸壓、最少配筋量與鋼筋間距；另檢核 45° 內角加腋、滿流排水容量（曼寧公式）、地盤承載力與抗浮安全係數。適用範圍：覆土深度 &gt; 0.60 m（覆土較淺時須依 hwbridge 第 4.3 節以集中輪重設計版，本表不適用）。可檢核單孔或多孔（1～6 孔）鋼筋混凝土箱涵，各孔斷面相同並以單孔剛架逐孔分析；多孔箱涵之孔間回填土由鄰孔分擔，最外側孔之外側邊坡覆土未計入，須由設計者確認。另可選擇採用公路橋梁耐震設計規範 §8.2 之地震土壓（該條係針對橋台與擋土牆，箱涵之適用性須設計者確認）。</i><span class="alleen-scherm"></span>
 
 #hide
 kleur(u) = if(u > 1; "#b91c1c"; if(u > 0.9; "#b45309"; "#047857"))
@@ -61,6 +61,18 @@ s_wall = 150'mm <i>側牆垂直受拉主筋間距 s_wall</i>
 db_corner = 12.7'mm <i>（D13 鋼筋，單根面積 126.7 mm²）</i>
 s_corner = 200'mm <i>角隅 X 形補強斜筋間距 s_corner</i>
 
+'<h4>5. 多孔箱涵與地震土壓設定</h4>
+n_barrels = 1'- <i>孔數 n（1～6；各孔斷面相同，本表以單孔剛架逐孔分析；n = 1 為單孔箱涵）</i>
+s_gap = 0.00'm <i>孔間回填土寬度 s_gap（0 = 各孔相接共用隔壁；n = 1 時本項不影響計算）</i>
+L_culvert = 20.00'm <i>涵身沿水流方向長度 L_culvert（hwbridge §4.4：多孔箱涵活載重可忽略之判定用）</i>
+seis_form = 0'- <i>地震土壓：0 = 不考慮；1 = 考慮（公路橋梁耐震設計規範 §8.2；該條係針對橋台與擋土牆，箱涵之適用性須設計者確認）</i>
+S_II_S = 1.0'- <i>工址短週期水平譜加速度係數 S_II,S（公路橋梁耐震設計規範 §2.3.2，由設計者填入）</i>
+kh_seis = 0'- <i>地震土壓用水平加速度係數 k_h（0 = 依 §8.2 取 0.2·S_II,S）</i>
+c_soil = 0'kN/m^2 <i>回填土黏著力 c（§8.2 式 8-2 用；無試驗資料時取 0）</i>
+theta_w = 0'deg <i>牆背填土面與水平面之夾角 θ（水平回填取 0）</i>
+delta_w = 0'deg <i>牆背與回填土之摩擦角 δ（設計者輸入；常假設 δ = φ）</i>
+mo_form = 1'- <i>地震土壓公式：1 = 條文式（§8-3、8-4）；2 = Mononobe–Okabe 常用式</i>
+
 #hide
 fc_mpa = fc_kpa / 1000
 fy_mpa = fy_kpa / 1000
@@ -68,7 +80,7 @@ fy_mpa = fy_kpa / 1000
 '幾何與適用範圍防護檢核（覆土 ≤ 0.60 m 且有車載時屬 hwbridge §4.3 集中輪重，本表拒算）
 limit_chamfer = min(B_clear / 2; H_clear / 2; t_wall)
 cover_ok = if(truck_type == 0 or H_cover > 0.60; 1; 0)
-geom_ok = if(B_clear > 0.5 and H_clear > 0.5 and t_top > 0.15 and t_bot > 0.15 and t_wall > 0.15 and c_chamfer > 0 and c_chamfer ≤ limit_chamfer and H_cover ≥ 0 and s_top > 0 and s_bot > 0 and s_wall > 0 and (truck_type == 0 or truck_type == 1) and k_truck ≥ 1.0 and s_wheel > 0 and s_axle > 0 and cover_ok == 1; 1; 0)
+geom_ok = if(B_clear > 0.5 and H_clear > 0.5 and t_top > 0.15 and t_bot > 0.15 and t_wall > 0.15 and c_chamfer > 0 and c_chamfer ≤ limit_chamfer and H_cover ≥ 0 and s_top > 0 and s_bot > 0 and s_wall > 0 and (truck_type == 0 or truck_type == 1) and k_truck ≥ 1.0 and s_wheel > 0 and s_axle > 0 and cover_ok == 1 and n_barrels ≥ 1 and n_barrels ≤ 6 and n_barrels ≡ floor(n_barrels) and s_gap ≥ 0 and L_culvert > 0 and (seis_form ≡ 0 or (seis_form ≡ 1 and S_II_S > 0 and c_soil ≥ 0 and theta_w ≥ 0 and theta_w ≤ 45 and delta_w ≥ 0 and delta_w ≤ 45 and (mo_form ≡ 1 or mo_form ≡ 2))); 1; 0)
 UC_geom = if(geom_ok == 1; 0.0; 999.0)
 #show
 
@@ -79,6 +91,9 @@ B_outer = B_clear + 2 * t_wall'm <i>箱涵外總寬 B_outer</i>
 H_outer = H_clear + t_top + t_bot'm <i>箱涵外總高 H_outer</i>
 B_c = B_clear + t_wall'm <i>閉合剛架頂底版計算跨度 B_c</i>
 H_c = H_clear + (t_top + t_bot) / 2'm <i>閉合剛架側牆計算高度 H_c</i>
+B_total = n_barrels * (B_clear + 2 * t_wall) + (n_barrels - 1) * s_gap'm <i>多孔箱涵全寬 B_total</i>
+w_trib = if(n_barrels ≡ 1; B_c; B_c + s_gap)'m <i>單孔之從屬面積寬度（頂版計算跨度 B_c ＋孔間回填土寬度 s_gap）</i>
+f_tr = w_trib / B_c'- <i>單孔垂直載重放大係數（單孔為 1）</i>
 
 '<i>涵洞衝擊係數 I（hwbridge §3.13：覆土 0～0.3 m 取 30%、0.3～0.6 m 取 20%、0.6～0.9 m 取 10%；覆土 0.9 m 以上屬 B 類，不計衝擊）：</i>
 #hide
@@ -96,7 +111,7 @@ L_x = if(D_spread > s_wheel; D_spread + s_wheel; D_spread)
 n_y = if(D_spread > s_axle; 2; 1)
 L_y = if(D_spread > s_axle; D_spread + s_axle; D_spread)
 n_wheels = n_x * n_y
-LL_negligible = if(H_cover > 2.4 and H_cover > B_clear + t_wall; 1; 0)
+LL_negligible = if(H_cover > 2.4 and H_cover > B_clear + t_wall and n_barrels ≡ 1; 1; if(n_barrels ≥ 2 and H_cover > L_culvert; 1; 0))
 q_truck_noI = if(truck_type == 0 or LL_negligible == 1 or cover_ok == 0; 0.0; n_x * n_y * P_wheel / (L_x * L_y))
 q_truck_raw = q_truck_noI * (1 + I_truck)
 #show
@@ -119,7 +134,7 @@ W_walls_total = 2 * gamma_c * t_wall * H_c'kN/m <i>雙側牆每延米自重 W_wa
 q_D_top = w_soil + q_surcharge + w_top_self'kN/m^2
 
 '底版工作載重下地盤平均接觸應力（hwbridge §3.13 B 類：基礎壓力不計衝擊）：
-q_base_service = q_D_top + w_bot_self + W_walls_total / B_c + q_truck_noI'kN/m^2
+q_base_service = q_D_top + w_bot_self + W_walls_total / w_trib + q_truck_noI'kN/m^2
 '地盤平均工作接觸應力：q_base_service = 'ru(q_base_service)' kN/m² ≤ qa = 'qa_allow' kN/m²
 
 '<i>側牆側向土水壓力計算（外側向內推）：</i>
@@ -127,19 +142,40 @@ z_top = H_cover + t_top / 2'm <i>頂版中心線深度</i>
 z_bot = H_cover + H_outer - t_bot / 2'm <i>底版中心線深度</i>
 
 '側向活載重超載壓力（hwbridge §3.20：不小於相當 60 cm 高之填土）：
-p_L_lat = if(truck_type == 0; 0.0; K0_soil * gamma_s * 0.60)'kN/m^2
+p_L_lat = if(truck_type == 0 or seis_form ≡ 1; 0.0; K0_soil * gamma_s * 0.60)'kN/m^2
 
 '<i>土壓力不得小於相當 4.7 kN/m³ 之流體壓力（hwbridge §3.20）：</i>
 #hide
 p_soil_top_calc = max(K0_soil * (q_surcharge + gamma_s * z_top); 4.7 * z_top)
 p_soil_bot_calc = max(K0_soil * (q_surcharge + gamma_s * min(z_bot; H_gw) + max(0; gamma_s - gamma_w) * max(0; z_bot - H_gw)); 4.7 * z_bot)
 p_water_bot_calc = gamma_w * max(0; z_bot - H_gw)
-p_lat_top_calc = p_soil_top_calc + p_L_lat
-p_lat_bot_calc = p_soil_bot_calc + p_water_bot_calc + p_L_lat
+
+'地震土壓（公路橋梁耐震設計規範 §8.2；牆背填土面與地面均假設水平：θ = 0、α_g = 0）
+sinD(a) = sin(a * pi / 180)
+cosD(a) = cos(a * pi / 180)
+kh_ea = if(kh_seis > 0; kh_seis; 0.2 * S_II_S)
+th0_ea = atan(kh_ea) * 180 / pi
+numA = cosD(phi_deg - th0_ea - theta_w)^2
+s1A = sinD(phi_deg + delta_w)
+s2A = if(phi_deg - th0_ea < 0; 0; sinD(phi_deg - th0_ea))
+c1A = cosD(theta_w + th0_ea + delta_w)
+c2A = cosD(theta_w)
+wA = if(c1A > 0 and c2A > 0; max(0; s1A * s2A / (c1A * c2A)); 0)
+denA = if(mo_form ≡ 1; cosD(th0_ea) * cosD(theta_w)^2 * c1A * (1 + sqrt(wA))^2; cosD(th0_ea)^2 * cosD(theta_w)^2 * c1A * (1 + sqrt(wA)))
+KEA_c = if(denA > 0; numA / denA; -1)
+sqKEA_c = if(KEA_c > 0; sqrt(KEA_c); 0)
+h_live_eq = if(truck_type == 0; 0.0; 0.60)
+q_prime_seis = q_surcharge + gamma_s * h_live_eq
+p_seis_top_calc = if(KEA_c > 0; max(KEA_c * (q_prime_seis + gamma_s * z_top) - 2 * c_soil * sqKEA_c; 4.7 * z_top); 0.0)
+p_seis_bot_calc = if(KEA_c > 0; max(KEA_c * (q_prime_seis + gamma_s * z_bot) - 2 * c_soil * sqKEA_c; 4.7 * z_bot); 0.0) + gamma_w * max(0; z_bot - H_gw)
+
+p_lat_top_calc = if(seis_form ≡ 1; p_seis_top_calc; p_soil_top_calc + p_L_lat)
+p_lat_bot_calc = if(seis_form ≡ 1; p_seis_bot_calc; p_soil_bot_calc + p_water_bot_calc + p_L_lat)
 #show
 
 p_lat_top = ru(p_lat_top_calc)'kN/m^2 <i>頂版中心高度側向總壓力 p_lat,top</i>
 p_lat_bot = ru(p_lat_bot_calc)'kN/m^2 <i>底版中心高度側向總壓力 p_lat,bot</i>
+'<i>地震土壓參數（seis_form = 1 時適用）：K_EA = 'ru(KEA_c)'；k_h = 'ru(kh_ea)'；θ0 = 'ru(th0_ea)' 度；q′ = 'ru(q_prime_seis)' kN/m²</i>
 
 '<h3>四、強度設計載重組合（hwbridge §3.23 表 3.3 第 VIII 組：涵洞）</h3>
 '<i>U = γ·[β_D·D + 1.67·(L+I) + β_E·E]，γ = 1.3；受撓構材 β_D = 1.0；剛性涵洞 β_E = 1.0（垂直與水平土壓）。檢核頂版、底版跨中正彎矩時，側向土壓所生彎矩至多取一半（§3.20，β_E = 0.5）。</i>
@@ -150,12 +186,12 @@ beta_L = 1.67
 beta_E = 1.0
 #show
 
-w_u_top = gamma_LF * (beta_D * w_top_self + beta_E * (w_soil + q_surcharge) + beta_L * q_truck)'kN/m^2 <i>因數化頂版垂直載重 w_u,top</i>
+w_u_top = gamma_LF * (beta_D * w_top_self + f_tr * (beta_E * (w_soil + q_surcharge) + beta_L * q_truck))'kN/m^2 <i>因數化頂版垂直載重 w_u,top</i>
 w_u_wall_per_B = gamma_LF * beta_D * W_walls_total / B_c'kN/m^2 <i>側牆自重換算底版反力分量</i>
 w_u_bot = w_u_top + w_u_wall_per_B'kN/m^2 <i>底版因數化淨向上地盤反力 w_u,bot</i>
 
-p_u_top = gamma_LF * (beta_E * p_soil_top_calc + beta_L * p_L_lat)'kN/m^2 <i>頂版中心高度因數化側壓力 p_u,top</i>
-p_u_bot = gamma_LF * (beta_E * (p_soil_bot_calc + p_water_bot_calc) + beta_L * p_L_lat)'kN/m^2 <i>底版中心高度因數化側壓力 p_u,bot</i>
+p_u_top = gamma_LF * (beta_E * (if(seis_form ≡ 1; p_seis_top_calc; p_soil_top_calc)) + beta_L * p_L_lat)'kN/m^2 <i>頂版中心高度因數化側壓力 p_u,top</i>
+p_u_bot = gamma_LF * (beta_E * (if(seis_form ≡ 1; p_seis_bot_calc; p_soil_bot_calc + p_water_bot_calc)) + beta_L * p_L_lat)'kN/m^2 <i>底版中心高度因數化側壓力 p_u,bot</i>
 
 '<h3>五、閉合剛架平面結構力學分析（raamwerk 求解）</h3>
 '<i>取每延米寬度（b = 1.0 m）為四節點四桿件閉合剛架模型求解內力：</i>
@@ -370,16 +406,17 @@ P_flow = 2 * (B_clear + H_clear) - 8 * c_chamfer + 4 * (2^0.5) * c_chamfer'm <i>
 R_flow = A_flow / P_flow'm <i>水力半徑</i>
 Q_cap_calc = (1 / n_manning) * A_flow * (R_flow^(2/3)) * (S_slope^0.5)'m^3/s
 #show
-Q_cap = ru(Q_cap_calc)'m^3/s <i>滿流排水容量 Q_cap</i>
+Q_cap_one = ru(Q_cap_calc)'m^3/s <i>單孔滿流排水容量</i>
+Q_cap = ru(n_barrels * Q_cap_calc)'m^3/s <i>滿流排水容量 Q_cap（多孔箱涵為各孔合計）</i>
 UC_Q = Q_design / Q_cap
 '<b style="color:'kleur(UC_Q)'">排水通水容量檢核：UC_Q = 'ru(UC_Q)' ≤ 1.0 → 'oordeel(UC_Q)'</b>
 
 '<h4>3. 地下水抗浮穩定性檢核</h4>
 #hide
 h_submerged = max(0; H_cover + H_outer - H_gw)'m
-U_uplift = gamma_w * h_submerged * B_outer'kN/m <i>每延米總浮力</i>
-W_concrete = gamma_c * (B_outer * H_outer - A_flow)'kN/m
-W_soil_cover = gamma_s * H_cover * B_outer'kN/m
+U_uplift = gamma_w * h_submerged * B_total'kN/m <i>每延米總浮力</i>
+W_concrete = gamma_c * (B_total * H_outer - n_barrels * A_flow)'kN/m
+W_soil_cover = gamma_s * H_cover * B_total'kN/m
 W_total_weight = W_concrete + W_soil_cover'kN/m
 FS_float_calc = if(U_uplift ≤ 0.1; 999.0; W_total_weight / U_uplift)
 UC_float_calc = if(U_uplift ≤ 0.1; 0.0; 1.20 / FS_float_calc)

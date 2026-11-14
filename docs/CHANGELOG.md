@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（hwbridge / rc112）：`tw-box-culvert` 新增多孔箱涵（孔數 1～6、孔間回填土寬度、涵身長度），依《公路橋梁設計規範》第 4.4 節「多孔箱涵覆土超過兩端支承面距離時不計活載重」判定活載重可忽略，並以單孔從屬寬度計算孔間回填土分擔之垂直載重放大；另新增可選地震土壓工況（依交通部《公路橋梁耐震設計規範》§8.2 之 k_h = 0.2·S_II,S、式 8-3 地震土壓力係數 K_EA〔條文式與 Mononobe–Okabe 常用式〕與式 8-2 地震土壓力）。既有表單請以「Bladen bijwerken」更新。
+
 - 台灣版（swc_tech 滯洪池）：`tw-detention-basin` 新增逐時段調洪演算（修正脈動法／蓄水指示法），排放孔口改依內政部國土管理署《雨水下水道設計指南》I-8.3.2 之矩形孔口堰流（y ≤ 1.2L）、潛流（y ≥ 1.8L）與中間段流量線內插、緊急溢洪口 q = 1.767·B·H₂^1.5（A 級已驗證公式），先前採用之孔口流量係數 Cd = 0.62 與堰流係數 Cw = 1.84 為工程慣用值，現已不再使用；演算輸入新增演算時段數、自訂入流洪峰與漲退水時間，據以檢核演算最高水位不得高於堤頂、演算最大有效蓄水量不得大於 V_eff、演算最大出流不得大於第 95 條第三款之上限。既有表單請以「Bladen bijwerken」更新。
 
 - 台灣版（滯洪池逐時段調洪演算）：`tw-detention-basin` 新增修正脈動法（Modified Puls 法、逐時段蓄水指示法）演算，可輸入自訂入流洪峰、漲水與退水時間，逐時段求解蓄水量與水位，檢核演算最高水位不得高於堤頂、演算最大有效蓄水量不得大於有效容積 V_eff、演算最大出流不得大於 `swc_tech` 第 95 條第三款之出流洪峰上限。排放孔口改依《雨水下水道設計指南》I-8.3.2 之矩形孔口堰流（作用水深 ≤ 1.2L，q = 1.767·B·y^1.5）／潛流（作用水深 ≥ 1.8L，q = 0.6·B·L·√(2g(y − L/2))）／中間段流量線內插與緊急溢洪口溢流量（q = 1.767·L·h^1.5，須大於設計入流洪峰），先前使用之工程慣用係數 Cd = 0.62、Cw = 1.84 已移除，改依 A 級已驗證公式 `rainwater109_detention_orifice_weir`、`rainwater109_detention_orifice_submerged`、`rainwater109_detention_overflow`。既有表單請以「Bladen bijwerken」更新。

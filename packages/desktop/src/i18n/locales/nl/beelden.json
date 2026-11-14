@@ -556,7 +556,9 @@
     "kop": "Duikerlichaam en overdekking",
     "velden": {
       "chamfer": "Voute c",
-      "cover": "Overdekking Hc"
+      "cover": "Overdekking Hc",
+      "barrels": "Aantal barrels n",
+      "gap": "Tussenruimte s_gap"
     },
     "noot": "Lasten, materialen, wapening en hydraulische toetsing staan in het blad; het beeld rekent niet.",
     "doorsnede": "Doorsnede met grondoverdekking",
