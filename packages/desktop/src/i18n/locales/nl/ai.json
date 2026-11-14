@@ -42,7 +42,7 @@
   "protocol": "API-protocol",
   "protocolOpenai": "OpenAI-compatibel (DeepSeek, OpenRouter, Groq, Ollama, vLLM…)",
   "protocolAnthropic": "Anthropic-compatibel (Claude / Anthropic Messages API)",
-  "protocolGemini": "Google Gemini-compatibel",
+  "protocolGemini": "Google (Antigravity-protocol)",
   "aanbieder": "Aanbieder",
   "endpoint": "Endpoint",
   "model": "Model",

@@ -42,7 +42,7 @@
   "protocol": "API 協定",
   "protocolOpenai": "OpenAI 相容（DeepSeek、OpenRouter、Groq、Ollama、vLLM…）",
   "protocolAnthropic": "Anthropic 相容（Claude / Anthropic Messages API）",
-  "protocolGemini": "Google Gemini 相容",
+  "protocolGemini": "Google（Antigravity 協定）",
   "aanbieder": "提供者",
   "endpoint": "端點",
   "model": "模型",
