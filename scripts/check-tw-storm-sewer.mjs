@@ -28,7 +28,7 @@ const set = (o) => Object.entries(o).reduce((t, [naam, waarde]) => setEen(t, naa
 const draai = (o = {}) => {
   const tpl = set(o);
   return {
-    uit: leesGetallen(evaluate(parse(tpl.replaceAll("#hide\n", "#show\n"))), {}),
+    uit: leesGetallen(evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n"))), {}),
     res: leesResultaat(evaluate(parse(tpl), {}), "tw-storm-sewer"),
   };
 };

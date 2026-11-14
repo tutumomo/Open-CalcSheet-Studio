@@ -13,7 +13,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {});
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), {});
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-gravity-retaining-wall") };
 }
 const base = { H: 3.0, t: 0.8, B: 2.6, gw: 24, mat: 1, fc: 21, fta: 0, fca: 1000, fva: 150, gs: 18, phi: 30, q: 10, mu: 0.5, qa: 200, base: 1 };

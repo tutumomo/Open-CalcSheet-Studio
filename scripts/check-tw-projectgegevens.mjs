@@ -61,7 +61,7 @@ meld(scopeMet({ tw_SDS: "0.6" }).tw_SDS === 0.6, "S_DS 照填");
 
 console.log("\n5. 載重表接線（獨立對照）");
 const rechen = (tpl, scope, waarden = {}) => {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), waarden, scope);
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), waarden, scope);
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), waarden, scope), "x") };
 };
 const qh = (V, I, a, zg, H) => 0.06 * 2.774 * (Math.max(H, 5) / zg) ** (2 * a) * (I * V) ** 2;

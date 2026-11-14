@@ -8,7 +8,7 @@ const SCOPE = projectScope(legeGegevens());
 let fouten = 0;
 function meld(ok, t, d = "") { console.log(`  ${ok ? "OK    " : "FOUT  "} ${t}${ok || !d ? "" : `  -> ${d}`}`); if (!ok) fouten++; }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {}, SCOPE);
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), {}, SCOPE);
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}, SCOPE), "tw-wind-load") };
 }
 function vervang(tpl, o, n) { if (!tpl.includes(o)) throw new Error(`找不到：${o}`); return tpl.replace(o, n); }

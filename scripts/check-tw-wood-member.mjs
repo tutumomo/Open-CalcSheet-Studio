@@ -17,7 +17,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 const draai = (tpl, sel = {}) => ({
-  uit: leesGetallen(evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), sel)),
+  uit: leesGetallen(evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), sel)),
   res: leesResultaat(evaluate(parse(tpl), sel), "tw-wood-member"),
 });
 const vervang = (t, o, n) => {

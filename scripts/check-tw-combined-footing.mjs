@@ -24,7 +24,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 const draai = (waarden = {}) => ({
-  uit: leesGetallen(evaluate(parse(T.replaceAll("#hide\n", "#show\n")), { ...waarden })),
+  uit: leesGetallen(evaluate(parse(T.replaceAll(/#hide\r?\n/g, "#show\n")), { ...waarden })),
   res: leesResultaat(evaluate(parse(T), { ...waarden }), "tw-combined-footing"),
 });
 const rel = (a, b, tol = 1e-4) => typeof a === "number" && Math.abs(a - b) <= tol * Math.max(1, Math.abs(b));

@@ -7,7 +7,7 @@ import { TW_VLOER_VERANDERLIJK_TABEL as T17 } from "../packages/desktop/src/rapp
 let fouten = 0;
 const meld = (ok, t, d = "") => { console.log(`  ${ok ? "OK    " : "FOUT  "} ${t}${ok || !d ? "" : `  -> ${d}`}`); if (!ok) fouten++; };
 const draai = (tpl, waarden = {}) => ({
-  uit: leesGetallen(evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), waarden)),
+  uit: leesGetallen(evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), waarden)),
   res: leesResultaat(evaluate(parse(tpl), waarden), "tw-dead-live-loads"),
 });
 const vervang = (t, o, n) => { if (!t.includes(o)) throw new Error(`找不到：${o}`); return t.replace(o, n); };

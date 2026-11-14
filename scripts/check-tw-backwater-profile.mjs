@@ -14,7 +14,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {});
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), {});
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-backwater-profile") };
 }
 const base = { Q: 10, b: 3, m: 1, n: 0.015, S0: 0.001, y0: 1.8, L: 400, N: 20, H: 3.0, Va: 4.57 };

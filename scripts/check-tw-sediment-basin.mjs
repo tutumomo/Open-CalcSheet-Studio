@@ -41,7 +41,7 @@ function checkNabij(naam, gekregen, verwacht, tol = 1e-3) {
 
 /** 以修改後的範本字串求值；alles = true 時把 #hide 區塊也讀出 */
 function draai(tpl, alles = false) {
-  const bron = alles ? tpl.replaceAll("#hide\n", "#show\n") : tpl;
+  const bron = alles ? tpl.replaceAll(/#hide\r?\n/g, "#show\n") : tpl;
   const nodes = evaluate(parse(bron), {});
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-sediment-basin") };
 }

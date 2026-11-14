@@ -15,7 +15,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {}, SCOPE);
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), {}, SCOPE);
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}, SCOPE), "tw-seismic-load") };
 }
 function vervang(tpl, oud, nieuw) {

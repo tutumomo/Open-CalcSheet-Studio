@@ -13,7 +13,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {});
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), {});
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-pile-cap") };
 }
 const base = { fc: 28, fy: 420, np: 4, s: 2400, dp: 800, bc: 700, h: 1600, cover: 75, bar: 32, nb: 10, zr: 0.85, bs: 0.4, Pu: 6000 };

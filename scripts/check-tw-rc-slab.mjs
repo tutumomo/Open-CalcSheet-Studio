@@ -16,7 +16,7 @@ function meld(ok, tekst, detail = "") {
   if (!ok) fouten++;
 }
 function draai(tpl) {
-  const nodes = evaluate(parse(tpl.replaceAll("#hide\n", "#show\n")), {});
+  const nodes = evaluate(parse(tpl.replaceAll(/#hide\r?\n/g, "#show\n")), {});
   return { uit: leesGetallen(nodes), res: leesResultaat(evaluate(parse(tpl), {}), "tw-rc-slab") };
 }
 const base = { fc: 28, fy: 420, h: 150, ln: 3.0, Ll: 7.0, sup: 3, mc: 4, wD: 2.0, wL: 3.0, env: 1, cover: 20, bar: 13, s: 150, bt: 10, st: 250 };
