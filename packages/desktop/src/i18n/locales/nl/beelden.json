@@ -424,7 +424,13 @@
     "geenVelden": "Dit blad toont nu geen invoervelden.",
     "uitleg": "Rekent door als je een veld verlaat, op Enter drukt of even wacht.",
     "verbergBeeld": "Tekening verbergen",
-    "toonBeeld": "Tekening tonen"
+    "toonBeeld": "Tekening tonen",
+    "gewijzigd": "Gewijzigd ten opzichte van de opgeleverde invoer: {{aantal}}",
+    "omgeslagen": "Met de opgeleverde invoer voldeed het blad; nu niet meer.",
+    "herstel": "Terug naar {{waarde}}",
+    "herstelAlles": "Alles herstellen",
+    "neemOver": "Als opgeleverd vastleggen",
+    "neemOverUitleg": "De invoer van nu geldt voortaan als de opgeleverde invoer; de markeringen verdwijnen."
   },
   "vloerOpPalen": {
     "plattegrond": "Plattegrond",

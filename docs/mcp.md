@@ -62,7 +62,7 @@ leesbare tekst: deel ze niet.
 
 ## Tools
 
-58 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
+59 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
 De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 [api.md](api.md#routes). In het kort:
 
@@ -73,7 +73,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Rapport | `report_get`, `report_set` |
 | Geschiedenis | `undo`, `redo` |
 | Modules | `modules_list`, `module_schema`, `library_list`, `library_install`, `library_remove` |
-| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_read`, `sheet_run`, `sheet_insert_formula` |
+| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_reset_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_read`, `sheet_run`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate`, `calc_evaluate_batch`, `job_start`, `job_status`, `job_cancel` |
 | Formules | `formulas_list`, `formula_get` |
 | Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
@@ -133,6 +133,22 @@ het oordeel `check: "unchecked"`. `#while` zonder `max=` werkt als voorheen.
 (120 s): `job_start` geeft meteen een `jobId`, `job_status` de voortgang en
 antwoorden, `job_cancel` stopt na het lopende item. Jobs staan alleen in het
 geheugen van de app.
+
+Een blad onthoudt de **opgeleverde invoer**: wat `sheet_add` en
+`sheet_set_input` erin zetten. Wijzigt de gebruiker daarna in de app een veld,
+dan geven `sheet_get` (per veld `modified` en `original`, en de lijst
+`modifiedInputs`) en `sheet_evaluate` (`modifiedInputs`) dat terug, naast de
+uitkomst met de nieuwe waarde. Een veld dat nooit is gezet, is opgeleverd met
+de standaardwaarde van de rekentekst; `5` en `5.0` gelden als gelijk.
+`sheet_set_input` met `design: false` wijzigt zoals een gebruiker en laat de
+opgeleverde waarde staan. `sheet_reset_input` zet de gewijzigde velden (of
+alleen `names`) terug, in één stap voor ongedaan maken. Een blad dat in de app
+is ingevoegd en nooit via de API is ingevuld, houdt niets bij: `modified` is
+dan `false`, `original` ontbreekt en `sheet_reset_input` geeft `tracked: false`.
+In de app toont het invoerscherm van zo'n blad de gewijzigde velden gemarkeerd,
+met een knop per veld en voor alles, en een melding als het blad met de
+opgeleverde invoer voldeed en nu niet meer. De opgeleverde invoer staat in het
+projectbestand (`ocss::blad::ontwerp`).
 
 `sheet_read` geeft de inhoud van elk soort blad als gegevens: van een
 spreadsheet de gevulde cellen (adres, soort, waarde, formule; een formule met

@@ -424,7 +424,13 @@
     "geenVelden": "此計算表目前沒有顯示任何輸入欄位。",
     "uitleg": "離開欄位、按 Enter 或稍候片刻即重新計算。",
     "verbergBeeld": "隱藏圖面",
-    "toonBeeld": "顯示圖面"
+    "toonBeeld": "顯示圖面",
+    "gewijzigd": "與交付輸入不同的欄位：{{aantal}} 項",
+    "omgeslagen": "以交付輸入計算為合格，修改後不合格。",
+    "herstel": "還原為 {{waarde}}",
+    "herstelAlles": "全部還原",
+    "neemOver": "設為交付值",
+    "neemOverUitleg": "將目前的輸入視為新的交付輸入，修改標記隨之消失。"
   },
   "vloerOpPalen": {
     "plattegrond": "平面圖",

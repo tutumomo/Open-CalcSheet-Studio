@@ -78,6 +78,12 @@ export interface Exemplaar {
   /** Invoerwaarden van dit exemplaar, per variabelenaam. */
   waarden: Record<string, string>;
   /**
+   * De invoer zoals het blad is opgeleverd (via de API: sheet_add, sheet_set_input). Wat in
+   * `waarden` daarvan afwijkt, is daarna gewijzigd (store/ontwerpInvoer.ts). Ontbreekt bij
+   * een blad dat niets bijhoudt; een leeg object betekent: opgeleverd met de standaardwaarden.
+   */
+  ontwerpWaarden?: Record<string, string>;
+  /**
    * Elementen in een bronmodel waar dit blad over gaat.
    *
    * Leeg (of afwezig) betekent: losstaande berekening — de IFC-export maakt dan
@@ -227,7 +233,16 @@ interface ProjectState {
   verplaats: (id: string, richting: -1 | 1) => void;
 
   zetBron: (id: string, source: string) => void;
-  zetWaarde: (id: string, naam: string, waarde: string) => void;
+  /** `ontwerp`: de waarde is ook de opgeleverde waarde (de API), niet een wijziging erop. */
+  zetWaarde: (id: string, naam: string, waarde: string, ontwerp?: boolean) => void;
+  /** De opgeleverde invoer van een blad vastleggen of (`undefined`) loslaten. */
+  zetOntwerp: (id: string, ontwerp: Record<string, string> | undefined, stap?: boolean) => void;
+  /**
+   * Zet de genoemde velden terug naar wat is opgeleverd. Een veld zonder opgeleverde
+   * waarde gaat terug naar de standaard van de rekentekst. Eén stap terug. Alleen de
+   * genoemde namen: een beeld bewaart in `waarden` ook eigen instellingen.
+   */
+  herstelInvoer: (id: string, namen: string[]) => void;
   /** Vult ontbrekende waarden aan; bestaande blijven staan. */
   seedWaarden: (id: string, defaults: Record<string, string>) => void;
   /**
@@ -703,15 +718,54 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
       };
     }),
 
-  zetWaarde: (id, naam, waarde) =>
+  zetWaarde: (id, naam, waarde, ontwerp) =>
     set((s) => {
       if (!s.exemplaren.some((e) => e.id === id)) return s;
       return {
       ...metGeschiedenis(s, `waarde:${id}:${naam}`),
       exemplaren: s.exemplaren.map((e) =>
-        e.id === id ? { ...e, waarden: { ...e.waarden, [naam]: waarde } } : e,
+        e.id === id
+          ? {
+              ...e,
+              waarden: { ...e.waarden, [naam]: waarde },
+              // Begint het blad nu bij te houden: wat er al stond, geldt als opgeleverd.
+              ...(ontwerp ? { ontwerpWaarden: { ...(e.ontwerpWaarden ?? e.waarden), [naam]: waarde } } : {}),
+            }
+          : e,
       ),
       dirty: true,
+      };
+    }),
+
+  zetOntwerp: (id, ontwerp, stap = true) =>
+    set((s) => {
+      if (!s.exemplaren.some((e) => e.id === id)) return s;
+      return {
+        // Zonder stap: hoort bij het toevoegen van het blad, dat zelf al een stap is.
+        ...(stap ? metGeschiedenis(s, null) : {}),
+        exemplaren: s.exemplaren.map((e) => {
+          if (e.id !== id) return e;
+          const { ontwerpWaarden: _weg, ...rest } = e;
+          return ontwerp ? { ...rest, ontwerpWaarden: { ...ontwerp } } : rest;
+        }),
+        dirty: true,
+      };
+    }),
+
+  herstelInvoer: (id, namen) =>
+    set((s) => {
+      const ex = s.exemplaren.find((e) => e.id === id);
+      if (!ex?.ontwerpWaarden) return s;
+      const waarden = { ...ex.waarden };
+      for (const naam of namen) {
+        // Zonder opgeleverde waarde: terug naar de standaard van de rekentekst.
+        if (ex.ontwerpWaarden[naam] !== undefined) waarden[naam] = ex.ontwerpWaarden[naam];
+        else delete waarden[naam];
+      }
+      return {
+        ...metGeschiedenis(s, null),
+        exemplaren: s.exemplaren.map((e) => (e.id === id ? { ...e, waarden } : e)),
+        dirty: true,
       };
     }),
 

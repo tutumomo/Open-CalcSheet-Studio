@@ -47,6 +47,7 @@ export const ATTR = {
   marimo: 'ocss::blad::marimo',
   toetsing: 'ocss::blad::toetsing',
   varianten: 'ocss::blad::varianten',
+  ontwerp: 'ocss::blad::ontwerp',
   uitkomst: 'ocss::blad::uitkomst',
   figuur: 'ocss::figuur',
   element: 'ocss::element',
@@ -203,6 +204,8 @@ export const OCSS_SCHEMAS: Record<string, IfcxSchema> = {
   },
   [ATTR.rekentekst]: { value: TEKST },
   [ATTR.invoer]: { value: lijst(PAAR) },
+  // De invoer zoals het blad is opgeleverd (sheet_set_input): wat daarvan afwijkt, is later gewijzigd.
+  [ATTR.ontwerp]: { value: lijst(PAAR) },
   [ATTR.elementen]: {
     value: lijst(object({ id: TEKST, naam: opt(TEKST) })),
   },

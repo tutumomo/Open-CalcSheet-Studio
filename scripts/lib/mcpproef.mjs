@@ -209,7 +209,29 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
         s.activeId = id;
       },
       zetBron: (id, source) => wijzig("zetBron", () => opBlad(id, (e) => ({ ...e, source }))),
-      zetWaarde: (id, naam, waarde) => wijzig("zetWaarde", () => opBlad(id, (e) => ({ ...e, waarden: { ...e.waarden, [naam]: waarde } }))),
+      // Zoals projectStore.ts: `ontwerp` legt de waarde ook vast als opgeleverd (P2-14).
+      zetWaarde: (id, naam, waarde, ontwerp) =>
+        wijzig("zetWaarde", () =>
+          opBlad(id, (e) => ({
+            ...e,
+            waarden: { ...e.waarden, [naam]: waarde },
+            ...(ontwerp ? { ontwerpWaarden: { ...(e.ontwerpWaarden ?? e.waarden), [naam]: waarde } } : {}),
+          })),
+        ),
+      // Hoort bij het toevoegen: geen eigen stap in de geschiedenis.
+      zetOntwerp: (id, ontwerp) => opBlad(id, (e) => ({ ...e, ontwerpWaarden: { ...ontwerp } })),
+      herstelInvoer: (id, namen) =>
+        wijzig("herstelInvoer", () =>
+          opBlad(id, (e) => {
+            if (!e.ontwerpWaarden) return e;
+            const waarden = { ...e.waarden };
+            for (const naam of namen) {
+              if (e.ontwerpWaarden[naam] !== undefined) waarden[naam] = e.ontwerpWaarden[naam];
+              else delete waarden[naam];
+            }
+            return { ...e, waarden };
+          }),
+        ),
       zetGegeven: (naam, waarde) => wijzig("zetGegeven", () => (s.gegevens = { ...s.gegevens, [naam]: waarde })),
       zetProjectNaam: (naam) => {
         acties.push("zetProjectNaam");

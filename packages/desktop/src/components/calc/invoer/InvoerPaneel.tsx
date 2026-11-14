@@ -1,12 +1,14 @@
-import { memo, useEffect, useId, useRef, useState, type ComponentType } from "react";
+import { memo, useCallback, useEffect, useId, useMemo, useRef, useState, type ComponentType } from "react";
 import { useTranslation } from "react-i18next";
 import { eenheidInBeeld } from "@ifc-calc/core";
 import ThemedSelect from "../../ThemedSelect";
 import { Kop, UitkomstKop } from "../designerKit";
 import { useActiefExemplaar, useProjectScope } from "../../../store/actiefBlad";
-import type { Exemplaar } from "../../../store/projectStore";
+import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
+import { isGewijzigd, opgeleverd } from "../../../store/ontwerpInvoer";
 import { useDoorrekening } from "../../../rekenen/doorrekening";
-import { inBeeld, leesGetypt, naamDelen, pauzeVoor, platTekst, type BladInvoer, type PaneelVeld, type TekstDeel } from "./velden";
+import { rekenEenmalig } from "../../../rekenen/variantRekenen";
+import { inBeeld, leesGetypt, naamDelen, pauzeVoor, platTekst, standaardInvoer, type BladInvoer, type PaneelVeld, type TekstDeel } from "./velden";
 import { useInvoerWachtrij } from "./useInvoerWachtrij";
 import type { InvoerWachtrij } from "./wachtrij";
 import "../../ThemedSelect.css";
@@ -27,6 +29,11 @@ import "./InvoerPaneel.css";
  *
  * Een module kan er een beeld boven krijgen dat de invoer volgt (`Beeld`, zie
  * invoerScherm.tsx). Dat beeld leest ook wat er nog wacht, en beweegt dus meteen mee.
+ *
+ * Een blad met opgeleverde invoer (store/ontwerpInvoer.ts, via de API gemaakt of ingevuld)
+ * laat zien welke velden daarna gewijzigd zijn, met de opgeleverde waarde erbij en een knop
+ * om hem terug te zetten. Voldeed het blad met de opgeleverde invoer en nu niet meer, dan
+ * staat dat boven het formulier. Een blad zonder opgeleverde invoer ziet er uit als altijd.
  */
 
 /** Wat een beeld boven het formulier krijgt. */
@@ -78,8 +85,31 @@ function Tekst({ delen }: { delen: readonly TekstDeel[] }) {
   );
 }
 
+interface VeldProps {
+  veld: PaneelVeld;
+  opgeslagen: string | undefined;
+  rij: InvoerWachtrij;
+  /** Het blad houdt de opgeleverde invoer bij: elke rij heeft dan een plek voor de herstelknop. */
+  volgt: boolean;
+  /** De opgeleverde waarde in de eenheid van het blad, als het veld daarvan afwijkt; anders null. */
+  was: string | null;
+  herstel: (naam: string) => void;
+}
+
+/** De knop achter een gewijzigd veld: terug naar de opgeleverde waarde. */
+function Herstel({ veld, was, tekst, herstel }: { veld: PaneelVeld; was: string | null; tekst: string; herstel: (naam: string) => void }) {
+  const { t } = useTranslation("beelden");
+  if (was === null) return <span className="ip-herstel-plek" />;
+  const uitleg = t("invoer.herstel", { waarde: tekst });
+  return (
+    <button type="button" className="ip-herstel" title={uitleg} aria-label={`${veld.toonNaam}: ${uitleg}`} onClick={() => herstel(veld.naam)}>
+      ↺
+    </button>
+  );
+}
+
 /** Een `?`-veld: naam, toelichting, het getal en de eenheid. */
-const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: PaneelVeld; opgeslagen: string | undefined; rij: InvoerWachtrij }) {
+const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij, volgt, was, herstel }: VeldProps) {
   const id = useId();
   // Wat er staat zolang niemand typt. Tijdens het typen blijft staan wat er getypt is:
   // teruggerekend en weer omgezet zou "12," halverwege "12" worden.
@@ -106,7 +136,7 @@ const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: Pan
   };
   const toelichting = platTekst(veld.label);
   return (
-    <div className="ip-rij">
+    <div className={was !== null ? "ip-rij ip-gewijzigd" : "ip-rij"}>
       <label className="ip-naam" htmlFor={id} title={veld.toonNaam}>
         <Naam naam={veld.toonNaam} />
       </label>
@@ -143,14 +173,22 @@ const GetalVeld = memo(function GetalVeld({ veld, opgeslagen, rij }: { veld: Pan
         }}
       />
       <span className="ip-eenheid">{eenheidInBeeld(veld.toonEenheid)}</span>
+      {volgt && (
+        <Herstel
+          veld={veld}
+          was={was}
+          tekst={was === null ? "" : `${inBeeld(veld, was)}${veld.toonEenheid ? ` ${eenheidInBeeld(veld.toonEenheid)}` : ""}`}
+          herstel={herstel}
+        />
+      )}
     </div>
   );
 });
 
 /** Een keuzelijst: het label van het blad en de keuzes. Een keuze gaat meteen naar het blad. */
-const KeuzeVeld = memo(function KeuzeVeld({ veld, opgeslagen, rij }: { veld: PaneelVeld; opgeslagen: string | undefined; rij: InvoerWachtrij }) {
+const KeuzeVeld = memo(function KeuzeVeld({ veld, opgeslagen, rij, volgt, was, herstel }: VeldProps) {
   return (
-    <div className="ip-rij ip-keuze">
+    <div className={was !== null ? "ip-rij ip-keuze ip-gewijzigd" : "ip-rij ip-keuze"}>
       <span className="ip-label" title={veld.toonNaam}>
         <Tekst delen={veld.label} />
       </span>
@@ -159,6 +197,7 @@ const KeuzeVeld = memo(function KeuzeVeld({ veld, opgeslagen, rij }: { veld: Pan
         options={veld.keuzes.map((k) => ({ value: k.waarde, label: k.tekst }))}
         onChange={(waarde) => rij.zetNu(veld.naam, waarde)}
       />
+      {volgt && <Herstel veld={veld} was={was} tekst={veld.keuzes.find((k) => k.waarde === was)?.tekst ?? was ?? ""} herstel={herstel} />}
     </div>
   );
 });
@@ -200,10 +239,100 @@ function Paneel({ exemplaar, Beeld }: { exemplaar: Exemplaar; Beeld?: ComponentT
   const lees = (naam: string) => rij.wacht(naam) ?? exemplaar.waarden[naam];
   const metBeeld = !!Beeld && toonBeeld;
 
+  // ── De opgeleverde invoer (store/ontwerpInvoer.ts) ──
+  const ontwerp = exemplaar.ontwerpWaarden;
+  const volgt = ontwerp !== undefined;
+  const standaarden = useMemo(() => standaardInvoer(exemplaar.source), [exemplaar.source]);
+  // Alle velden van de tekst, ook achter een voorwaarde: wat niet in beeld staat, telt mee
+  // en gaat mee terug met "alles herstellen".
+  const gewijzigd = useMemo(
+    () =>
+      ontwerp
+        ? Object.keys(standaarden).filter((naam) => isGewijzigd(ontwerp, naam, exemplaar.waarden[naam], standaarden[naam].beginwaarde))
+        : [],
+    [ontwerp, standaarden, exemplaar.waarden],
+  );
+  const wasVan = (naam: string): string | null =>
+    gewijzigd.includes(naam) ? opgeleverd(ontwerp, naam, standaarden[naam]?.beginwaarde ?? "0") ?? null : null;
+
+  const bladId = exemplaar.id;
+  const herstel = useCallback(
+    (naam: string) => {
+      // Wat er voor dit veld nog wachtte, vervalt: anders overschrijft het de herstelde waarde.
+      rij.vergeet(naam);
+      useProjectStore.getState().herstelInvoer(bladId, [naam]);
+    },
+    [rij, bladId],
+  );
+  const herstelAlles = () => {
+    for (const naam of gewijzigd) rij.vergeet(naam);
+    useProjectStore.getState().herstelInvoer(bladId, gewijzigd);
+  };
+  /** De invoer van nu geldt voortaan als opgeleverd; ongedaan te maken. */
+  const neemOver = () => {
+    rij.stuurAlles();
+    const nu = useProjectStore.getState().exemplaren.find((e) => e.id === bladId);
+    if (!nu?.ontwerpWaarden) return;
+    const nieuw = { ...nu.ontwerpWaarden };
+    for (const naam of Object.keys(standaarden)) {
+      if (nu.waarden[naam] !== undefined) nieuw[naam] = nu.waarden[naam];
+      else delete nieuw[naam];
+    }
+    useProjectStore.getState().zetOntwerp(bladId, nieuw);
+  };
+
+  // Het oordeel met de opgeleverde invoer, om te zien of het blad is omgeslagen. Alleen als
+  // er iets gewijzigd is; de sleutel verandert niet zolang iemand aan een gewijzigd veld
+  // verder typt, dus dit rekent één keer.
+  const ontwerpInvoer = useMemo(() => {
+    if (!ontwerp || gewijzigd.length === 0) return null;
+    const uit = { ...exemplaar.waarden };
+    for (const naam of gewijzigd) {
+      if (ontwerp[naam] !== undefined) uit[naam] = ontwerp[naam];
+      else delete uit[naam];
+    }
+    return uit;
+  }, [ontwerp, gewijzigd, exemplaar.waarden]);
+  const ontwerpSleutel = ontwerpInvoer ? JSON.stringify(ontwerpInvoer) + "\u0000" + exemplaar.source : "";
+  const [ontwerpVoldeed, setOntwerpVoldeed] = useState<{ sleutel: string; voldoet: boolean | null } | null>(null);
+  useEffect(() => {
+    if (!ontwerpInvoer) return;
+    let weg = false;
+    void rekenEenmalig(bladId, ontwerpInvoer).then((u) => {
+      if (weg) return;
+      // Een fout of "niet getoetst" is geen oordeel: dan valt er niets te vergelijken.
+      const voldoet = u && !u.fout && !u.resultaat.nietGetoetst ? u.resultaat.voldoet : null;
+      setOntwerpVoldeed({ sleutel: ontwerpSleutel, voldoet });
+    });
+    return () => {
+      weg = true;
+    };
+    // ontwerpInvoer zit in de sleutel
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [bladId, ontwerpSleutel]);
+  const nu = doorrekening?.uitkomst?.resultaat;
+  const omgeslagen =
+    !status && gewijzigd.length > 0 && ontwerpVoldeed?.sleutel === ontwerpSleutel && ontwerpVoldeed.voldoet === true &&
+    !!nu && !nu.nietGetoetst && nu.voldoet === false;
+
   return (
-    <div ref={paneelRef} className={`vd-panel ip-paneel${breed ? " ip-breed" : ""}`}>
+    <div ref={paneelRef} className={`vd-panel ip-paneel${breed ? " ip-breed" : ""}${volgt ? " ip-volgt" : ""}`}>
       {status ? <Kop titel={titel} badge={status} staat="info" /> : <UitkomstKop titel={titel} uitkomst={doorrekening?.uitkomst ?? null} />}
       <div className={rekent ? "ip-voortgang ip-loopt" : "ip-voortgang"} />
+      {gewijzigd.length > 0 && (
+        <div className={omgeslagen ? "ip-melding ip-omgeslagen" : "ip-melding"} role="status">
+          <span>
+            {omgeslagen && <strong>{t("invoer.omgeslagen")} </strong>}
+            {t("invoer.gewijzigd", { aantal: gewijzigd.length })}
+          </span>
+          <button type="button" className="settings-btn settings-btn-secondary" onClick={herstelAlles}>
+            {t("invoer.herstelAlles")}
+          </button>
+          <button type="button" className="settings-btn settings-btn-secondary" title={t("invoer.neemOverUitleg")} onClick={neemOver}>
+            {t("invoer.neemOver")}
+          </button>
+        </div>
+      )}
 
       <div className="ip-inhoud">
         {Beeld && metBeeld && (
@@ -223,9 +352,9 @@ function Paneel({ exemplaar, Beeld }: { exemplaar: Exemplaar; Beeld?: ComponentT
                   {groep.kop && <div className="vd-ctrl-h">{groep.kop}</div>}
                   {groep.velden.map((veld) =>
                     veld.soort === "keuze" ? (
-                      <KeuzeVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} />
+                      <KeuzeVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} volgt={volgt} was={wasVan(veld.naam)} herstel={herstel} />
                     ) : (
-                      <GetalVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} />
+                      <GetalVeld key={veld.naam} veld={veld} opgeslagen={exemplaar.waarden[veld.naam]} rij={rij} volgt={volgt} was={wasVan(veld.naam)} herstel={herstel} />
                     ),
                   )}
                 </section>

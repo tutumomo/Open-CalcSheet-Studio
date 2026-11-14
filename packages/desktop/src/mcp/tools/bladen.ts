@@ -24,7 +24,7 @@ import {
 } from "../rekenen.ts";
 import {
   LEEG_BLAD, LEEG_BLAD_NAAM, LEEG_BLAD_TEKST, LEZEN, NIEUW, WEG, WIJZIGEN,
-  alsTekst, bekendeUitkomst, bladSoort, bladUit, fout, geenBlad, geenPdfBlad, idOptioneel, idVerplicht, invoerJson,
+  alsTekst, bekendeUitkomst, bladSoort, bladUit, fout, geenBlad, geenPdfBlad, gewijzigdeInvoer, idOptioneel, idVerplicht, invoerJson,
   kiesKeuze, korteNaam, objectSchema, ok, pdfUit, rekenBlad, resultaatJson, ruimUitkomstenOp, tekstOfGetal,
   veldenVan, vergeetBlad, zoekBlad,
 } from "./hulp.ts";
@@ -450,6 +450,8 @@ export const BLADTOOLS: McpToolDef[] = [
         tid = LEEG_BLAD;
       }
       const id = ctx.omgeving.acties.voegToe(tid, basis, bron);
+      // Opgeleverd met de standaardwaarden: wat de gebruiker daarna wijzigt, is te zien (P2-14).
+      ctx.omgeving.acties.zetOntwerp(id, {});
       let blad = zoekBlad(ctx.omgeving.stand(), id);
       if (naam && blad && blad.naam !== naam) {
         ctx.omgeving.acties.hernoem(id, naam);
@@ -461,7 +463,7 @@ export const BLADTOOLS: McpToolDef[] = [
         name: blad?.naam ?? naam,
         kind: "calculation",
         templateId: tid,
-        inputs: velden.map((v) => invoerJson(v, blad?.waarden ?? {}, bron)),
+        inputs: velden.map((v) => invoerJson(v, blad?.waarden ?? {}, bron, blad?.ontwerpWaarden ?? null)),
         ...(leesfout ? { parseError: leesfout } : {}),
       });
     },
@@ -569,7 +571,8 @@ export const BLADTOOLS: McpToolDef[] = [
       const data: Record<string, unknown> = {
         ...basis,
         source: blad.source,
-        inputs: velden.map((v) => invoerJson(v, blad.waarden, blad.source)),
+        inputs: velden.map((v) => invoerJson(v, blad.waarden, blad.source, blad.ontwerpWaarden ?? null)),
+        modifiedInputs: gewijzigdeInvoer(velden, blad),
         otherValues: Object.fromEntries(Object.entries(blad.waarden).filter(([k]) => !veldnamen.has(k))),
       };
       if (leesfout) data.parseError = leesfout;
@@ -603,7 +606,7 @@ export const BLADTOOLS: McpToolDef[] = [
         id: blad.id,
         name: blad.naam,
         lines: source.split("\n").length,
-        inputs: velden.map((v) => invoerJson(v, blad.waarden, blad.source)),
+        inputs: velden.map((v) => invoerJson(v, blad.waarden, blad.source, blad.ontwerpWaarden ?? null)),
         ...(leesfout ? { parseError: leesfout } : {}),
       });
     },
@@ -614,13 +617,16 @@ export const BLADTOOLS: McpToolDef[] = [
     kind: "mutate",
     description:
       "Set input values of a sheet: an input field or a choice list (see inputs in sheet_get). Pass name and value for one value, or values as an object {name: value} for several. " +
-      "For a choice list pass the option value (the option text is also accepted). Numbers may be given as number or text ('4.2' or '4,2'), in the unit of the field. Nothing is written if one value is invalid.",
+      "For a choice list pass the option value (the option text is also accepted). Numbers may be given as number or text ('4.2' or '4,2'), in the unit of the field. Nothing is written if one value is invalid. " +
+      "The values you set are recorded as the delivered design values: when the user later changes a field in the app, sheet_get and sheet_evaluate report it as modified with its original value. " +
+      "Pass design=false to change a value the way a user does, leaving the delivered value as it was.",
     inputSchema: objectSchema(
       {
         id: idVerplicht,
         name: { type: "string", minLength: 1, description: "Input name." },
         value: { ...tekstOfGetal, description: "New value." },
         values: { type: "object", description: "Several values at once: {name: value}.", additionalProperties: tekstOfGetal },
+        design: { type: "boolean", description: "Record the values as the delivered design values. Default true; false leaves the delivered values and so marks the fields as modified." },
       },
       ["id"],
     ),
@@ -670,8 +676,54 @@ export const BLADTOOLS: McpToolDef[] = [
           zetten.push([naam, tekst]);
         }
       }
-      for (const [naam, waarde] of zetten) ctx.omgeving.acties.zetWaarde(blad.id, naam, waarde);
-      return ok({ id: blad.id, name: blad.naam, set: Object.fromEntries(zetten) });
+      const ontwerp = args.design !== false;
+      for (const [naam, waarde] of zetten) ctx.omgeving.acties.zetWaarde(blad.id, naam, waarde, ontwerp);
+      const nu = zoekBlad(ctx.omgeving.stand(), blad.id) ?? blad;
+      return ok({ id: blad.id, name: blad.naam, set: Object.fromEntries(zetten), design: ontwerp, modifiedInputs: gewijzigdeInvoer(velden, nu) });
+    },
+  },
+
+  {
+    name: "sheet_reset_input",
+    kind: "mutate",
+    description:
+      "Put input values of a sheet back to the delivered design values (the values set with sheet_set_input, or the defaults of the calculation text for fields never set). " +
+      "Pass names for some fields; without names every modified field goes back. One undo step. A sheet that was never filled in through the API tracks no design values: then nothing is reset and tracked is false.",
+    inputSchema: objectSchema(
+      {
+        id: idVerplicht,
+        names: { type: "array", items: { type: "string" }, description: "Only these inputs. Default: every modified input." },
+      },
+      ["id"],
+    ),
+    annotations: WIJZIGEN,
+    rest: [{ method: "POST", path: "/sheets/{id}/inputs/reset" }],
+    handler: (args, ctx) => {
+      const gevonden = bladUit(args, ctx, false);
+      if ("fout" in gevonden) return gevonden.fout;
+      const { blad } = gevonden;
+      const pdf = geenPdfBlad(blad);
+      if (pdf) return pdf;
+      const { velden } = veldenVan(blad.source);
+      const gewijzigd = gewijzigdeInvoer(velden, blad);
+      let terug = gewijzigd;
+      if (Array.isArray(args.names)) {
+        const namen = args.names.filter((n): n is string => typeof n === "string");
+        const onbekend = namen.find((n) => !velden.some((v) => v.naam === n));
+        if (onbekend !== undefined) {
+          return fout("VALIDATION", `Sheet "${blad.naam}" has no input "${onbekend}".`, { inputs: velden.map((v) => v.naam) });
+        }
+        terug = gewijzigd.filter((g) => namen.includes(g.name));
+      }
+      if (terug.length > 0) ctx.omgeving.acties.herstelInvoer(blad.id, terug.map((g) => g.name));
+      const nu = zoekBlad(ctx.omgeving.stand(), blad.id) ?? blad;
+      return ok({
+        id: blad.id,
+        name: blad.naam,
+        tracked: blad.ontwerpWaarden !== undefined,
+        reset: Object.fromEntries(terug.map((g) => [g.name, g.original])),
+        modifiedInputs: gewijzigdeInvoer(velden, nu),
+      });
     },
   },
 
@@ -1033,6 +1085,8 @@ export const BLADTOOLS: McpToolDef[] = [
         ...resultaatJson(resultaat),
         warnings: waarschuwingen,
         ucValues: ucWaarden(getallen),
+        // P2-14: velden die na de oplevering gewijzigd zijn, met de opgeleverde waarde.
+        modifiedInputs: gewijzigdeInvoer(veldenVan(blad.source).velden, blad),
       };
       const niet = nietKlaar(uitkomst.d.nodes);
       data.notConverged = niet;

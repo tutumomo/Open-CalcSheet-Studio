@@ -44,6 +44,10 @@ import { readFileSync as leesBestand } from "node:fs";
 import { fileURLToPath as naarPad } from "node:url";
 import { maakApp, maakContext, PROJECT_ID, RAPPORT_ID } from "./lib/mcpproef.mjs";
 import { laadTemplate } from "./lib/refcheck.mjs";
+import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "../packages/desktop/src/store/projectBestand.ts";
+import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
+import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
+import { gelijkeInvoer, isGewijzigd, opgeleverd } from "../packages/desktop/src/store/ontwerpInvoer.ts";
 
 let fouten = 0;
 let aantal = 0;
@@ -113,7 +117,7 @@ console.log("Dispatcher:");
   const verwacht = [
     "project_get", "project_set_data", "modules_list", "sheet_add", "sheet_get", "sheet_set_source",
     "sheet_set_input", "sheet_rename", "sheet_remove", "sheet_select", "sheet_evaluate", "calc_evaluate",
-    "module_schema", "sheet_read", "sheet_run", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
+    "module_schema", "sheet_read", "sheet_run", "sheet_reset_input", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
   ];
   meld(verwacht.every((n) => namen.includes(n)), "tools/list: de twaalf oorspronkelijke tools", verwacht.filter((n) => !namen.includes(n)).join());
   meld(namen.length === MCP_TOOLS.length && new Set(namen).size === namen.length, `tools/list: alle ${MCP_TOOLS.length} tools, elk één keer`);
@@ -643,6 +647,102 @@ console.log("Inhoud per bladsoort (sheet_read, sheet_run):");
   for (const id of [ss.data.id, gr.data.id, jp.data.id, mr.data.id, dr.data.id]) await roep("sheet_remove", { id });
   zetWerkmapKern(null);
   void pakWerkmapUit;
+}
+
+// ── 5g. Opgeleverde invoer: modified, original, sheet_reset_input (P2-14) ───
+console.log("Opgeleverde invoer (modified, original, sheet_reset_input):");
+{
+  // `gelijk` hierboven telt zelf mee; hier is een vergelijking nodig die alleen antwoordt.
+  const zelfde = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  // De regels zelf.
+  meld(gelijkeInvoer("5", "5.0") && gelijkeInvoer(" 4,5 ", "4.5") && !gelijkeInvoer("5", "6") && !gelijkeInvoer("a", "b"), "gelijke invoer: tekst of getalwaarde");
+  meld(opgeleverd(undefined, "x", "3") === undefined && opgeleverd({}, "x", "3") === "3" && opgeleverd({ x: "7" }, "x", "3") === "7", "opgeleverd: niets bijgehouden, standaard, of de vastgelegde waarde");
+  meld(!isGewijzigd(undefined, "x", "9", "3") && !isGewijzigd({}, "x", undefined, "3") && isGewijzigd({}, "x", "9", "3") && !isGewijzigd({ x: "9" }, "x", "9.0", "3"), "gewijzigd: alleen tegenover wat is opgeleverd");
+
+  const veld = (r, naam) => r.data.inputs.find((v) => v.name === naam);
+  const toe = await roep("sheet_add", { templateId: "tw-rc-beam", name: "交付梁" });
+  const id = toe.data.id;
+  const ex = () => app.s.exemplaren.find((e) => e.id === id);
+  meld(!toe.isError && zelfde(ex().ontwerpWaarden, {}), "sheet_add: het blad houdt de opgeleverde invoer bij", JSON.stringify(ex()?.ontwerpWaarden));
+  const g0 = await roep("sheet_get", { id });
+  meld(g0.data.inputs.length > 5 && g0.data.inputs.every((v) => v.modified === false && v.original === v.default), "sheet_get: elk veld modified=false, original = de standaardwaarde");
+  meld(zelfde(g0.data.modifiedInputs, []), "sheet_get: modifiedInputs leeg");
+
+  // De agent levert op: geen wijziging.
+  const s1 = await roep("sheet_set_input", { id, values: { M_u: "180", support_type: "2" } });
+  meld(!s1.isError && s1.data.design === true && zelfde(s1.data.modifiedInputs, []), "sheet_set_input: standaard de opgeleverde waarde, dus niet gewijzigd", JSON.stringify(s1.data));
+  meld(zelfde(ex().ontwerpWaarden, { M_u: "180", support_type: "2" }), "de opgeleverde waarden staan bij het blad", JSON.stringify(ex().ontwerpWaarden));
+  const e1 = await roep("sheet_evaluate", { id });
+  meld(!e1.isError && zelfde(e1.data.modifiedInputs, []), "sheet_evaluate: modifiedInputs leeg na opleveren");
+
+  // De gebruiker wijzigt in de app: zetWaarde zonder `ontwerp`, zoals het invoerpaneel.
+  app.omgeving.acties.zetWaarde(id, "M_u", "420");
+  const g1 = await roep("sheet_get", { id });
+  const mu = veld(g1, "M_u");
+  meld(mu.value === "420" && mu.modified === true && mu.original === "180", "na een wijziging in de app: modified=true met original", JSON.stringify(mu));
+  meld(veld(g1, "V_u").modified === false && veld(g1, "support_type").modified === false, "de andere velden blijven ongewijzigd");
+  meld(zelfde(g1.data.modifiedInputs, [{ name: "M_u", value: "420", original: "180" }]), "sheet_get: modifiedInputs noemt het veld", JSON.stringify(g1.data.modifiedInputs));
+  const e2 = await roep("sheet_evaluate", { id });
+  meld(zelfde(e2.data.modifiedInputs, [{ name: "M_u", value: "420", original: "180" }]) && e2.data.uc !== e1.data.uc, "sheet_evaluate: nieuwe uitkomst én de wijziging gemeld", `${e1.data.uc} → ${e2.data.uc}`);
+
+  // Dezelfde getalwaarde anders geschreven is geen wijziging.
+  app.omgeving.acties.zetWaarde(id, "M_u", "180.0");
+  meld(zelfde((await roep("sheet_get", { id })).data.modifiedInputs, []), "180.0 tegenover 180: niet gewijzigd");
+  app.omgeving.acties.zetWaarde(id, "M_u", "420");
+
+  // design=false: de API wijzigt zoals een gebruiker; een veld zonder eigen opgeleverde waarde meet tegen de standaard.
+  const s2 = await roep("sheet_set_input", { id, name: "V_u", value: 150, design: false });
+  meld(!s2.isError && s2.data.design === false && s2.data.modifiedInputs.length === 2, "sheet_set_input design=false: telt als wijziging", JSON.stringify(s2.data.modifiedInputs));
+  meld(veld(await roep("sheet_get", { id }), "V_u").original === "120" && ex().ontwerpWaarden.V_u === undefined, "original is dan de standaardwaarde van de rekentekst");
+
+  // Herstellen: één veld, onbekend veld, alles.
+  const onbekend = await roep("sheet_reset_input", { id, names: ["bestaat_niet"] });
+  meld(onbekend.isError && onbekend.data.code === "VALIDATION" && ex().waarden.M_u === "420", "sheet_reset_input: onbekend veld geweigerd, niets hersteld");
+  const voor = app.acties.length;
+  const r1 = await roep("sheet_reset_input", { id, names: ["M_u"] });
+  meld(!r1.isError && r1.data.tracked === true && zelfde(r1.data.reset, { M_u: "180" }) && ex().waarden.M_u === "180", "sheet_reset_input: één veld terug naar de opgeleverde waarde", JSON.stringify(r1.data));
+  meld(zelfde(r1.data.modifiedInputs.map((m) => m.name), ["V_u"]), "het andere gewijzigde veld blijft staan");
+  const r2 = await roep("sheet_reset_input", { id });
+  meld(zelfde(r2.data.reset, { V_u: "120" }) && ex().waarden.V_u === undefined && zelfde(r2.data.modifiedInputs, []), "sheet_reset_input zonder namen: alles terug; zonder opgeleverde waarde naar de standaard", JSON.stringify(r2.data));
+  meld(app.acties.slice(voor).filter((a) => a === "herstelInvoer").length === 2, "elke herstelling is één stap in de geschiedenis");
+  const r3 = await roep("sheet_reset_input", { id });
+  meld(!r3.isError && zelfde(r3.data.reset, {}) && app.acties.slice(voor).filter((a) => a === "herstelInvoer").length === 2, "niets gewijzigd: niets hersteld en geen stap");
+  const e3 = await roep("sheet_evaluate", { id });
+  meld(e3.data.uc === e1.data.uc && e3.data.passes === e1.data.passes, "na herstellen dezelfde uitkomst als bij opleveren", `${e1.data.uc} / ${e3.data.uc}`);
+  await roep("undo");
+  meld(ex().waarden.V_u === "150", "ongedaan maken zet de wijziging terug");
+  await roep("sheet_reset_input", { id });
+
+  // Acceptatie: dezelfde waarde via de API of in de app geeft dezelfde uitkomst.
+  const s3 = await roep("sheet_set_input", { id, name: "M_u", value: "420" });
+  const e4 = await roep("sheet_evaluate", { id });
+  meld(!s3.isError && e4.data.uc === e2.data.uc && zelfde(e4.data.modifiedInputs, []), "M_u = 420 via de API rekent als in de app, en is dan de opgeleverde waarde", `${e2.data.uc} / ${e4.data.uc}`);
+
+  // Een blad dat in de app is ingevoegd houdt niets bij, tot de API er iets oplevert.
+  const los = app.omgeving.acties.voegToe("tw-rc-beam", "手動梁", app.sjablonen["tw-rc-beam"]);
+  app.omgeving.acties.zetWaarde(los, "b", "350");
+  const g2 = await roep("sheet_get", { id: los });
+  meld(g2.data.inputs.every((v) => v.modified === false && !("original" in v)) && zelfde(g2.data.modifiedInputs, []), "een blad uit de app: modified=false en geen original");
+  const r4 = await roep("sheet_reset_input", { id: los });
+  meld(!r4.isError && r4.data.tracked === false && zelfde(r4.data.reset, {}), "sheet_reset_input op zo'n blad: tracked=false, niets hersteld");
+  await roep("sheet_set_input", { id: los, name: "h", value: "700" });
+  const g3 = await roep("sheet_get", { id: los });
+  meld(veld(g3, "b").modified === false && veld(g3, "b").original === "350" && veld(g3, "h").original === "700", "de eerste oplevering neemt de bestaande invoer mee: wat er al stond is niet 'gewijzigd'", JSON.stringify(veld(g3, "b")));
+
+  // module_schema is geen blad: geen modified/original.
+  const schema = await roep("module_schema", { templateId: "tw-rc-beam" });
+  meld(schema.data.inputs.every((v) => !("modified" in v) && !("original" in v)), "module_schema: geen modified of original");
+
+  // Het projectbestand: opslaan en openen houdt de opgeleverde invoer, ook een lege.
+  app.omgeving.acties.zetWaarde(id, "M_u", "300");
+  const project = { versie: PROJECT_FORMAAT_VERSIE, naam: "交付", gegevens: legeGegevens(), exemplaren: [ex(), { ...ex(), id: "leeg", ontwerpWaarden: {} }, (() => { const { ontwerpWaarden: _weg, ...rest } = ex(); return { ...rest, id: "zonder" }; })()] };
+  const tekst = bouwProjectBestand(project, bladenVoorIfc(project));
+  const terug = leesProjectBestand(tekst, "x").exemplaren;
+  meld(zelfde(terug[0].ontwerpWaarden, ex().ontwerpWaarden) && terug[0].waarden.M_u === "300", "opslaan en openen: dezelfde opgeleverde invoer naast de gewijzigde", JSON.stringify(terug[0].ontwerpWaarden));
+  meld(zelfde(terug[1].ontwerpWaarden, {}) && terug[2].ontwerpWaarden === undefined, "een lege opgeleverde invoer blijft 'bijhouden'; zonder blijft zonder");
+  meld(Object.keys(JSON.parse(tekst).schemas ?? {}).includes("ocss::blad::ontwerp"), "het attribuut heeft een schema in het bestand");
+
+  for (const weg of [id, los]) await roep("sheet_remove", { id: weg });
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────

@@ -128,6 +128,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
       // Doorgerekend: zoals het blad ze nog gebruikt, met die van zijn varianten (projectIfcx.ts).
       toetsingen: uitkomsten.has(ex.id) ? uitkomsten.get(ex.id)!.toetsingen : gebruikteToetsingen(ex.toetsingen, undefined),
       ...(ex.varianten ? { varianten: ex.varianten } : {}),
+      ...(ex.ontwerpWaarden ? { ontwerpWaarden: ex.ontwerpWaarden } : {}),
     })),
   });
   return JSON.stringify(doc, null, 2);
@@ -247,6 +248,8 @@ export function normaliseerExemplaar(x: unknown, naam: string): Exemplaar | null
   // Varianten van het blad (store/varianten.ts); alleen een rekenblad rekent ze door.
   const varianten = leesVarianten(e.varianten);
   if (varianten) ex.varianten = varianten;
+  // De opgeleverde invoer (sheet_set_input); ook een lege lijst telt: het blad houdt wijzigingen bij.
+  if (e.ontwerpWaarden && typeof e.ontwerpWaarden === "object" && !Array.isArray(e.ontwerpWaarden)) ex.ontwerpWaarden = leesWaarden(e.ontwerpWaarden);
   return ex;
 }
 

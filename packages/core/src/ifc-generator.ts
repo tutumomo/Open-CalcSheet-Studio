@@ -92,6 +92,8 @@ export interface IfcCalcSheet {
   toetsingen?: Record<string, VastgelegdeToets>;
   /** Varianten van het blad: andere invoer naast het blad, met per variant alleen de eigen waarden. */
   varianten?: VariantenGegevens;
+  /** De opgeleverde invoer: wat in `waarden` daarvan afwijkt, is na de oplevering gewijzigd. */
+  ontwerpWaarden?: Record<string, string>;
   /** Het oordeel zoals de app het leest; zonder beslist de maatgevende UC. */
   resultaat?: BladOordeel;
   /** Waarom het blad niet doorgerekend kon worden. */

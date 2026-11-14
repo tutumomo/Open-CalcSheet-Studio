@@ -59,6 +59,7 @@ export interface BladVoorIfc {
   marimo?: MarimoNotebook;
   toetsingen?: Record<string, VastgelegdeToets>;
   varianten?: Varianten;
+  ontwerpWaarden?: Record<string, string>;
 }
 
 /** Wat dit bestand van een project nodig heeft. */
@@ -96,6 +97,7 @@ function bladVoorIfc(ex: BladVoorIfc, gegevens: Record<string, string>): IfcCalc
     jupyter: ex.jupyter,
     marimo: ex.marimo,
     ...(ex.varianten ? { varianten: ex.varianten } : {}),
+    ...(ex.ontwerpWaarden ? { ontwerpWaarden: ex.ontwerpWaarden } : {}),
     nodes: [],
   };
   if (!isLosBlad(ex)) {

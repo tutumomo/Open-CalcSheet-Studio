@@ -14,6 +14,7 @@ import { isTekenBlad } from "../../store/tekenBlad.ts";
 import { isJupyterBlad } from "../../store/jupyterBlad.ts";
 import { isMarimoBlad } from "../../store/marimoBlad.ts";
 import { jsonGetal, leesBron, rekenDoor, type Doorrekening } from "../rekenen.ts";
+import { isGewijzigd, opgeleverd } from "../../store/ontwerpInvoer.ts";
 
 // ── Resultaten ──────────────────────────────────────────────────────────────
 
@@ -128,7 +129,13 @@ export function veldLabels(bron: string): Record<string, string> {
   return uit;
 }
 
-export function invoerJson(v: Invoerveld, waarden: Record<string, string>, bron = ""): Record<string, unknown> {
+export function invoerJson(
+  v: Invoerveld,
+  waarden: Record<string, string>,
+  bron = "",
+  /** De opgeleverde invoer van het blad; `null` = het blad houdt niets bij; weggelaten = geen blad (module_schema). */
+  ontwerp?: Record<string, string> | null,
+): Record<string, unknown> {
   const gezet = waarden[v.naam] !== undefined;
   const waarde = gezet ? waarden[v.naam] : v.beginwaarde;
   const uit: Record<string, unknown> = {
@@ -145,7 +152,21 @@ export function invoerJson(v: Invoerveld, waarden: Record<string, string>, bron 
     const gekozen = v.keuzes.find((k) => k.value === waarde);
     if (gekozen) uit.selectedText = gekozen.text;
   }
+  if (ontwerp !== undefined) {
+    // P2-14: is de opgeleverde waarde daarna gewijzigd, en wat was hij.
+    uit.modified = isGewijzigd(ontwerp ?? undefined, v.naam, waarden[v.naam], v.beginwaarde);
+    const was = opgeleverd(ontwerp ?? undefined, v.naam, v.beginwaarde);
+    if (was !== undefined) uit.original = was;
+  }
   return uit;
+}
+
+/** De gewijzigde velden van een blad: naam, huidige en opgeleverde waarde. */
+export function gewijzigdeInvoer(velden: Invoerveld[], blad: { waarden: Record<string, string>; ontwerpWaarden?: Record<string, string> }): { name: string; value: string; original: string }[] {
+  if (!blad.ontwerpWaarden) return [];
+  return velden
+    .filter((v) => isGewijzigd(blad.ontwerpWaarden, v.naam, blad.waarden[v.naam], v.beginwaarde))
+    .map((v) => ({ name: v.naam, value: blad.waarden[v.naam] ?? v.beginwaarde, original: opgeleverd(blad.ontwerpWaarden, v.naam, v.beginwaarde)! }));
 }
 
 /** Een keuzelijstwaarde herkennen aan waarde of tekst. */

@@ -424,7 +424,13 @@
     "geenVelden": "This sheet shows no input fields at the moment.",
     "uitleg": "Calculates when you leave a field, press Enter or pause for a moment.",
     "verbergBeeld": "Hide drawing",
-    "toonBeeld": "Show drawing"
+    "toonBeeld": "Show drawing",
+    "gewijzigd": "Changed from the delivered input: {{aantal}}",
+    "omgeslagen": "With the delivered input the sheet passed; it no longer does.",
+    "herstel": "Restore {{waarde}}",
+    "herstelAlles": "Restore all",
+    "neemOver": "Keep as delivered",
+    "neemOverUitleg": "The current input becomes the delivered input from now on; the marks disappear."
   },
   "vloerOpPalen": {
     "plattegrond": "Plan",

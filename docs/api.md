@@ -137,7 +137,8 @@ de alleen-lezenstand.
 | `POST /sheets/pdf` | `sheet_add_pdf` | wijzigen | path, base64, fileName, force, name |
 | `GET /sheets/{id}` | `sheet_get` | lezen | id, evaluate, full |
 | `PUT /sheets/{id}/source` | `sheet_set_source` | wijzigen | **id**, **source** |
-| `PATCH /sheets/{id}/inputs` | `sheet_set_input` | wijzigen | **id**, name, value, values |
+| `PATCH /sheets/{id}/inputs` | `sheet_set_input` | wijzigen | **id**, name, value, values, design |
+| `POST /sheets/{id}/inputs/reset` | `sheet_reset_input` | wijzigen | **id**, names |
 | `PUT /sheets/{id}/pdf` | `sheet_set_pdf` | wijzigen | **id**, path, base64, fileName, force |
 | `PUT /sheets/{id}/markdown` | `sheet_set_markdown` | wijzigen | **id**, **text**, fileName, headingsInToc |
 | `PUT /sheets/{id}/graph` | `sheet_set_graph` | wijzigen | **id**, **graph** |

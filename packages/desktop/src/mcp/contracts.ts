@@ -48,6 +48,8 @@ export interface McpBlad {
   templateId: string;
   source: string;
   waarden: Record<string, string>;
+  /** De opgeleverde invoer (store/ontwerpInvoer.ts); ontbreekt als het blad niets bijhoudt. */
+  ontwerpWaarden?: Record<string, string>;
   pdf?: McpPdf;
   xlsx?: McpPdf;
   md?: McpMarkdown;
@@ -154,7 +156,12 @@ export interface McpOmgeving {
     verwijder(id: string): void;
     selecteer(id: string): void;
     zetBron(id: string, source: string): void;
-    zetWaarde(id: string, naam: string, waarde: string): void;
+    /** `ontwerp`: de waarde geldt ook als opgeleverd, niet als wijziging erop. */
+    zetWaarde(id: string, naam: string, waarde: string, ontwerp?: boolean): void;
+    /** Een nieuw blad gaat wijzigingen bijhouden; hoort bij het toevoegen (geen eigen stap). */
+    zetOntwerp(id: string, ontwerp: Record<string, string>): void;
+    /** De genoemde velden terug naar wat is opgeleverd; één stap. */
+    herstelInvoer(id: string, namen: string[]): void;
     zetGegeven(naam: string, waarde: string): void;
     zetProjectNaam(naam: string): void;
     zetVerborgen(onderdeel: "gegevens" | "rapport", verborgen: boolean): void;

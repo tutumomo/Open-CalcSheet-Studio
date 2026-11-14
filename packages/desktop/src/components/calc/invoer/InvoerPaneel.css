@@ -194,6 +194,75 @@
   color: var(--oa-text-muted);
 }
 
+/* ── Opgeleverde invoer (store/ontwerpInvoer.ts) ─────────────────────────────
+   Alleen bij een blad dat de opgeleverde invoer bijhoudt (.ip-volgt): een vijfde kolom
+   voor de herstelknop, zodat de velden op één lijn blijven. */
+.ip-volgt .ip-rij {
+  grid-template-columns: 58px minmax(0, 1fr) 92px 50px 20px;
+}
+.ip-volgt .ip-keuze {
+  grid-template-columns: minmax(0, 1fr) 150px 20px;
+}
+.ip-gewijzigd .ip-veld,
+.ip-gewijzigd .themed-select-trigger {
+  border-color: var(--oa-warning);
+  background: var(--oa-warning-tint);
+}
+.ip-gewijzigd .ip-naam,
+.ip-gewijzigd.ip-keuze .ip-label {
+  color: var(--oa-warning);
+}
+.ip-herstel {
+  box-sizing: border-box;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small);
+  background: none;
+  color: var(--oa-warning);
+  font-size: var(--oa-size-body);
+  line-height: 1;
+  cursor: pointer;
+}
+.ip-herstel:hover {
+  border-color: var(--oa-warning);
+  background: var(--oa-warning-tint);
+}
+.ip-herstel:focus-visible {
+  outline: 2px solid var(--oa-focus);
+  outline-offset: -1px;
+}
+
+/* Boven het formulier: hoeveel er gewijzigd is, en of het blad daardoor niet meer voldoet. */
+.ip-melding {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: var(--oa-space-sm);
+  padding: var(--oa-space-xs) var(--oa-space-md);
+  border-bottom: 1px solid var(--oa-border);
+  border-left: 3px solid var(--oa-warning);
+  background: var(--oa-warning-tint);
+  color: var(--oa-text);
+}
+.ip-melding > span {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+.ip-melding > button {
+  flex: none;
+  padding: var(--oa-space-hairline) var(--oa-space-md);
+}
+.ip-melding.ip-omgeslagen {
+  border-left-color: var(--oa-error);
+  background: var(--oa-error-tint);
+}
+.ip-melding.ip-omgeslagen strong {
+  color: var(--oa-error);
+}
+
 /* Eén regel: de hoogte van het paneel is voor het beeld en het formulier. */
 .ip-voet {
   flex: none;
