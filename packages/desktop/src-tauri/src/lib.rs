@@ -27,6 +27,8 @@ mod jupyter_omgeving;
 // Buildkenmerken (editie, tag, commit, bouwdatum): zie src/kenmerken.rs.
 mod kenmerken;
 mod mcp_bridge;
+// Externe MCP-client (stdio/HTTP) voor de AI-zijbalk (P2-15).
+mod mcp_client;
 mod rapport_pdf;
 
 #[cfg(feature = "rapportengine")]
@@ -252,6 +254,8 @@ pub fn run() {
         // De stopknop van de AI-zijbalk en de tijdelijke OAuth-sessie.
         .manage(ai::AiState::default())
         .manage(ai::OAuthState::default())
+        // Verbonden externe MCP-servers voor de AI-zijbalk.
+        .manage(mcp_client::McpClientState::default())
         .invoke_handler(tauri::generate_handler![
             engine_generate_pdf,
             engine_save_pdf,
@@ -285,13 +289,19 @@ pub fn run() {
             ai::ai_list_models,
             ai::ai_vraag,
             ai::ai_stop,
+            mcp_client::mcp_extern_connect,
+            mcp_client::mcp_extern_disconnect,
+            mcp_client::mcp_extern_status,
+            mcp_client::mcp_extern_call,
+            mcp_client::mcp_extern_set_secret,
         ])
         .build(context)
         .expect("error while building tauri application")
         .run(|app, event| {
-            // Het kindproces van FEM Studio gaat mee dicht.
+            // Het kindproces van FEM Studio en externe stdio MCP-servers gaan mee dicht.
             if let tauri::RunEvent::Exit = event {
                 tauri::Manager::state::<fem_studio::FemStudio>(app).stop();
+                tauri::Manager::state::<mcp_client::McpClientState>(app).stop_all();
             }
         });
 }

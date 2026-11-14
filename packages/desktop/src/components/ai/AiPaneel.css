@@ -375,6 +375,55 @@
   padding: 6px 12px;
 }
 
+.ai-mcp-kaart {
+  border: 1px solid var(--oa-border-subtle);
+  border-radius: var(--oa-radius-s, 4px);
+  padding: 6px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--oa-surface, transparent);
+}
+
+.ai-mcp-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ai-mcp-titel {
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-mcp-status {
+  font-size: var(--oa-size-small, 0.88em);
+  color: var(--oa-text-muted);
+}
+
+.ai-mcp-status-ok {
+  color: var(--oa-success);
+}
+
+.ai-mcp-check {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--oa-size-small, 0.92em);
+}
+
+.ai-mcp-tools {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  max-height: 140px;
+  overflow: auto;
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 0.86em;
+}
+
 .ai-voet {
   border-top: 1px solid var(--oa-border-subtle);
   padding: 8px 12px;

@@ -33,6 +33,12 @@ export interface LaatsteUitkomst {
   fouten?: string[];
 }
 
+export interface ExternServerKort {
+  id: string;
+  naam: string;
+  tools: string[];
+}
+
 export interface SysteemOpties {
   /** De taal van de app; de assistent antwoordt daarin. */
   taal: string;
@@ -42,6 +48,8 @@ export interface SysteemOpties {
   uitkomst?: LaatsteUitkomst | null;
   /** De bladen die de gebruiker met `@naam` aanwees; leeg = alles. */
   bereik?: BladKort[];
+  /** Verbonden externe MCP-servers (bijv. regs, ontwerp-engine, OpenCADStudio). */
+  externeServers?: ExternServerKort[];
   /** Hoeveel tekens rekentekst er mee mag (standaard 8000). */
   maxBron?: number;
 }
@@ -115,6 +123,15 @@ export function bouwSysteemtekst(opties: SysteemOpties): string {
     ];
     if (u.warnings && u.warnings.length > 0) regels.push(`warnings: ${u.warnings.join("; ")}`);
     if (u.fouten && u.fouten.length > 0) regels.push(`errors: ${u.fouten.slice(0, 10).join("; ")}`);
+    delen.push(regels.join("\n"));
+  }
+
+  if (opties.externeServers && opties.externeServers.length > 0) {
+    const regels = [`\n# Connected external MCP servers`];
+    for (const s of opties.externeServers) {
+      const lijst = s.tools.length > 0 ? s.tools.join(", ") : "(no tools)";
+      regels.push(`- ${s.naam} (${s.id}): ${lijst}`);
+    }
     delen.push(regels.join("\n"));
   }
 

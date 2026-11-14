@@ -36,6 +36,16 @@ import {
   verwachteRedirectUri,
   vulOAuthAan,
 } from "../packages/desktop/src/components/ai/profielen.ts";
+import {
+  MCP_EXTERN_SJABLONEN,
+  bouwExternToolKaart,
+  externeToolNaam,
+  formatArgsTekst,
+  leesEnv,
+  migreerMcpServers,
+  parseArgsTekst,
+  schrijfEnv,
+} from "../packages/desktop/src/components/ai/mcpExtern.ts";
 
 let fouten = 0;
 let aantal = 0;
@@ -431,6 +441,78 @@ toets("leesKoppen en schrijfKoppen verwerken extra headers zonder lege regels",
   koppen["X-Api-Version"] === "2026-01" &&
   koppen["Authorization"] === "negeer" &&
   schrijfKoppen({ "X-A": "1", "X-B": "2" }).includes("X-A: 1"));
+
+// ── 6. Externe MCP-servers (stdio / HTTP) ───────────────────────────────────
+console.log("\n6. Externe MCP-servers (stdio / HTTP)");
+toets("MCP-sjablonen bevatten regs, OpenCADStudio, design-engine en custom http",
+  MCP_EXTERN_SJABLONEN.some((s) => s.id === "regs" && s.transport === "stdio") &&
+  MCP_EXTERN_SJABLONEN.some((s) => s.id === "opencadstudio" && s.transport === "stdio") &&
+  MCP_EXTERN_SJABLONEN.some((s) => s.id === "custom-http" && s.transport === "http"));
+
+const argLijst = parseArgsTekst('-E -P "C:\\pad met spaties\\regs_server.py" --mcp');
+const argWin = parseArgsTekst('"--file" "D:\\Civil\\mijn map\\a.calc"');
+toets("parseArgsTekst en formatArgsTekst behouden aanhalingstekens, spaties en Windows-paden",
+  argLijst.length === 4 &&
+  argLijst[2] === "C:\\pad met spaties\\regs_server.py" &&
+  formatArgsTekst(argLijst).includes('"C:\\pad met spaties\\regs_server.py"') &&
+  argWin[1] === "D:\\Civil\\mijn map\\a.calc",
+  { argLijst, argWin });
+
+const envMap = leesEnv("# commentaar\nPYTHONIOENCODING=utf-8\nFOO=bar=baz\n");
+toets("leesEnv en schrijfEnv verwerken KEY=VALUE-regels",
+  envMap.PYTHONIOENCODING === "utf-8" &&
+  envMap.FOO === "bar=baz" &&
+  schrijfEnv(envMap).includes("PYTHONIOENCODING=utf-8"));
+
+const langNaam = externeToolNaam("opencadstudio_cad_server", "very_long_command_that_exceeds_sixty_four_characters_easily");
+toets("externeToolNaam blijft <= 64 tekens en gebruikt veilige tekens",
+  langNaam.length <= 64 && /^[a-zA-Z0-9_-]+$/.test(langNaam),
+  langNaam);
+
+const extServers = migreerMcpServers([
+  { id: "regs", naam: "Taiwan Regs", actief: true, transport: "stdio", command: "python3", args: ["regs_server.py", "--mcp"] },
+  { naam: "OpenCADStudio", actief: false, transport: "http", url: "http://127.0.0.1:9000/mcp", headers: { "X-Client": "ocss" } },
+]);
+toets("migreerMcpServers maakt geldige configs met unieke id's",
+  extServers.length === 2 &&
+  extServers[0].id === "regs" &&
+  extServers[0].actief === true &&
+  extServers[1].transport === "http" &&
+  extServers[1].headers?.["X-Client"] === "ocss",
+  extServers);
+
+const { gereedschap: extTools, kaart: extKaart } = bouwExternToolKaart(
+  extServers,
+  {
+    regs: {
+      id: "regs",
+      verbonden: true,
+      server_naam: "regs-mcp",
+      tools: [
+        { server_id: "regs", naam: "regs_ask", beschrijving: "Zoek norm", schema: { type: "object" }, read_only: true, destructive: false },
+        { server_id: "regs", naam: "regs_write", beschrijving: "Schrijf iets", schema: { type: "object" }, read_only: false, destructive: true },
+      ],
+      heeft_geheim: false,
+    },
+  },
+  ["sheet_get"],
+);
+toets("bouwExternToolKaart koppelt verbonden tools terug naar originele server en toolnaam",
+  extTools.length === 2 &&
+  extKaart.get("mcp__regs__regs_ask")?.tool.naam === "regs_ask" &&
+  extKaart.get("mcp__regs__regs_ask")?.tool.read_only === true &&
+  extKaart.get("mcp__regs__regs_write")?.tool.read_only === false,
+  extTools);
+
+const promptMetExt = bouwSysteemtekst({
+  taal: "zh-TW",
+  projectNaam: "Demo",
+  bladen: [],
+  actief: null,
+  externeServers: [{ id: "regs", naam: "regs-mcp", tools: ["mcp__regs__regs_ask"] }],
+});
+toets("bouwSysteemtekst noemt verbonden externe MCP-servers",
+  promptMetExt.includes("Connected external MCP servers") && promptMetExt.includes("mcp__regs__regs_ask"));
 
 console.log(fouten === 0 ? `\nAI-zijbalk: ${aantal} controles, alle groen.` : `\n${fouten} van ${aantal} controles gezakt.`);
 process.exit(fouten === 0 ? 0 : 1);

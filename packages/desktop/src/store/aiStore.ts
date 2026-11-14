@@ -41,9 +41,23 @@ import { voerToolUit } from "../mcp/uitvoeren.ts";
 import { liveOmgeving } from "../mcp/omgeving.ts";
 import { useMcpStatus } from "../mcp/status.ts";
 import { MCP_SERVERNAAM } from "../mcp/koppeling.ts";
-import { bouwSysteemtekst, parseBereik, type ActiefBlad, type BladKort, type LaatsteUitkomst } from "../components/ai/prompt.ts";
+import { bouwSysteemtekst, parseBereik, type ActiefBlad, type BladKort, type ExternServerKort, type LaatsteUitkomst } from "../components/ai/prompt.ts";
 import { voerVraagUit, type Antwoord, type Goedkeuring, type Stap, type ToolUitkomst } from "../components/ai/agent.ts";
 import { DESTRUCTIEF } from "../components/ai/beleid.ts";
+import {
+  MCP_EXTERN_SJABLONEN,
+  bouwExternToolKaart,
+  migreerMcpServers,
+  type McpExternServerConfig,
+} from "../components/ai/mcpExtern.ts";
+import {
+  mcpExternCall,
+  mcpExternConnect,
+  mcpExternDisconnect,
+  mcpExternSetSecret,
+  mcpExternStatus,
+  type McpExternStatus,
+} from "../tauri/mcpExtern.ts";
 import {
   AI_SJABLONEN,
   STANDAARD_PROFIELEN,
@@ -56,6 +70,7 @@ import {
 import type { McpToolDef } from "../mcp/contracts.ts";
 
 const SLEUTEL = "aiInstellingen";
+const SLEUTEL_MCP = "aiMcpServers";
 
 export interface AiInstellingen {
   actiefId: string;
@@ -101,6 +116,10 @@ interface AiStand {
   modellenFout: string | null;
   oauthLopend: AiOAuthLopend | null;
   oauthFout: string | null;
+  /** Externe MCP-servers (stdio / HTTP) en hun verbindingsstatus. */
+  mcpServers: McpExternServerConfig[];
+  mcpStatussen: Record<string, McpExternStatus>;
+  mcpBezig: Record<string, boolean>;
   regels: AiRegel[];
   stappen: Stap[];
   bezig: boolean;
@@ -126,6 +145,12 @@ interface AiStand {
   logOAuthUit(): Promise<void>;
   zetHandmatigToken(accessToken: string, refreshToken?: string): Promise<void>;
   haalModellenOp(): Promise<void>;
+  voegMcpServerToe(sjabloonId: string, naam?: string): Promise<string>;
+  werkMcpServerBij(id: string, wijziging: Partial<McpExternServerConfig>): Promise<void>;
+  verwijderMcpServer(id: string): Promise<void>;
+  bewaarMcpGeheim(id: string, secret: string): Promise<void>;
+  verbindMcpServer(id: string): Promise<void>;
+  verbreekMcpServer(id: string): Promise<void>;
   wisGesprek(): void;
   verstuur(tekst: string): Promise<void>;
   stop(): void;
@@ -160,6 +185,10 @@ async function bewaarInstellingen(actiefId: string, profielen: AiProfiel[]): Pro
   await setSetting(SLEUTEL, { actiefId, profielen });
 }
 
+async function bewaarMcpServers(servers: McpExternServerConfig[]): Promise<void> {
+  await setSetting(SLEUTEL_MCP, servers);
+}
+
 function context() {
   const s = useMcpStatus.getState();
   return {
@@ -171,7 +200,10 @@ function context() {
 }
 
 /** Het project zoals de assistent het ziet, met de laatste doorrekening van het actieve blad. */
-async function bouwContext(taal: string): Promise<{ systeem: string; bereik: BladKort[] | null }> {
+async function bouwContext(
+  taal: string,
+  externeServers: ExternServerKort[] = [],
+): Promise<{ systeem: string; bereik: BladKort[] | null }> {
   const stand = liveOmgeving.stand();
   const bladen: BladKort[] = stand.exemplaren.map((b) => ({ id: b.id, naam: b.naam, templateId: b.templateId, ref: b.ref }));
   const gevonden = stand.exemplaren.find((b) => b.id === stand.activeId) ?? null;
@@ -200,7 +232,7 @@ async function bouwContext(taal: string): Promise<{ systeem: string; bereik: Bla
   }
 
   return {
-    systeem: bouwSysteemtekst({ taal, projectNaam: stand.projectNaam, bladen, actief, uitkomst }),
+    systeem: bouwSysteemtekst({ taal, projectNaam: stand.projectNaam, bladen, actief, uitkomst, externeServers }),
     bereik: null,
   };
 }
@@ -217,6 +249,9 @@ export const useAiStore = create<AiStand>((set, get) => ({
   modellenFout: null,
   oauthLopend: null,
   oauthFout: null,
+  mcpServers: [],
+  mcpStatussen: {},
+  mcpBezig: {},
   regels: [],
   stappen: [],
   bezig: false,
@@ -233,14 +268,26 @@ export const useAiStore = create<AiStand>((set, get) => ({
     if (get().geladen) return;
     const bewaard = await getSetting<unknown>(SLEUTEL, null);
     const { actiefId, profielen } = migreerInstellingen(bewaard);
+    const mcpServers = migreerMcpServers(await getSetting<unknown>(SLEUTEL_MCP, null));
     const beschikbaar = await aiBeschikbaar();
     const statussen: Record<string, AiProfielAuthStatus> = {};
+    const mcpStatussen: Record<string, McpExternStatus> = {};
     if (beschikbaar) {
       for (const p of profielen) {
         statussen[p.id] = await profielStatus(p.id);
       }
+      for (const s of mcpServers) {
+        mcpStatussen[s.id] = await mcpExternStatus(s.id);
+      }
     }
-    set({ geladen: true, beschikbaar, actiefId, profielen, statussen });
+    set({ geladen: true, beschikbaar, actiefId, profielen, statussen, mcpServers, mcpStatussen });
+    if (beschikbaar) {
+      for (const s of mcpServers) {
+        if (s.actief && !mcpStatussen[s.id]?.verbonden) {
+          void get().verbindMcpServer(s.id);
+        }
+      }
+    }
   },
 
   async kiesProfiel(id) {
@@ -471,6 +518,108 @@ export const useAiStore = create<AiStand>((set, get) => ({
     }
   },
 
+  async voegMcpServerToe(sjabloonId, naam) {
+    const sjabloon = MCP_EXTERN_SJABLONEN.find((s) => s.id === sjabloonId) ?? MCP_EXTERN_SJABLONEN[0];
+    const bestaande = get().mcpServers;
+    const label = naam && naam.trim() !== "" ? naam.trim() : sjabloon.naam;
+    const id = maakProfielId(
+      sjabloon.id.startsWith("custom-") && !naam ? "mcp" : sjabloon.id === "custom-stdio" || sjabloon.id === "custom-http" ? label : sjabloon.id,
+      bestaande.map((s) => s.id),
+    );
+    const nieuw: McpExternServerConfig = {
+      id,
+      naam: label,
+      actief: false,
+      transport: sjabloon.transport,
+      ...(sjabloon.command !== undefined ? { command: sjabloon.command } : {}),
+      ...(sjabloon.args ? { args: [...sjabloon.args] } : {}),
+      ...(sjabloon.cwd !== undefined ? { cwd: sjabloon.cwd } : {}),
+      ...(sjabloon.env ? { env: { ...sjabloon.env } } : {}),
+      ...(sjabloon.url !== undefined ? { url: sjabloon.url } : {}),
+    };
+    const mcpServers = [...bestaande, nieuw];
+    set({ mcpServers });
+    await bewaarMcpServers(mcpServers);
+    return id;
+  },
+
+  async werkMcpServerBij(id, wijziging) {
+    const mcpServers = get().mcpServers.map((s) => (s.id === id ? { ...s, ...wijziging, id: s.id } : s));
+    set({ mcpServers });
+    await bewaarMcpServers(mcpServers);
+  },
+
+  async verwijderMcpServer(id) {
+    if (get().beschikbaar) {
+      await mcpExternDisconnect(id).catch(() => {});
+      await mcpExternSetSecret(id, "").catch(() => {});
+    }
+    const mcpServers = get().mcpServers.filter((s) => s.id !== id);
+    const mcpStatussen = { ...get().mcpStatussen };
+    delete mcpStatussen[id];
+    set({ mcpServers, mcpStatussen });
+    await bewaarMcpServers(mcpServers);
+  },
+
+  async bewaarMcpGeheim(id, secret) {
+    await mcpExternSetSecret(id, secret);
+    const st = await mcpExternStatus(id);
+    set({ mcpStatussen: { ...get().mcpStatussen, [id]: st } });
+  },
+
+  async verbindMcpServer(id) {
+    const srv = get().mcpServers.find((s) => s.id === id);
+    if (!srv || !get().beschikbaar) return;
+    set({ mcpBezig: { ...get().mcpBezig, [id]: true } });
+    try {
+      const st = await mcpExternConnect({
+        id: srv.id,
+        naam: srv.naam,
+        transport: srv.transport,
+        ...(srv.command !== undefined ? { command: srv.command } : {}),
+        ...(srv.args ? { args: srv.args } : {}),
+        ...(srv.cwd ? { cwd: srv.cwd } : {}),
+        ...(srv.env ? { env: srv.env } : {}),
+        ...(srv.url !== undefined ? { url: srv.url } : {}),
+        ...(srv.headers ? { headers: srv.headers } : {}),
+      });
+      set({
+        mcpStatussen: { ...get().mcpStatussen, [id]: st },
+        mcpBezig: { ...get().mcpBezig, [id]: false },
+      });
+    } catch (e) {
+      const fout = e instanceof Error ? e.message : String(e);
+      const vorig = get().mcpStatussen[id];
+      set({
+        mcpStatussen: {
+          ...get().mcpStatussen,
+          [id]: {
+            id,
+            verbonden: false,
+            tools: [],
+            heeft_geheim: vorig?.heeft_geheim ?? false,
+            fout,
+          },
+        },
+        mcpBezig: { ...get().mcpBezig, [id]: false },
+      });
+    }
+  },
+
+  async verbreekMcpServer(id) {
+    if (!get().beschikbaar) return;
+    set({ mcpBezig: { ...get().mcpBezig, [id]: true } });
+    try {
+      const st = await mcpExternDisconnect(id);
+      set({
+        mcpStatussen: { ...get().mcpStatussen, [id]: st },
+        mcpBezig: { ...get().mcpBezig, [id]: false },
+      });
+    } catch {
+      set({ mcpBezig: { ...get().mcpBezig, [id]: false } });
+    }
+  },
+
   wisGesprek() {
     set({ regels: [], stappen: [], fout: null });
   },
@@ -522,7 +671,22 @@ export const useAiStore = create<AiStand>((set, get) => ({
     const antwoordRegel: AiRegel = { id: nieuwId("antwoord"), rol: "assistant", tekst: "", stappen: [], loopt: true };
     set({ regels: [...get().regels, vraagRegel, antwoordRegel], stappen: [], bezig: true, fout: null });
 
-    const { systeem } = await bouwContext(taal);
+    const { gereedschap: externGereedschap, kaart: externKaart } = bouwExternToolKaart(
+      get().mcpServers,
+      get().mcpStatussen,
+      MCP_TOOLS.map((t) => t.name),
+    );
+    const externeServers: ExternServerKort[] = [];
+    for (const srv of get().mcpServers) {
+      const srvSt = get().mcpStatussen[srv.id];
+      if (!srvSt || !srvSt.verbonden) continue;
+      const tools = [...externKaart.values()]
+        .filter((e) => e.serverId === srv.id)
+        .map((e) => e.volleNaam);
+      externeServers.push({ id: srv.id, naam: srvSt.server_naam?.trim() || srv.naam, tools });
+    }
+
+    const { systeem } = await bouwContext(taal, externeServers);
     const bereik = gebruiker.bladen.length > 0 ? gebruiker.bladen : null;
     const systeemMetBereik =
       bereik === null
@@ -546,11 +710,17 @@ export const useAiStore = create<AiStand>((set, get) => ({
           ...(p.extraKoppen && Object.keys(p.extraKoppen).length > 0 ? { extraKoppen: p.extraKoppen } : {}),
           ...(p.projectId ? { projectId: p.projectId } : {}),
           systeem: systeemMetBereik,
-          gereedschap: aiGereedschap(),
+          gereedschap: [...aiGereedschap(), ...externGereedschap],
           kenmerk: (naam) => {
             const t = toolVan(naam);
-            if (!t) return null;
-            return { naam, kind: t.kind, destructief: DESTRUCTIEF.has(naam) };
+            if (t) return { naam, kind: t.kind, destructief: DESTRUCTIEF.has(naam) };
+            const ext = externKaart.get(naam);
+            if (!ext) return null;
+            return {
+              naam,
+              kind: ext.tool.read_only ? "read" : "mutate",
+              destructief: !ext.tool.read_only,
+            };
           },
           huidigeInhoud: async (naam, argumenten) => {
             const id = typeof argumenten.id === "string" ? argumenten.id : null;
@@ -563,9 +733,20 @@ export const useAiStore = create<AiStand>((set, get) => ({
           },
           voerUit: async (naam, argumenten): Promise<ToolUitkomst> => {
             const tool = toolVan(naam);
-            if (!tool) return { ok: false, code: "NOT_FOUND", error: `Unknown tool ${naam}` };
-            const r = await voerToolUit(tool, argumenten, context());
-            return r.ok ? { ok: true, data: r.data } : { ok: false, code: r.code, error: r.error, data: r.data };
+            if (tool) {
+              const r = await voerToolUit(tool, argumenten, context());
+              return r.ok ? { ok: true, data: r.data } : { ok: false, code: r.code, error: r.error, data: r.data };
+            }
+            const ext = externKaart.get(naam);
+            if (!ext) return { ok: false, code: "NOT_FOUND", error: `Unknown tool ${naam}` };
+            try {
+              const r = await mcpExternCall(ext.serverId, ext.tool.naam, argumenten);
+              return r.ok
+                ? { ok: true, data: { text: r.tekst, server: ext.serverNaam, tool: ext.tool.naam } }
+                : { ok: false, code: "MCP_ERROR", error: r.tekst || "External MCP tool failed" };
+            } catch (e) {
+              return { ok: false, code: "MCP_ERROR", error: e instanceof Error ? e.message : String(e) };
+            }
           },
           vraagGoedkeuring: (verzoek) =>
             new Promise<Antwoord>((resolve) => {

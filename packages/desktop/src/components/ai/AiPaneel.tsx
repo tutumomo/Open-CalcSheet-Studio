@@ -14,8 +14,17 @@ import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAiStore } from "../../store/aiStore.ts";
 import { AI_SJABLONEN, OAUTH_SJABLONEN, leesKoppen, schrijfKoppen, verwachteRedirectUri, type AiProfiel } from "./profielen.ts";
+import {
+  MCP_EXTERN_SJABLONEN,
+  formatArgsTekst,
+  leesEnv,
+  parseArgsTekst,
+  schrijfEnv,
+  type McpExternServerConfig,
+} from "./mcpExtern.ts";
 import { voorbeeldTekst } from "./beleid.ts";
 import type { AiAanbieder, AiAuthModus, AiOAuthSoort, AiTokenFormaat } from "../../tauri/ai.ts";
+import type { McpTransport } from "../../tauri/mcpExtern.ts";
 import type { Stap } from "./agent.ts";
 import "./AiPaneel.css";
 
@@ -657,7 +666,249 @@ function Instellingen() {
           </div>
         </details>
       )}
+
+      <ExterneMcpSectie />
     </div>
+  );
+}
+
+function McpServerKaart({ srv }: { srv: McpExternServerConfig }) {
+  const { t } = useTranslation("ai");
+  const status = useAiStore((s) => s.mcpStatussen[srv.id]);
+  const bezig = useAiStore((s) => s.mcpBezig[srv.id] === true);
+  const werkMcpServerBij = useAiStore((s) => s.werkMcpServerBij);
+  const verwijderMcpServer = useAiStore((s) => s.verwijderMcpServer);
+  const verbindMcpServer = useAiStore((s) => s.verbindMcpServer);
+  const verbreekMcpServer = useAiStore((s) => s.verbreekMcpServer);
+  const bewaarMcpGeheim = useAiStore((s) => s.bewaarMcpGeheim);
+  const [argsTekst, setArgsTekst] = useState(formatArgsTekst(srv.args));
+  const [envTekst, setEnvTekst] = useState(schrijfEnv(srv.env));
+  const [koppenTekst, setKoppenTekst] = useState(schrijfKoppen(srv.headers));
+  const [geheim, setGeheim] = useState("");
+
+  useEffect(() => {
+    setArgsTekst(formatArgsTekst(srv.args));
+    setEnvTekst(schrijfEnv(srv.env));
+    setKoppenTekst(schrijfKoppen(srv.headers));
+  }, [srv.id]);
+
+  const verbonden = status?.verbonden === true;
+  const aantalTools = status?.tools.length ?? 0;
+
+  return (
+    <div className="ai-mcp-kaart">
+      <div className="ai-mcp-kop">
+        <span className="ai-mcp-titel">{srv.naam}</span>
+        <span className={`ai-mcp-status${verbonden ? " ai-mcp-status-ok" : ""}`}>
+          {bezig
+            ? t("mcpVerbindenBezig")
+            : verbonden
+              ? t("mcpVerbonden", { count: aantalTools })
+              : t("mcpNietVerbonden")}
+        </span>
+      </div>
+
+      {status?.fout && <div className="ai-oauth-fout">{status.fout}</div>}
+
+      <div className="ai-instellingen-rij">
+        {verbonden ? (
+          <button className="ai-knop" disabled={bezig} onClick={() => void verbreekMcpServer(srv.id)}>
+            {t("mcpVerbreken")}
+          </button>
+        ) : (
+          <button className="ai-knop ai-knop-primair" disabled={bezig} onClick={() => void verbindMcpServer(srv.id)}>
+            {t("mcpVerbinden")}
+          </button>
+        )}
+        <button className="ai-knop" disabled={bezig} onClick={() => void verwijderMcpServer(srv.id)}>
+          {t("mcpVerwijderen")}
+        </button>
+      </div>
+
+      <label className="ai-mcp-check">
+        <input
+          type="checkbox"
+          checked={srv.actief}
+          onChange={(e) => void werkMcpServerBij(srv.id, { actief: e.target.checked })}
+        />
+        <span>{t("mcpAutoVerbind")}</span>
+      </label>
+
+      <label className="ai-veld">
+        <span>{t("mcpNaam")}</span>
+        <input
+          type="text"
+          value={srv.naam}
+          onChange={(e) => void werkMcpServerBij(srv.id, { naam: e.target.value })}
+        />
+      </label>
+
+      <label className="ai-veld">
+        <span>{t("mcpTransport")}</span>
+        <select
+          value={srv.transport}
+          onChange={(e) => void werkMcpServerBij(srv.id, { transport: e.target.value as McpTransport })}
+        >
+          <option value="stdio">{t("mcpTransportStdio")}</option>
+          <option value="http">{t("mcpTransportHttp")}</option>
+        </select>
+      </label>
+
+      {srv.transport === "stdio" ? (
+        <>
+          <label className="ai-veld">
+            <span>{t("mcpCommand")}</span>
+            <input
+              type="text"
+              value={srv.command ?? ""}
+              spellCheck={false}
+              onChange={(e) => void werkMcpServerBij(srv.id, { command: e.target.value })}
+            />
+          </label>
+          <label className="ai-veld">
+            <span>{t("mcpArgs")}</span>
+            <input
+              type="text"
+              value={argsTekst}
+              spellCheck={false}
+              onChange={(e) => {
+                const v = e.target.value;
+                setArgsTekst(v);
+                void werkMcpServerBij(srv.id, { args: parseArgsTekst(v) });
+              }}
+            />
+          </label>
+          <label className="ai-veld">
+            <span>{t("mcpCwd")}</span>
+            <input
+              type="text"
+              value={srv.cwd ?? ""}
+              spellCheck={false}
+              onChange={(e) => void werkMcpServerBij(srv.id, { cwd: e.target.value })}
+            />
+          </label>
+          <label className="ai-veld">
+            <span>{t("mcpEnv")}</span>
+            <textarea
+              className="ai-koppen-invoer"
+              rows={2}
+              value={envTekst}
+              spellCheck={false}
+              onChange={(e) => {
+                const v = e.target.value;
+                setEnvTekst(v);
+                void werkMcpServerBij(srv.id, { env: leesEnv(v) });
+              }}
+            />
+          </label>
+        </>
+      ) : (
+        <>
+          <label className="ai-veld">
+            <span>{t("mcpUrl")}</span>
+            <input
+              type="text"
+              value={srv.url ?? ""}
+              spellCheck={false}
+              onChange={(e) => void werkMcpServerBij(srv.id, { url: e.target.value })}
+            />
+          </label>
+          <label className="ai-veld">
+            <span>{t("mcpGeheim")}</span>
+            <input
+              type="password"
+              value={geheim}
+              spellCheck={false}
+              autoComplete="off"
+              onChange={(e) => setGeheim(e.target.value)}
+            />
+          </label>
+          <div className="ai-instellingen-rij">
+            <button
+              className="ai-knop"
+              disabled={geheim.trim() === ""}
+              onClick={() => {
+                void bewaarMcpGeheim(srv.id, geheim.trim());
+                setGeheim("");
+              }}
+            >
+              {t("mcpGeheimBewaren")}
+            </button>
+            <button
+              className="ai-knop"
+              disabled={!status?.heeft_geheim}
+              onClick={() => {
+                void bewaarMcpGeheim(srv.id, "");
+                setGeheim("");
+              }}
+            >
+              {t("mcpGeheimWissen")}
+            </button>
+          </div>
+          {status?.heeft_geheim && <div className="ai-hint">{t("mcpGeheimBewaard")}</div>}
+          <label className="ai-veld">
+            <span>{t("extraKoppen")}</span>
+            <textarea
+              className="ai-koppen-invoer"
+              rows={2}
+              value={koppenTekst}
+              spellCheck={false}
+              onChange={(e) => {
+                const v = e.target.value;
+                setKoppenTekst(v);
+                void werkMcpServerBij(srv.id, { headers: leesKoppen(v) });
+              }}
+            />
+          </label>
+        </>
+      )}
+
+      {verbonden && aantalTools > 0 && (
+        <details className="ai-details">
+          <summary>{t("mcpToolsLijst", { count: aantalTools })}</summary>
+          <ul className="ai-mcp-tools">
+            {status.tools.map((tool) => (
+              <li key={tool.naam} title={tool.beschrijving}>
+                {tool.naam}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+    </div>
+  );
+}
+
+function ExterneMcpSectie() {
+  const { t } = useTranslation("ai");
+  const mcpServers = useAiStore((s) => s.mcpServers);
+  const voegMcpServerToe = useAiStore((s) => s.voegMcpServerToe);
+  const [sjabloonId, setSjabloonId] = useState(MCP_EXTERN_SJABLONEN[0].id);
+
+  return (
+    <details className="ai-details">
+      <summary>{t("mcpTitel")}</summary>
+      <div className="ai-details-inhoud">
+        <div className="ai-hint">{t("mcpHint")}</div>
+        <div className="ai-instellingen-rij">
+          <select
+            aria-label={t("mcpSjabloon")}
+            value={sjabloonId}
+            onChange={(e) => setSjabloonId(e.target.value)}
+          >
+            {MCP_EXTERN_SJABLONEN.map((s) => (
+              <option key={s.id} value={s.id}>{s.naam}</option>
+            ))}
+          </select>
+          <button className="ai-knop" onClick={() => void voegMcpServerToe(sjabloonId)}>
+            {t("mcpToevoegen")}
+          </button>
+        </div>
+        {mcpServers.map((srv) => (
+          <McpServerKaart key={srv.id} srv={srv} />
+        ))}
+      </div>
+    </details>
   );
 }
 
@@ -668,6 +919,7 @@ export default function AiPaneel() {
   const beschikbaar = useAiStore((s) => s.beschikbaar);
   const actiefId = useAiStore((s) => s.actiefId);
   const profielen = useAiStore((s) => s.profielen);
+  const mcpStatussen = useAiStore((s) => s.mcpStatussen);
   const regels = useAiStore((s) => s.regels);
   const stappen = useAiStore((s) => s.stappen);
   const bezig = useAiStore((s) => s.bezig);
@@ -683,6 +935,10 @@ export default function AiPaneel() {
   const gesprek = useRef<HTMLDivElement>(null);
 
   const actiefProfiel = profielen.find((p) => p.id === actiefId) ?? profielen[0];
+  const aantalExterneTools = Object.values(mcpStatussen).reduce(
+    (som, st) => som + (st.verbonden ? st.tools.length : 0),
+    0,
+  );
 
   // Bij elk nieuw stuk tekst of elke stap mee naar beneden, tenzij de gebruiker
   // zelf omhoog heeft gescrold.
@@ -705,6 +961,11 @@ export default function AiPaneel() {
           {actiefProfiel && (
             <span className="ai-kop-profiel" title={actiefProfiel.model}>
               {actiefProfiel.naam}
+            </span>
+          )}
+          {aantalExterneTools > 0 && (
+            <span className="ai-kop-profiel">
+              {t("mcpBadge", { count: aantalExterneTools })}
             </span>
           )}
         </div>

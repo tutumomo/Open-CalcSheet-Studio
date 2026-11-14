@@ -86,6 +86,15 @@ App 內建的 AI 助理（OCSS 規格 P2-15）。標題列的 **AI** 按鈕開�
 網路請求由 Rust 發出（webview 受 CORS 限制，且金鑰與權杖不該進 webview），
 SSE 逐段解析後以 Tauri channel 回傳，所以畫面是逐字出現的。
 
+## 外部 MCP 工具伺服器（stdio／HTTP）
+
+除了 App 內建的 60 項工具，面板的「設定 › **外部 MCP 工具伺服器（stdio / HTTP）**」可設定並連線任意外部 MCP 伺服器（實作於 `src-tauri/src/mcp_client.rs`）：
+
+- **內建範本**：台灣工程規範查詢（`regs_server.py --mcp`）、**OpenCADStudio**（`OpenCADStudio --mcp`）、設計引擎（stdio），以及自訂 Stdio／HTTP 伺服器。
+- **Stdio 傳輸**：設定執行指令、參數、工作目錄與環境變數，連線期間保留子程序以加速連續查詢，中斷連線或關閉 App 時自動清理程序。
+- **HTTP 傳輸**：支援 JSON-RPC 2.0 POST、Streamable HTTP（`Mcp-Session-Id` 與 `text/event-stream` SSE 回應）與自訂 HTTP 標頭；選填的 Bearer 驗證權杖僅存於作業系統金鑰環（`mcp_secret:<id>`），不寫進 `preferences.json`。
+- **安全命名與核准**：外部工具以 `mcp__<伺服器>__<工具>`（64 字元以內）匯入模型工具清單。伺服器標註 `readOnlyHint: true` 的唯讀查詢（如查規範）直接執行；具寫入／出圖性質的工具一律先經使用者核准才呼叫。
+
 ## 限制
 
 - 只在桌面版（Tauri）可用；瀏覽器預覽（`npm run dev`）會顯示提示。
@@ -93,7 +102,7 @@ SSE 逐段解析後以 Tauri channel 回傳，所以畫面是逐字出現的。
 - 一次提問最多 **12 回合**（工具呼叫來回）；超過時停在目前結果並提示可請助理
   繼續。單次工具結果進對話前截短到 20000 字元（面板仍顯示完整內容）。
 - 可隨時按**停止**中斷；已完成的步驟保留，且都可復原。
-- 助理不會自己去查規範資料庫或外部網路：它只有這些工具。
+- 未連接外部 MCP 伺服器時，助理僅使用內建 60 項工具；連上 `regs`、設計引擎或 OpenCADStudio 後即可跨工具查詢規範並直接繪圖出圖。
 
 ## 程式位置
 
@@ -103,16 +112,18 @@ SSE 逐段解析後以 Tauri channel 回傳，所以畫面是逐字出現的。
 | `src/components/ai/beleid.ts` | 哪一步要問、哪一步先看差異；參數摘要與逐行比較 |
 | `src/components/ai/prompt.ts` | 系統提示與 `@` 範圍解析 |
 | `src/components/ai/profielen.ts` | 預設與第三方大模型範本、OAuth 範本、設定檔遷移與就緒檢查 |
-| `src/store/aiStore.ts` | 面板狀態、多設定檔、OAuth 登入與模型列表、對話、步驟 |
-| `src/components/ai/AiPaneel.tsx`、`.css` | 面板本體（設定檔管理、模型下拉選單、OAuth 流程） |
-| `src/tauri/ai.ts` | 前端到 Rust 的介面（對話 channel、OAuth PKCE、模型抓取） |
-| `src-tauri/src/ai.rs` | 金鑰環、OAuth 2.0 PKCE 與續期、模型抓取、三協定請求與 SSE 解析 |
+| `src/components/ai/mcpExtern.ts` | 外部 MCP 伺服器範本、工具命名空間（`mcp__*`）與設定遷移 |
+| `src/store/aiStore.ts` | 面板狀態、多設定檔、OAuth 登入、模型列表、外部 MCP 連線與步驟 |
+| `src/components/ai/AiPaneel.tsx`、`.css` | 面板本體（設定檔管理、模型下拉選單、OAuth 流程、外部 MCP 設定） |
+| `src/tauri/ai.ts`、`src/tauri/mcpExtern.ts` | 前端到 Rust 的介面（對話 channel、OAuth PKCE、模型抓取、外部 MCP 呼叫） |
+| `src-tauri/src/ai.rs`、`src-tauri/src/mcp_client.rs` | 金鑰環、OAuth 2.0 PKCE 與續期、模型抓取、SSE 解析、外部 MCP stdio/HTTP 客戶端 |
 
 ## 驗證
 
 ```bash
-node scripts/check-ai-agent.mjs                     # 86 項：政策、差異、@ 範圍、迴圈、設定檔／OAuth
+node scripts/check-ai-agent.mjs                     # 93 項：政策、差異、@ 範圍、迴圈、設定檔／OAuth、外部 MCP
 cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib ai::
+cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib mcp_client::
 ```
 
 未涵蓋：真實提供者的串流、OAuth 瀏覽器實際授權與金鑰環存取（需要真實帳號／金鑰與實機桌面環境），面板版面的目視檢查。
