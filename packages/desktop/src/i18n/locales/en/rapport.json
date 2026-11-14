@@ -494,10 +494,12 @@
     "kopvoetHint": "Available variables: {titel}, {projectnaam}, {kenmerk}, {datum}, {revisie}. Empty means no header; the footer then shows the office name.",
     "kop": "Header text",
     "voet": "Footer text",
-    "nummeringKop": "Table numbers",
+    "nummeringKop": "Table and figure numbers",
     "nummeringHint": "Numbered per chapter (the first table of chapter 4 is 表 4-1).",
     "tabellen": "Number the tables",
     "tabellenHint": "Puts 表 x-y above the material, load and combination tables.",
+    "figuren": "Number the figures",
+    "figurenHint": "Puts 圖 x-y in the title block of every drawing placed in the chapter itself; a drawing in appendix A keeps its A-number.",
     "kopVoorbeeld": "{titel} — {projectnaam}",
     "voetVoorbeeld": "{kenmerk} · {datum} · rev. {revisie}"
   }

@@ -271,7 +271,9 @@ function Berekening({ blad, w }: { blad: Blad; w: RapportWeergave }) {
       )}
       {toelichting.trim() && <Tekst tekst={toelichting} invul={w.invul} subkoppen={w.rapport.opmaak.subkoppen} />}
       {inHoofdstuk && b && soort ? (
-        <soort.Afdruk ex={b.ex} maten={MATEN.rapport} />
+        // Een tekening krijgt haar figuurnummer in de titelhoek van het vel; een
+        // bijschriftregel zou hier op de vorige pagina belanden (P2-16).
+        <soort.Afdruk ex={b.ex} maten={MATEN.rapport} nummer={w.bijschriften.get(bijschriftSleutel.figuur(b.ex.id))} />
       ) : inHoofdstuk && b ? (
         // `print-blad` geeft de uitwerking dezelfde compacte opmaak als een
         // los blad; `rpa-inline` haalt de paginasprong van een los blad weg.

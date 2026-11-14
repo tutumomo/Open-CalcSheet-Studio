@@ -494,10 +494,12 @@
     "kopvoetHint": "Beschikbare variabelen: {titel}, {projectnaam}, {kenmerk}, {datum}, {revisie}. Leeg betekent geen kopregel; de voet toont dan de bureaunaam.",
     "kop": "Kopregel",
     "voet": "Voetregel",
-    "nummeringKop": "Tabelnummers",
+    "nummeringKop": "Tabel- en figuurnummers",
     "nummeringHint": "Genummerd per hoofdstuk (de eerste tabel van hoofdstuk 4 is 表 4-1).",
     "tabellen": "De tabellen nummeren",
     "tabellenHint": "Zet 表 x-y boven de tabellen met materialen, belastingen en combinaties.",
+    "figuren": "De figuren nummeren",
+    "figurenHint": "Zet 圖 x-y in de titelhoek van elke tekening die in het hoofdstuk zelf staat; een tekening in bijlage A houdt haar A-nummer.",
     "kopVoorbeeld": "{titel} — {projectnaam}",
     "voetVoorbeeld": "{kenmerk} · {datum} · rev. {revisie}"
   }

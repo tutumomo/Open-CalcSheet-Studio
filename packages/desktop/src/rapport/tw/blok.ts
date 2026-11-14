@@ -47,15 +47,19 @@ export interface TwKopvoet {
 }
 
 /**
- * De nummering van de tabellen in de tekst.
+ * De nummering van de tabellen en figuren in de tekst.
  *
- * Alleen tabellen: een tekening gaat als heel vel door de bladafdruk, met haar
- * eigen titelhoek, en krijgt daar geen bijschriftregel bij (zie
- * docs/tw/OCSS接入實作計畫.md §7, P2-16).
+ * Een tekening gaat als heel vel door de bladafdruk, met haar eigen titelhoek.
+ * Het figuurnummer gaat daarom niet als bijschriftregel boven het vel — dat zou
+ * op de vorige pagina belanden — maar in die titelhoek, vóór de naam van het
+ * blad: "圖 6-1 樑配筋圖". Een tekening in bijlage A houdt haar bijlagenummer
+ * ("A.3"), want de tekst en de inhoudsopgave verwijzen daarnaar.
  */
 export interface TwNummering {
   /** "表 4-1" boven elke tabel van het rapport zelf. */
   tabellen: boolean;
+  /** "圖 6-1" in de titelhoek van elke tekening die in het hoofdstuk zelf staat. */
+  figuren: boolean;
 }
 
 export interface TwOpzet {
@@ -68,7 +72,7 @@ export interface TwOpzet {
 export const STANDAARD_TW: TwOpzet = {
   handtekening: { naam: "", vakgebied: "", nummer: "", instantie: "", datum: "", bureau: "", beeld: "", tonen: true },
   kopvoet: { kop: "", voet: "" },
-  nummering: { tabellen: false },
+  nummering: { tabellen: false, figuren: false },
 };
 
 const tekst = (x: unknown, standaard: string): string => (typeof x === "string" ? x : standaard);
@@ -95,7 +99,10 @@ export function normaliseerTw(x: unknown): TwOpzet {
       tonen: ja(h.tonen, s.handtekening.tonen),
     },
     kopvoet: { kop: tekst(k.kop, s.kopvoet.kop), voet: tekst(k.voet, s.kopvoet.voet) },
-    nummering: { tabellen: ja(n.tabellen, s.nummering.tabellen) },
+    nummering: {
+      tabellen: ja(n.tabellen, s.nummering.tabellen),
+      figuren: ja(n.figuren, s.nummering.figuren),
+    },
   };
 }
 

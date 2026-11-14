@@ -66,6 +66,7 @@ export default function TwSectie() {
       <h3 className="rapport-subkop">{t("tw.nummeringKop")}</h3>
       <p className="rapport-hint">{t("tw.nummeringHint")}</p>
       <Vink label={t("tw.tabellen")} pad="tw.nummering.tabellen" aan={tw.nummering.tabellen} hint={t("tw.tabellenHint")} />
+      <Vink label={t("tw.figuren")} pad="tw.nummering.figuren" aan={tw.nummering.figuren} hint={t("tw.figurenHint")} />
     </Sectie>
   );
 }

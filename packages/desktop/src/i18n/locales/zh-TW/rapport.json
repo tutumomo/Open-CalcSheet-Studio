@@ -494,10 +494,12 @@
     "kopvoetHint": "可用變數：{titel}、{projectnaam}、{kenmerk}、{datum}、{revisie}。留空則不顯示頁首，頁尾沿用事務所名稱。",
     "kop": "頁首文字",
     "voet": "頁尾文字",
-    "nummeringKop": "表號",
+    "nummeringKop": "表號與圖號",
     "nummeringHint": "依章節自動編號（例如第 4 章第一張表為「表 4-1」）。",
     "tabellen": "表格加上表號",
     "tabellenHint": "材料強度、載重、載重組合等表格上方加「表 x-y」。",
+    "figuren": "圖說加上圖號",
+    "figurenHint": "檢核章節內的設計圖在標題欄加「圖 x-y」；置於附錄 A 的圖仍用附錄編號。",
     "kopVoorbeeld": "{titel} — {projectnaam}",
     "voetVoorbeeld": "{kenmerk} · {datum} · 第 {revisie} 版"
   }

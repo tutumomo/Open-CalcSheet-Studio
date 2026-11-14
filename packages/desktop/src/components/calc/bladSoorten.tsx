@@ -42,7 +42,7 @@ export interface BladSoort {
    * vers vel en `print-vel-af` sluit het af (paginering.ts). Wat nog tekent draagt
    * `data-afdruk-laadt`; het afdrukvoorbeeld ziet zelf wanneer er iets verandert.
    */
-  Afdruk: ComponentType<{ ex: Exemplaar; maten: Maten }>;
+  Afdruk: ComponentType<{ ex: Exemplaar; maten: Maten; nummer?: number | string }>;
   /**
    * Het hele blad zelf, zonder kop erboven: voor een blad op eigen papierformaat met
    * zijn naam op het vel. Zonder: de kop met `Afdruk` eronder (LosBladAfdruk).
@@ -119,7 +119,14 @@ export function bladSoortVan(ex: { templateId?: string }): BladSoort | undefined
  */
 export function bladVoorOpzet(ex: Exemplaar, tekst?: (tekst: string) => string): Blad {
   const soort = bladSoortVan(ex);
-  return { id: ex.id, naam: ex.naam, plek: soort?.plek, koppen: soort?.inhoudsKoppen?.(ex, tekst) };
+  return {
+    id: ex.id,
+    naam: ex.naam,
+    plek: soort?.plek,
+    koppen: soort?.inhoudsKoppen?.(ex, tekst),
+    // Een blad met een eigen heel vel (een tekening) is een figuur in het rapport.
+    ...(soort?.HeelBlad ? { figuur: true } : {}),
+  };
 }
 
 /**

@@ -21,6 +21,8 @@ export const bijschriftSleutel = {
   veranderlijk: "tabel:veranderlijk",
   wind: "tabel:wind",
   factoren: "tabel:factoren",
+  /** Het figuurnummer van een tekening, op de id van het blad. */
+  figuur: (bladId: string) => `figuur:${bladId}`,
 };
 
 /** Het hoofdstuknummer van een knoop: "4.5.2" geeft "4". */
@@ -35,20 +37,33 @@ function hoofdstuk(nummer: string): string {
  */
 export function bijschriften(rapport: Rapport, knopen: Rapportknoop[]): Map<string, string> {
   const uit = new Map<string, string>();
-  /** Per hoofdstuk het laatst uitgegeven nummer. */
+  /** Per hoofdstuk het laatst uitgegeven nummer, apart voor tabellen en figuren. */
   const teller = new Map<string, number>();
-  const volgend = (ch: string): string => {
-    const n = (teller.get(ch) ?? 0) + 1;
-    teller.set(ch, n);
+  const volgend = (soort: "tabel" | "figuur", ch: string): string => {
+    const sleutel = `${soort}:${ch}`;
+    const n = (teller.get(sleutel) ?? 0) + 1;
+    teller.set(sleutel, n);
     return `${ch}-${n}`;
   };
   const tabel = (ch: string, sleutel: string): void => {
     if (uit.has(sleutel)) return;
-    uit.set(sleutel, `表 ${volgend(ch)}`);
+    uit.set(sleutel, `表 ${volgend("tabel", ch)}`);
+  };
+  /**
+   * Een tekening in het hoofdstuk zelf krijgt een figuurnummer. Staat zij in
+   * bijlage A, dan houdt zij haar bijlagenummer ("A.3"): de tekst en de
+   * inhoudsopgave verwijzen daarnaar, en een tweede nummer zou daarvan afwijken.
+   */
+  const figuur = (ch: string, blad: NonNullable<Rapportknoop["blad"]>): void => {
+    if (blad.bijlage !== "" || !blad.figuur) return;
+    const sleutel = bijschriftSleutel.figuur(blad.id);
+    if (uit.has(sleutel)) return;
+    uit.set(sleutel, `圖 ${volgend("figuur", ch)}`);
   };
   const loop = (lijst: Rapportknoop[]): void => {
     for (const knoop of lijst) {
       const ch = hoofdstuk(knoop.nummer);
+      if (knoop.blad) figuur(ch, knoop.blad);
       switch (knoop.inhoud) {
         case "materialen":
           tabel(ch, bijschriftSleutel.materialen);

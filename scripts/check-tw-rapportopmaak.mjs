@@ -9,7 +9,9 @@
  *   4  de tabelnummers: per hoofdstuk omhoog tellen, en dezelfde nummers bij een
  *      tweede ronde (de nummers komen uit de indeling, niet uit de tekenvolgorde);
  *   5  de machineleesbare kant: `report_set` zet de velden en `report_get` leest
- *      ze terug, dus de API kan alles wat het paneel kan.
+ *      ze terug, dus de API kan alles wat het paneel kan;
+ *   6  de figuurnummers: een tekening in het hoofdstuk zelf telt per hoofdstuk mee
+ *      in een eigen reeks, een tekening in bijlage A houdt haar A-nummer.
  *
  * Draaien:  node scripts/check-tw-rapportopmaak.mjs
  * Vereist een gebouwde core:  npm --prefix packages/core run build
@@ -156,11 +158,12 @@ kop("5. report_set en report_get: dezelfde velden langs de API");
   await zet("tw.handtekening.nummer", "技證字第 12345 號");
   await zet("tw.kopvoet.kop", "{titel} — {projectnaam}");
   await zet("tw.nummering.tabellen", true);
+  await zet("tw.nummering.figuren", true);
   const gelezen = await lees();
   const tw = gelezen.ok ? gelezen.data.report.tw : null;
   gelijk("report_get leest ze terug",
-    tw && [tw.handtekening.naam, tw.handtekening.nummer, tw.kopvoet.kop, tw.nummering.tabellen],
-    ["王小明", "技證字第 12345 號", "{titel} — {projectnaam}", true]);
+    tw && [tw.handtekening.naam, tw.handtekening.nummer, tw.kopvoet.kop, tw.nummering.tabellen, tw.nummering.figuren],
+    ["王小明", "技證字第 12345 號", "{titel} — {projectnaam}", true, true]);
   toets("het blok verschijnt nu op het voorblad", tw ? heeftHandtekening(tw.handtekening) : false);
 
   const fout = await zet("tw.bestaatniet.naam", "x");
@@ -171,7 +174,54 @@ kop("5. report_set en report_get: dezelfde velden langs de API");
   terug.ongedaan();
   const naTerug = await lees();
   gelijk("ongedaan maken draait de laatste zetting terug",
-    naTerug.ok ? naTerug.data.report.tw.nummering.tabellen : null, false);
+    naTerug.ok ? [naTerug.data.report.tw.nummering.tabellen, naTerug.data.report.tw.nummering.figuren] : null,
+    [true, false]);
+}
+
+// ── 6. De figuurnummers ─────────────────────────────────────────────────────
+kop("6. De figuurnummers: per hoofdstuk, met een eigen reeks");
+{
+  const knoop = (nummer, inhoud, kinderen = [], blad) => ({
+    id: `${inhoud}-${nummer}`,
+    nummer,
+    titel: inhoud,
+    inhoud,
+    nieuwePagina: false,
+    kinderen,
+    ...(blad ? { blad } : {}),
+  });
+  const tekening = (id, bijlage) => ({ id, naam: id, bijlage, figuur: true });
+  const blad = (id) => ({ id, naam: id, bijlage: "" });
+  const knopen = [
+    knoop("3", "materialen", [], blad("m1")),
+    knoop("6", "berekeningen", [
+      knoop("6.1", "balk", [], tekening("t1", "")),
+      knoop("6.2", "kolom", [], tekening("t2", "")),
+      knoop("6.3", "paal", [], tekening("t3", "A.1")),
+      knoop("6.4", "wapening", [], blad("b4")),
+    ]),
+  ];
+  const basis = nieuw();
+  const rapport = normaliseerRapport({
+    ...basis,
+    belastingen: { ...basis.belastingen, vloerenDaken: [], wanden: [] },
+  });
+  const nummers = bijschriften(rapport, knopen);
+
+  gelijk("een tekening in het hoofdstuk: het eerste figuurnummer van hoofdstuk 6",
+    nummers.get(bijschriftSleutel.figuur("t1")), "圖 6-1");
+  gelijk("de tweede tekening telt door", nummers.get(bijschriftSleutel.figuur("t2")), "圖 6-2");
+  toets("een tekening in bijlage A houdt haar A-nummer en krijgt geen figuurnummer",
+    !nummers.has(bijschriftSleutel.figuur("t3")));
+  toets("een blad zonder figuur krijgt geen figuurnummer", !nummers.has(bijschriftSleutel.figuur("b4")));
+  gelijk("de tabellen tellen in hun eigen reeks verder", nummers.get(bijschriftSleutel.materialen), "表 3-1");
+  gelijk("een tweede ronde geeft dezelfde nummers", [...bijschriften(rapport, knopen)], [...nummers]);
+
+  // De schakelaar staat los van de tabelnummers: alleen wat aan staat, gaat mee.
+  toets("standaard staan de figuurnummers uit", STANDAARD_TW.nummering.figuren === false);
+  gelijk("de schakelaar is met report_set te zetten en terug te lezen",
+    normaliseerTw({ nummering: { figuren: true } }).nummering.figuren, true);
+  gelijk("een verkeerd type valt terug op uit", normaliseerTw({ nummering: { figuren: "ja" } }).nummering.figuren, false);
 }
 
 console.log(fouten === 0 ? `\nTaiwanese rapportopmaak: ${aantal} controles, alle groen.` : `\n${fouten} van ${aantal} controles gezakt.`);

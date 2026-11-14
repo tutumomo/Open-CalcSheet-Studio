@@ -207,11 +207,19 @@ export function useRapportWeergave(): RapportWeergave {
 
   // De nummering van tabellen en figuren, en de kop- en voettekst: uit het
   // rapport zelf, zodat een opgeleverd rapport niet meewisselt met de app.
+  // De twee reeksen staan los van elkaar: alleen wat aan staat, gaat mee.
   const tw = rapport.tw ?? STANDAARD_TW;
-  const nummers = useMemo(
-    () => (tw.nummering.tabellen ? bijschriften(rapport, opzet.knopen) : new Map<string, string>()),
-    [rapport, opzet.knopen, tw.nummering.tabellen],
-  );
+  const { tabellen: nummerTabellen, figuren: nummerFiguren } = tw.nummering;
+  const nummers = useMemo(() => {
+    if (!nummerTabellen && !nummerFiguren) return new Map<string, string>();
+    const alle = bijschriften(rapport, opzet.knopen);
+    if (nummerTabellen && nummerFiguren) return alle;
+    const uit = new Map<string, string>();
+    for (const [sleutel, waarde] of alle) {
+      if (sleutel.startsWith("tabel:") === nummerTabellen) uit.set(sleutel, waarde);
+    }
+    return uit;
+  }, [rapport, opzet.knopen, nummerTabellen, nummerFiguren]);
   const kopvoet = useKopvoet();
 
   return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul, bijschriften: nummers, kopvoet };

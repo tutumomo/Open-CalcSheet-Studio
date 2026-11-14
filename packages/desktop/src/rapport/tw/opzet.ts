@@ -333,6 +333,7 @@ function bladKnopenTw(nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop[
       naam: b.naam,
       bijlage: staatInHoofdstuk(r, b) ? "" : `A.${++inBijlage}`,
       ...(b.koppen?.length ? { koppen: b.koppen } : {}),
+      ...(b.figuur ? { figuur: true } : {}),
     },
   }));
 }

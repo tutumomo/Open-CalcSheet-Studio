@@ -158,7 +158,7 @@ export interface Rapportknoop extends Omit<Knoop, "titel" | "titelNieuwbouw" | "
   nummer: string;
   nieuwePagina: boolean;
   kinderen: Rapportknoop[];
-  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[] };
+  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; figuur?: boolean };
 }
 
 /** Waar de uitwerking van een blad staat. */
@@ -177,6 +177,12 @@ export interface Blad {
   /** Waar de uitwerking staat zolang de gebruiker niets koos; zonder: in de bijlage. */
   plek?: BladPlek;
   koppen?: readonly Inhoudskop[];
+  /**
+   * Tekent dit blad een figuur (een tekening als heel vel, bladSoorten.tsx)?
+   * Zo'n blad krijgt in het hoofdstuk zelf een figuurnummer in zijn titelhoek
+   * ("圖 6-1", rapport/tw/nummering.ts); in bijlage A houdt het zijn A.x.
+   */
+  figuur?: boolean;
 }
 
 /** Staat de uitwerking van dit blad in het hoofdstuk zelf? De keuze in het rapport wint van de soort. */
@@ -265,6 +271,7 @@ function bladKnopen(nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop[] 
       naam: b.naam,
       bijlage: staatInHoofdstuk(r, b) ? "" : `A.${++inBijlage}`,
       ...(b.koppen?.length ? { koppen: b.koppen } : {}),
+      ...(b.figuur ? { figuur: true } : {}),
     },
   }));
 }
