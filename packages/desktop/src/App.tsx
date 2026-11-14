@@ -135,10 +135,17 @@ export default function App() {
       if (detail) zetHoekmodus(detail.angleMode as AngleMode);
     };
     window.addEventListener("units-changed", onUnits);
-    // Show window once theme is applied (avoids flash of unstyled chrome)
-    import("@tauri-apps/api/window")
-      .then(({ getCurrentWindow }) => {
-        getCurrentWindow().show();
+    // Show window once theme is applied (avoids flash of unstyled chrome).
+    // In de hoofdmodus (`--headless`) en bij een eenmalige CLI-opdracht
+    // (`eval`／`render`) komt er geen venster: `startCli` voert de opdracht uit
+    // en laat het proces met de juiste exitcode stoppen (docs/tw/OCSS接入實作計畫.md, P0-1).
+    import("./mcp/cli")
+      .then(({ startCli }) => startCli())
+      .then((zonderVenster) => {
+        if (zonderVenster) return;
+        return import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
+          getCurrentWindow().show();
+        });
       })
       .catch(() => {
         // Browser fallback (npm run dev without Tauri)

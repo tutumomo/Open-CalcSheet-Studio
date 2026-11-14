@@ -8,6 +8,7 @@ import { leesPad } from "../../rapport/pad.ts";
 import { LEZEN, NIEUW, WEG, WIJZIGEN, alsTekst, fout, objectSchema, ok, tekstOfGetal, zoekBlad } from "./hulp.ts";
 import { lijstVan } from "./bladen.ts";
 import { base64Bytes } from "../../store/pdfBijlage.ts";
+import { kenmerken } from "../kenmerken.ts";
 
 // ── Projectgegevens ─────────────────────────────────────────────────────────
 
@@ -110,15 +111,24 @@ export const PROJECTTOOLS: McpToolDef[] = [
   {
     name: "app_info",
     kind: "read",
-    description: "Name and version of the app, the MCP and REST addresses, the OpenAPI document, and whether the API is read-only or paused.",
+    description:
+      "Name and version of the app, which edition this build is (tw or upstream) together with the full release tag, commit and build date, the MCP and REST addresses, the OpenAPI document, and whether the API is read-only or paused. " +
+      "Use edition and tag to tell the Taiwan build from the upstream build: they share the version number.",
     inputSchema: objectSchema({}),
     annotations: LEZEN,
     rest: [{ method: "GET", path: "/info" }],
-    handler: (_args, ctx) => {
+    handler: async (_args, ctx) => {
       const basis = `http://127.0.0.1:${ctx.server.poort}`;
+      const k = await kenmerken(ctx.server.versie);
       return ok({
         name: ctx.server.naam,
         version: ctx.server.versie,
+        // Nieuw (P0-3): editie en volledige tag, zodat tw.4 en tw.5 uit elkaar te
+        // houden zijn. `version` blijft het kale versienummer voor bestaande clients.
+        edition: k.edition,
+        tag: k.tag,
+        commit: k.commit,
+        buildDate: k.buildDate,
         desktop: ctx.omgeving.bestanden.beschikbaar(),
         mcp: `${basis}/mcp`,
         rest: `${basis}/api/v1`,

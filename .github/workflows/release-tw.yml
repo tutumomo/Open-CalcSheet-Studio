@@ -113,9 +113,41 @@ jobs:
       - name: Build core package
         run: npm run build --workspace=@ifc-calc/core
 
+      # 台灣版的安裝檔要在版本欄就分得出 tw.1 與 tw.2（原本 deb／msi／dmg 都只有上游版號），
+      # 同時把 release tag 寫進 binary，讓 app_info 與 GET /api/v1/health 回報同一個 tag。
+      # 見 docs/tw/OCSS接入實作計畫.md P0-3。
+      - name: 設定建置版本與識別
+        working-directory: packages/desktop
+        env:
+          TAG: ${{ inputs.tag }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          VERSIE="${TAG#v}"
+          case "$VERSIE" in
+            *-tw.*) ;;
+            *) echo "::error::tag 必須是 v<上游版號>-tw.N，收到 $TAG"; exit 1 ;;
+          esac
+          node -e '
+            const fs = require("fs");
+            const pad = "src-tauri/tauri.conf.json";
+            const conf = JSON.parse(fs.readFileSync(pad, "utf8"));
+            conf.version = process.env.VERSIE;
+            fs.writeFileSync(pad, JSON.stringify(conf, null, 2) + "\n");
+            console.log("tauri.conf.json version =", conf.version);
+          '
+          {
+            echo "OCSS_BUILD_TAG=$VERSIE"
+            echo "OCSS_EDITION=tw"
+            echo "OCSS_GIT_COMMIT=${SHA:0:12}"
+          } >> "$GITHUB_ENV"
+          echo "OCSS_BUILD_DATE=$(date -u +%Y-%m-%d)" >> "$GITHUB_ENV"
+
+      # `--features rapportengine` bouwt de OpenAEC-rapportengine mee, zodat
+      # export_pdf via de API werkt in plaats van 501 te geven（P0-2）。
       - name: Build Tauri installer bundle
         working-directory: packages/desktop
-        run: npm run tauri build
+        run: npm run tauri build -- --features rapportengine
 
       - name: Upload installer artifact
         uses: actions/upload-artifact@v6

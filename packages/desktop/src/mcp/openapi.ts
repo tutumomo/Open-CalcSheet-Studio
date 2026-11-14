@@ -121,6 +121,36 @@ export function bouwOpenApi(tools: McpToolDef[], server: { naam: string; versie:
     tags: ["tools"],
     responses: { "200": { description: "Overview.", content: { "application/json": { schema: { type: "object" } } } }, ...foutAntwoorden(["401", "403"]) },
   });
+  voeg("/api/v1/health", "GET", {
+    operationId: "health",
+    summary: "Which build answers: edition (tw or upstream), version, full release tag, commit and build date. Readable without a token and answered by the bridge itself.",
+    tags: ["tools"],
+    security: [],
+    responses: {
+      "200": {
+        description: "Health of the bridge.",
+        content: {
+          "application/json": {
+            schema: {
+              type: "object",
+              properties: {
+                status: { type: "string", enum: ["ok"] },
+                name: { type: "string" },
+                edition: { type: "string", description: "tw or upstream." },
+                version: { type: "string", description: "Version number, for example 2026.46.1." },
+                tag: { type: "string", description: "Full release tag, for example 2026.46.1-tw.1." },
+                commit: { type: "string" },
+                buildDate: { type: "string" },
+                port: { type: "integer" },
+                api: { type: "string" },
+              },
+            },
+          },
+        },
+      },
+      ...foutAntwoorden(["403"]),
+    },
+  });
   voeg("/api/v1/openapi.json", "GET", {
     operationId: "openapi",
     summary: "This document. Readable without a token.",
@@ -135,7 +165,8 @@ export function bouwOpenApi(tools: McpToolDef[], server: { naam: string; versie:
       title: "Open CalcSheet Studio API",
       version: server.versie,
       description:
-        "Local REST API of the desktop app, on the same bridge as the MCP server (POST /mcp). Only on 127.0.0.1; every route except this document needs " +
+        "Local REST API of the desktop app, on the same bridge as the MCP server (POST /mcp). Only on 127.0.0.1; every route except this document " +
+        "and /api/v1/health needs " +
         "'Authorization: Bearer <token>' (Settings > API and AI assistant); requests with an Origin header are refused. Each route runs the MCP tool named in x-mcp-tool.",
     },
     servers: [{ url: `http://127.0.0.1:${server.poort}` }],

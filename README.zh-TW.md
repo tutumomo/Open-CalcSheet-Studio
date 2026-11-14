@@ -168,9 +168,26 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 應用程式內建 MCP 伺服器與 REST API，提供相同的 49 項工具：開啟與儲存專案、新增計算表、填入輸入參數、執行計算、匯出與列印。僅於本機電腦（`127.0.0.1`）監聽並受安全權杖保護。可在**設定 › API 與 AI 助手**中關閉、設為唯讀或暫停。詳見 [MCP 說明文件](docs/mcp.md)與 [REST API 文件](docs/api.md)。
 
+也可完全不開視窗執行：`--headless` 只跑 API 與 MCP 伺服器，`--version`／`--help` 不啟動圖形介面，`eval <檔案>` 與 `render <檔案> --pdf <輸出>` 讓 CI 與腳本直接計算與產出 PDF；`GET /api/v1/health` 免權杖回報版本與 edition，可分辨台灣版與上游版。詳見 [無頭模式與命令列](docs/tw/無頭模式與CLI.md)。
+
+### 無頭模式與命令列
+
+不必開視窗也能執行，適合 CI 與腳本：
+
+```sh
+open-calcsheet-studio-tw --version                      # 版本、edition、tag、commit、建置日期
+open-calcsheet-studio-tw eval berekening.calc            # 計算一個檔案，JSON 輸出
+open-calcsheet-studio-tw render berekening.calc --pdf uit.pdf
+open-calcsheet-studio-tw --headless                      # 只跑 API／MCP 伺服器
+```
+
+免權杖的 `GET /api/v1/health` 會回報 edition、版本、tag 與埠，可據以分辨同機器上的上游版與台灣版。詳見 [無頭模式與命令列](docs/tw/無頭模式與CLI.md)。
+
+**無頭模式與命令列**：`--version`／`--help` 不開視窗直接結束，`--headless` 只跑 API 與 MCP，`eval <檔案>` 印出計算結果的 JSON、`render <檔案> --pdf <輸出>` 直接產出 PDF。同一批工具、同一份計算核心，適合 CI 與腳本。版本資訊在建置時寫入執行檔（edition／tag／commit／建置日期），`app_info` 與免權杖的 `GET /api/v1/health` 都會回報，台灣版與上游版安裝在同一台機器時可據此分辨。詳見 [無頭模式與命令列](docs/tw/無頭模式與CLI.md)。
+
 ## 測試與可靠性
 
-- **106 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **107 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。

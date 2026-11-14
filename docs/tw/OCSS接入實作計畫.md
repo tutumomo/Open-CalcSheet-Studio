@@ -73,3 +73,32 @@
 3. 版本字串改為 `-tw.N` 會影響更新比對（`versie.mjs`）與 app 內「關於」→ 需同步檢查腳本。
 4. 單位警告若誤報太多會淹沒真正問題 → 先只報「非整數量綱」與「同式量綱不一致」兩類。
 5. 側邊欄（P2-15）是最大單項，涉及金鑰圈、undo 掛勾、串流與變更預覽；先做唯讀工具，再開放寫入。
+
+## 7. 進度
+
+| 日期 | 項目 | 狀態 | 說明 |
+|---|---|---|---|
+| 2026-11-14 | P0-1 無頭模式與 CLI | 完成 | `src-tauri/src/cli.rs`（參數解析、`--version`／`--help` 直接結束、`eval`／`render`）、`src/mcp/cli.ts`（呼叫同一 registry，輸出附 `build`）；驗證指令碼 `scripts/check-ocss-headless.mjs` |
+| 2026-11-14 | P0-2 API 產 PDF | 完成 | `release-tw.yml` 建置加 `--features rapportengine`；`render --pdf` 走 `export_pdf`。無報表引擎的建置仍回 `NOT_AVAILABLE`，不假裝成功 |
+| 2026-11-14 | P0-3 版本可辨識 | 完成 | `src-tauri/build.rs` 寫入 `OCSS_EDITION`／`OCSS_BUILD_TAG`／`OCSS_GIT_COMMIT`／`OCSS_BUILD_DATE`，`src/kenmerken.rs` 對外提供；`app_info` 增 `edition`／`tag`／`commit`／`buildDate`（既有 `version` 不動）；`release-tw.yml` 打包前把 `tauri.conf.json` 版本改為 `X.Y.Z-tw.N` |
+| 2026-11-14 | P0-4 免 token 的 health | 完成 | `GET /api/v1/health` 由 Rust 於 token 檢查前回應，內容不含專案資料；`openapi.ts`、`docs/api.md` 已文件化 |
+| — | P0-5 拋棄式工作階段 | 待做 | 需在 `McpOmgeving` 加快照／還原，屬跨檔改動，排在 P0 收尾後單獨一個 commit |
+
+## 8. 上游可合併性
+
+這一輪改到的上游檔案，都是「新增程式碼、少改既有行」的方式，合併 `upstream/main` 時的衝突面如下：
+
+| 檔案 | 改動性質 | 合併時怎麼處理 |
+|---|---|---|
+| `src-tauri/src/cli.rs`、`src/kenmerken.rs`、`src/mcp/cli.ts`、`src/mcp/kenmerken.ts` | 全新檔案 | 上游不會有同名檔案，通常不衝突；若上游日後也做 CLI，以本 fork 為準並把上游的新功能接進 `cli.rs` 的 `parse()` |
+| `src-tauri/src/lib.rs` | 只新增 `mod cli;`、3 個 command、`run()` 開頭幾行與 `.manage(CliState(..))` | 上游改 `run()` 或 handler 清單時衝突在同幾行，保留兩邊（本 fork 的 command 一律保留） |
+| `src-tauri/src/mcp_bridge.rs` | `is_public` 多一個 `\|\|`、`health_body` 新函式、`handle_request` 多一個 `port` 參數 | 上游若改簽章，把 `port` 一併帶進新的簽章即可 |
+| `src-tauri/build.rs` | 原本幾乎為空，新增寫入 4 個環境變數 | 上游若加自己的 `cargo:rustc-env`，兩段並存 |
+| `src/App.tsx` | 開頭插一段 `startCli()` 判斷 | 上游若改動最外層元件，先保留上游寫法，再把 `startCli()` 放回最前面 |
+| `src/mcp/openapi.ts`、`tools/project.ts` | 只新增路徑與欄位 | 純新增，衝突少；`app_info` 若上游改結構，把 4 個新欄位補回 |
+| `release-tw.yml` | 台灣版專屬，上游沒有 | 不合併上游 |
+| `docs/api.md`、README 三份 | 新增段落與腳本計數 | 計數以 `node scripts/check-readme.mjs` 為準重算 |
+
+合併後固定要跑：`npm run check`、`valideer-tw-basis.mjs`、`valideer-tw-i18n-keys.mjs`、`cargo test --lib`、
+`node scripts/check-ocss-headless.mjs`。新增的上游命令若也要在無頭模式可用，記得在 `cli.rs` 補一個
+`Opdracht` 變體，而不是在 Rust 端另外實作。

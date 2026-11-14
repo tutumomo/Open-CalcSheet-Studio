@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 無頭模式與命令列（`docs/OCSS_TW_開發需求規格.md` P0-1～P0-4）：`--headless` 只啟動 API 與 MCP 伺服器而不開視窗，`--version`／`--help` 直接輸出後結束，`eval <檔案>` 與 `render <檔案> --pdf <輸出>` 以同一套工具 registry 計算與產出 PDF；建置時寫入 edition／tag／commit／建置日期，`app_info` 增列 `edition`、`tag`、`commit`、`buildDate`；新增免權杖的 `GET /api/v1/health`，可分辨台灣版與上游版。台灣版建置改為編譯報表引擎（`--features rapportengine`），安裝檔版本帶 `-tw.N`。說明見 `docs/tw/無頭模式與CLI.md`。
+
 - 台灣版（rc112 柱）：`@kern` 第二套獨立對照擴充到 `tw-rc-column`。新增 `scripts/fixtures/kern/bladen.mjs` 的 `TW_KOLOM`（沿用 `tw-rc-column` 範本文字、材料對齊 C30/37 與 B500B，呼叫 `concrete_column_check`），並在 `scripts/check-kern-blok.mjs` 新增章節「De Taiwanse kolom tegen Open FEM Studio」：同一斷面在 P_u = 1800 kN 下，rc112 三點折線得 φMn,cap = 393.89 kN·m、EN 1992-1-1 §5.8 得 M_Rdz = 531.03 kN·m（比值 0.742），差異來源為側筋不計、φ 與分項係數之別及折線之保守近似。
 
 - 台灣版（rc112 單向板）：啟用以 Open FEM Studio 的 `@kern` 計算核心作為第二套獨立對照。新增 `scripts/fixtures/kern/bladen.mjs` 的 `TW_PLAAT`（沿用 `tw-rc-slab` 範本文字，附加 `@kern` 的 `solve_native_fem` drielagenmodel 呼叫），並在 `scripts/check-kern-blok.mjs` 新增章節「De Taiwanse plaat tegen Open FEM Studio」：同一斷面以相同設計值（混凝土 0.85f'c、鋼筋 0.9f_y）比對所需鋼筋量，rc112 得 147.53 mm²/m、Open FEM Studio 得 173.36 mm²/m，兩者的 A_s·z 完全相同，差異全由力臂慣例造成。答案由 `node scripts/proef-kern-blok.mjs --bewaar` 產生並存入 `scripts/fixtures/kern/antwoorden.json`，CI 不需啟動 FEM Studio 伺服器。

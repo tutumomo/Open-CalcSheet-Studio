@@ -9,6 +9,31 @@ zelfde alleen-lezen/pauze uit **Instellingen › API en AI-assistent**.
 - Basisadres: `http://127.0.0.1:3879/api/v1`
 - OpenAPI 3.1: `http://127.0.0.1:3879/api/v1/openapi.json`
 - Header: `Authorization: Bearer <token>` (het token staat op de tab)
+- Zonder token: `GET /api/v1/health` (zie hieronder)
+
+### `GET /api/v1/health` — editie en versie zonder token
+
+Deze route is de enige naast `openapi.json` die **geen** Bearer-token vraagt,
+zodat een client eerst kan vaststellen welke app er op de poort luistert
+(bijvoorbeeld de TW-editie naast een upstream-installatie). Het antwoord bevat
+geen sleutels of projectgegevens:
+
+```json
+{
+  "status": "ok",
+  "name": "Open CalcSheet Studio",
+  "edition": "tw",
+  "version": "2026.46.1",
+  "tag": "2026.46.1-tw.1",
+  "commit": "1bec4a3",
+  "buildDate": "2026-11-14",
+  "port": 3879,
+  "api": "/api/v1"
+}
+```
+
+Dezelfde kenmerken staan in het antwoord van de tool `app_info`
+(`GET /api/v1/info`), naast de bestaande velden.
 
 **Alle functies.** Elke REST-route en elke MCP-tool is dezelfde tool uit één
 registry (`packages/desktop/src/mcp/tools.ts`), uitgevoerd via dezelfde code
@@ -139,8 +164,8 @@ de alleen-lezenstand.
 eenheden van het blad; zie [projectmodel.md](projectmodel.md#eenheden).
 
 Vaste routes: `GET /api/v1` (overzicht met alle routes), `GET /api/v1/tools`
-(elke tool met JSON-schema en routes), `POST /api/v1/tools/{naam}` en
-`GET /api/v1/openapi.json`.
+(elke tool met JSON-schema en routes), `POST /api/v1/tools/{naam}`,
+`GET /api/v1/openapi.json` en `GET /api/v1/health` (zonder token).
 
 ## Statussen
 

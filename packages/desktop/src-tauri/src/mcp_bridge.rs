@@ -82,6 +82,11 @@ const MAX_BODY_BYTES: u64 = 50 * 1024 * 1024;
 const REST_PREFIX: &str = "/api/v1";
 /// De enige route die zonder token mag: de OpenAPI-specificatie.
 const OPENAPI_PATH: &str = "/api/v1/openapi.json";
+/// De tweede route zonder token: de gezondheidscheck. Bewust zonder
+/// projectgegevens, maar mét de editie en het versielabel, zodat een client die
+/// op de standaardpoort verbindt kan zien of hij de Taiwan-versie of de
+/// upstream-versie te pakken heeft (`docs/tw/OCSS接入實作計畫.md`, P0-4).
+const HEALTH_PATH: &str = "/api/v1/health";
 /// Wat de REST-kant toestaat (ook de `Allow`-header bij een 405).
 const REST_METHODS: &str = "GET, POST, PUT, PATCH, DELETE";
 
@@ -183,9 +188,30 @@ fn route(method: &str, path: &str) -> Route {
     Route::NotFound
 }
 
-/// Mag dit request zonder token? Alleen het lezen van de OpenAPI-specificatie.
+/// Mag dit request zonder token? Het lezen van de OpenAPI-specificatie en de
+/// gezondheidscheck. Allebei alleen `GET`, en allebei zonder projectgegevens.
 fn is_public(method: &str, path: &str) -> bool {
-    method == "GET" && path == OPENAPI_PATH
+    method == "GET" && (path == OPENAPI_PATH || path == HEALTH_PATH)
+}
+
+/// Het antwoord van `GET /api/v1/health`, als JSON-tekst. Puur zodat de
+/// unit-test hem kan nalezen zonder socket. Bevat géén token, géén projectnaam
+/// en géén pad: alleen wat een client nodig heeft om de versie te herkennen.
+/// `version` is het versienummer (`2026.46.1`), `tag` de volledige release-tag
+/// (`2026.46.1-tw.1`); die twee zijn niet hetzelfde.
+fn health_body(port: u16) -> String {
+    serde_json::json!({
+        "status": "ok",
+        "name": "Open CalcSheet Studio",
+        "edition": crate::kenmerken::EDITIE,
+        "version": crate::kenmerken::VERSIE,
+        "tag": crate::kenmerken::TAG,
+        "commit": crate::kenmerken::COMMIT,
+        "buildDate": crate::kenmerken::BOUWDATUM,
+        "port": port,
+        "api": format!("http://127.0.0.1:{port}/api/v1"),
+    })
+    .to_string()
 }
 
 /// De HTTP-status van een REST-antwoord uit de webview: wat die kiest, binnen
@@ -505,6 +531,7 @@ fn handle_request(
     inflight: &Mutex<()>,
     app: &tauri::AppHandle,
     token: &str,
+    port: u16,
     shutdown: &AtomicBool,
 ) {
     // (2) DNS-rebinding: elke Origin-header ⇒ 403, geen CORS-headers.
@@ -526,6 +553,12 @@ fn handle_request(
             return;
         }
         Route::Mcp | Route::Rest => {}
+    }
+    // De gezondheidscheck antwoordt de bridge zelf: geen webview nodig, dus ook
+    // bruikbaar terwijl de app nog opstart of een zwaar blad doorrekent.
+    if method == "GET" && path == HEALTH_PATH {
+        respond_json(request, 200, &health_body(port));
+        return;
     }
     // (1) Bearer-token exact; anders 401 zonder details. Alleen de
     // OpenAPI-specificatie is zonder token te lezen.
@@ -611,6 +644,7 @@ fn run_loop(
     pending: Arc<Pending>,
     app: tauri::AppHandle,
     token: String,
+    port: u16,
 ) {
     // Eén enkel in-flight-slot (deze loop is single-threaded, maar de mutex legt
     // de "strikt serieel"-invariant expliciet vast).
@@ -622,7 +656,7 @@ fn run_loop(
         // Korte recv-timeout zodat de shutdown-vlag periodiek gecheckt wordt.
         match server.recv_timeout(Duration::from_millis(200)) {
             Ok(Some(request)) => {
-                handle_request(request, &pending, &inflight, &app, &token, &shutdown);
+                handle_request(request, &pending, &inflight, &app, &token, port, &shutdown);
             }
             Ok(None) => continue,
             Err(_) => break,
@@ -693,7 +727,7 @@ pub fn mcp_bridge_start(
         let server = server.clone();
         let shutdown = shutdown.clone();
         let app = app.clone();
-        move || run_loop(server, shutdown, pending, app, token)
+        move || run_loop(server, shutdown, pending, app, token, port)
     });
 
     *guard = Some(RunningBridge {
@@ -1022,12 +1056,29 @@ mod tests {
     }
 
     #[test]
-    fn only_the_openapi_spec_is_public() {
+    fn only_the_openapi_spec_and_health_are_public() {
         assert!(is_public("GET", "/api/v1/openapi.json"));
         assert!(!is_public("POST", "/api/v1/openapi.json"));
+        assert!(is_public("GET", "/api/v1/health"));
+        assert!(!is_public("POST", "/api/v1/health"));
         assert!(!is_public("GET", "/api/v1/project"));
         assert!(!is_public("GET", "/api/v1/tools"));
         assert!(!is_public("POST", "/mcp"));
+    }
+
+    /// De gezondheidscheck is het enige antwoord dat zonder token naar buiten
+    /// gaat; hij mag dus niets meer bevatten dan versie en editie.
+    #[test]
+    fn health_meldt_de_editie_en_de_poort() {
+        let tekst = health_body(3879);
+        let w: serde_json::Value = serde_json::from_str(&tekst).unwrap();
+        assert_eq!(w["status"], "ok");
+        assert_eq!(w["port"], 3879);
+        assert_eq!(w["api"], "http://127.0.0.1:3879/api/v1");
+        assert_eq!(w["edition"], crate::kenmerken::EDITIE);
+        assert_eq!(w["tag"], crate::kenmerken::TAG);
+        assert_eq!(w["version"], crate::kenmerken::VERSIE);
+        assert!(!tekst.to_lowercase().contains("token"), "health bevat een tokenveld");
     }
 
     #[test]

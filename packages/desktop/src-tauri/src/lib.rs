@@ -17,9 +17,13 @@
 //! De ERPNext-koppeling (`erpnext`) haalt de locatie van een project op; het
 //! API-geheim staat in de sleutelbos van het besturingssysteem.
 
+// Command-line: --version, --help, --headless, eval, render (src/cli.rs).
+mod cli;
 mod erpnext;
 mod fem_studio;
 mod jupyter_omgeving;
+// Buildkenmerken (editie, tag, commit, bouwdatum): zie src/kenmerken.rs.
+mod kenmerken;
 mod mcp_bridge;
 mod rapport_pdf;
 
@@ -80,6 +84,43 @@ fn engine_preview_pdf(report: serde_json::Value) -> Result<String, String> {
     let path = dir.join(format!("preview-{}.pdf", ts));
     std::fs::write(&path, &bytes).map_err(|e| format!("Failed to write preview PDF: {}", e))?;
     Ok(path.to_string_lossy().into_owned())
+}
+
+/// Het projectbestand waarmee de app is gestart. Een dubbelklik in de
+/// Verkenner geeft via de bestandskoppeling het pad mee als argument.
+/// De opdracht waarmee de app is gestart. De frontend leest hem bij het
+/// opstarten: bij `headless`, `eval` en `render` komt er geen venster.
+struct CliState(cli::Opdracht);
+
+/// Wat de frontend moet doen: `null` (gewoon de app), `{"command":"headless"}`,
+/// of een eenmalige opdracht (`eval`／`render`) met de bron erbij.
+#[tauri::command]
+fn cli_opdracht(state: tauri::State<'_, CliState>) -> serde_json::Value {
+    state.0.als_json()
+}
+
+/// Het einde van een eenmalige opdracht: de uitvoer naar stdout en stoppen met
+/// die exitcode. De frontend roept dit als laatste aan, zodat `eval` en `render`
+/// in een script bruikbaar zijn (`&&`, `$(…)`).
+#[tauri::command]
+fn cli_klaar(tekst: String, code: i32) {
+    use std::io::Write;
+    let mut uit = std::io::stdout();
+    let _ = uit.write_all(tekst.as_bytes());
+    if !tekst.ends_with('\n') {
+        let _ = uit.write_all(b"\n");
+    }
+    let _ = uit.flush();
+    std::process::exit(code);
+}
+
+/// De kenmerken van deze build (editie, volledige tag, commit, bouwdatum).
+///
+/// De frontend zet ze in `app_info`; de MCP-brug gebruikt dezelfde module voor
+/// `GET /api/v1/health`, zodat elk antwoord dezelfde waarden meldt.
+#[tauri::command]
+fn app_kenmerken() -> serde_json::Value {
+    kenmerken::als_json()
 }
 
 /// Het projectbestand waarmee de app is gestart. Een dubbelklik in de
@@ -169,6 +210,20 @@ fn geen_voorspellende_verbindingen(identifier: &str) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // `--version` en `--help` printen en stoppen vóór er ook maar een venster,
+    // webview of bridge bestaat: anders bleef de app hangen (P0-1).
+    let opdracht = cli::parse(std::env::args_os().skip(1));
+    match &opdracht {
+        cli::Opdracht::Versie => {
+            println!("{}", cli::versie_tekst());
+            return;
+        }
+        cli::Opdracht::Help => {
+            println!("{}", cli::help_tekst());
+            return;
+        }
+        _ => {}
+    }
     let context = tauri::generate_context!();
     #[cfg(windows)]
     geen_voorspellende_verbindingen(&context.config().identifier);
@@ -184,6 +239,9 @@ pub fn run() {
         .plugin(tauri_plugin_store::Builder::new().build())
         // MCP-brug: één actieve brug of geen. Starten en stoppen doet de
         // frontend (src/mcp/brug.ts) met de twee commando's hieronder.
+        // De opdracht van de command line, zodat de frontend weet of er een
+        // venster moet komen en of er iets eenmaligs te doen is.
+        .manage(CliState(opdracht))
         .manage(mcp_bridge::BridgeState::default())
         // De server van de Jupyter-bladen; start bij het eerste blad.
         .manage(jupyter_omgeving::JupyterOmgeving::default())
@@ -194,6 +252,9 @@ pub fn run() {
             engine_save_pdf,
             engine_preview_pdf,
             startbestand,
+            app_kenmerken,
+            cli_opdracht,
+            cli_klaar,
             rapport_pdf::rapport_pdf_beschikbaar,
             rapport_pdf::rapport_pdf_schrijven,
             mcp_bridge::mcp_bridge_start,

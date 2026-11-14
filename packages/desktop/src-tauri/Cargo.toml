@@ -18,6 +18,9 @@ rapportengine = ["dep:openaec-core"]
 
 [build-dependencies]
 tauri-build = { version = "2", features = [] }
+# build.rs leest `identifier` uit tauri.conf.json om de editie (`tw` of
+# `upstream`) te bepalen; zie de toelichting boven in build.rs.
+serde_json = "1"
 
 [dependencies]
 tauri = { version = "2", features = ["protocol-asset", "image-png"] }
