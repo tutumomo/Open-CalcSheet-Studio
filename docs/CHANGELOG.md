@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（多孔箱涵圖面修正）：`tw-box-culvert` 的參數化圖面原本把多孔箱涵畫成好幾座單孔箱涵並排，孔與孔之間出現兩道牆；現在改成一個連續的混凝土箱體，中間牆體共用（厚度仍為 `t_wall`），只有孔間寬度 `s_gap` > 0 時才會在孔與孔之間填入土壤。計算內容不變。
+
 - 台灣版（AI 助理 › 側邊欄寬度）：AI 助理側邊欄現在可以拖曳左緣調整寬度，雙擊把手或按方向鍵（Shift 加速）微調；寬度限制在 320～760 px，且不超過視窗寬度的 60%，視窗變小時自動拉回範圍內，不會把工作區擠掉。寬度會記住，下次開啟沿用。工具數不變（60）。
 
 - 台灣版（AI 助理 › 供應商目錄）：供應商清單改為完整移植 Cindy（`makecindy/cindy`，`packages/model-providers/catalog/providers.json` 第 3 版）的 36 個 preset，沿用同一組 id、名稱、簡體與繁體中文名稱、官方文件網址、Base URL 與建議模型：OpenRouter、DeepSeek、智譜 GLM（中國大陸／Global／Coding Plan）、Kimi（Moonshot 中國大陸／Global／Kimi Code）、MiniMax、阿里雲百鍊（Coding Plan／Token Plan 個人版與團隊版）、火山方舟（API／Agent Plan／Coding Plan）、騰訊雲 Coding Plan、小米 MiMo（按量／包月）、硅基流動、OpenCode Go、Vercel AI Gateway、LongCat、Agnes AI、OpenHubs、Hinoki、Ollama Cloud、Sub2API、LiteLLM、LM Studio、llama.cpp、vLLM、Magpie 等。另外補上 Cindy 沒有但本 App 需要的 Anthropic、OpenAI、Groq、xAI、Mistral、本機 Ollama 與三種自訂端點。Google 一律以 **Antigravity**（Cloud Code Assist，`cloudcode-pa.googleapis.com/v1internal`）呈現，不再使用舊的 Gemini 命名；沒有自備 Google OAuth 憑證時改用同一目錄的「Google Antigravity（API 金鑰）」。精靈的連線步驟可直接改寫端點（Sub2API 這類需要填自己主機的 preset 會留空並提示），Antigravity 的模型清單由 Rust 直接回傳內建清單（Code Assist 沒有公開的 models 端點）。工具數不變（60）。
