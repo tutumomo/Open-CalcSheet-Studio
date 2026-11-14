@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（OCSS 接入 P3-17）：`calc_evaluate`／`sheet_evaluate` 的 `@toets` 與 `@fem` 規則現在帶回完整的 FEM Studio 答案。`@toets`：`version`、`date`、`resultStatus`（`Ok`／`NotOk`／`NotApplicable`）、`passes`、`governing`、`items[]`（每個檢核的 `id`、`clause`、`title`、`uc`、`status`）與 `members[]`（逐根構材或鋼筋）。`@fem`：`version`、`date`、`model`（節點、元素、網格、彈簧、線支承、厚度）、`cases[]`（總載重與總反力）與 `extremes[]`（每個案例或組合的 `mx`／`my`／`mxy` 單位 kN·m/m、`deflection` 單位 mm、`reaction` 單位 kN，各含 `max`、`min`、`unit`）。沒有答案時這些欄位不存在，`check` 仍為 `unchecked`；既有欄位（`uc`、`status`、`check`、`type`、`name`）一個都沒改。工具數不變（60）。
+
 - 台灣版（OCSS 接入 P2-15）：App 內建 AI 助理側邊欄（標題列「AI」按鈕），直接呼叫與 MCP／REST 相同的工具（in-process，不經 HTTP、不需 token），因此能力、參數與錯誤碼完全一致，暫停與唯讀開關同樣生效。助理自動取得專案、目前工作表及其輸入與計算文字、上次檢核結果與單位警告，可用 `@工作表名稱` 限定範圍（含空白的名稱可直接寫）。每一步工具呼叫都列在對話中（可展開參數與結果），各自是一步復原；刪表、存檔、開新專案與覆寫既有內容會先詢問，覆寫前顯示逐行差異。答案以串流顯示並可中途停止，預設 12 回合上限。金鑰只存在作業系統金鑰環（`src-tauri/src/ai.rs`），不寫入 `preferences.json` 或日誌；提供 Anthropic、OpenAI 相容（含本機 magpie `http://127.0.0.1:3425`）與 Google Gemini 三種端點。`--headless` 或無視窗模式下側邊欄不載入。工具數不變（60）。
 
 - 台灣版（OCSS 接入 P2-16）：結構計算書新增台灣版面（`Rapport.tw`）：封面下方的技師簽章欄（姓名、科別、技師證書字號、主管機關、事務所、簽署日期與簽章圖檔，任一有填寫才出現，可整欄關閉）、每頁的頁首頁尾文字（變數 `{titel}`、`{projectnaam}`、`{kenmerk}`、`{datum}`、`{revisie}`）、以及表格的表號（「表 4-1」，依章節自動編號）。舊報告開啟後外觀不變。報告面板在台灣報告下多一節「台灣計算書版面」；API 以 `report_set` 的 `tw.handtekening.*`、`tw.kopvoet.*`、`tw.nummering.tabellen` 設定，`report_get` 讀回。圖號尚未實作：繪圖表以整頁輸出並自帶標題欄，另加圖說需改動出圖路徑（記於 `docs/tw/OCSS接入實作計畫.md`）。工具數不變（60）。

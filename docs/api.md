@@ -190,6 +190,12 @@ Leeg betekent: niets op papier, dus een bestaand rapport verandert niet.
 (`project_data_set`). Uitkomsten van `sheet_evaluate`, `calc_evaluate` en `sheet_get` blijven in de
 eenheden van het blad; zie [projectmodel.md](projectmodel.md#eenheden).
 
+Een `@toets`-regel in `lines` bevat het volledige antwoord van FEM Studio
+(`version`, `date`, `resultStatus`, `passes`, `items[]`, `members[]`), een
+`@fem`-regel het model, de gevallen en de uitersten per combinatie. Zonder
+antwoord staan die velden er niet en blijft `check` `unchecked`. Zie
+[mcp.md](mcp.md#tools) voor de velden.
+
 Vaste routes: `GET /api/v1` (overzicht met alle routes), `GET /api/v1/tools`
 (elke tool met JSON-schema en routes), `POST /api/v1/tools/{naam}`,
 `GET /api/v1/openapi.json` en `GET /api/v1/health` (zonder token).

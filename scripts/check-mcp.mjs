@@ -50,6 +50,7 @@ import { bouwProjectBestand, leesProjectBestand, PROJECT_FORMAAT_VERSIE } from "
 import { bladenVoorIfc } from "../packages/desktop/src/store/projectIfcx.ts";
 import { legeGegevens } from "../packages/desktop/src/store/projectGegevens.ts";
 import { gelijkeInvoer, isGewijzigd, opgeleverd } from "../packages/desktop/src/store/ontwerpInvoer.ts";
+import { regels } from "../packages/desktop/src/mcp/rekenen.ts";
 
 let fouten = 0;
 let aantal = 0;
@@ -874,6 +875,69 @@ console.log("Tekening met maten uit het rekenblad (sheet_drawing):");
   meld(verkeerd.isError && verkeerd.data.code === "VALIDATION" && /not a drawing/.test(verkeerd.data.error), "geen tekenblad: VALIDATION", verkeerd.data.error);
   await roep("sheet_remove", { id: reken.data.id });
   await roep("sheet_remove", { id: tekenId });
+}
+
+// ── 5j. Het antwoord van @toets en @fem in de regels (P3-17) ────────────────
+console.log("Het antwoord van @toets en @fem in de regels:");
+{
+  const zelfde = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  const bron = "kolom = @toets rc_column\nplaat = @fem dak\n";
+  const toetsKnoop = {
+    type: "toets",
+    naam: "kolom",
+    tool: "rc_column",
+    status: "klaar",
+    versie: "1.8.2",
+    datum: "2026-03-01T10:00:00Z",
+    uitkomst: {
+      uc_max: 0.87,
+      status: "Ok",
+      voldoet: true,
+      maatgevend: "T2",
+      toetsen: [
+        { id: "T1", artikel: "22.2.2.4.3", titel: "Krachtenspel", uc: 0.61, status: "Ok" },
+        { id: "T2", artikel: "22.2.2.4.4", titel: "Knik", uc: 0.87, status: "Ok" },
+      ],
+      staven: [
+        { id: "S1", uc_max: 0.61, status: "Ok", maatgevend: "T1" },
+        { id: "S2", uc_max: 0.87, status: "Ok", maatgevend: "T2" },
+      ],
+    },
+  };
+  const femKnoop = {
+    type: "fem",
+    naam: "plaat",
+    taal: "nl",
+    status: "klaar",
+    versie: "1.8.2",
+    datum: "2026-03-01T10:05:00Z",
+    model: { knopen: 120, elementen: 98, maas: 40, veren: 12, lijnen: 3, dikten: [0.2, 0.25] },
+    gevallen: [
+      { naam: "eigen gewicht", hash: "h1", somLast: 210.5, somR: 210.5 },
+      { naam: "veranderlijk", hash: "h2", somLast: 90, somR: 90 },
+    ],
+    uitersten: [
+      { naam: "UGT-1", soort: "combinatie", mxMax: 32.1, mxMin: -4.2, myMax: 18.3, myMin: -1.1, mxyMax: 2.4, mxyMin: -2.4, wMax: 6.1, wMin: 0, RMax: 55.2, RMin: -3.1 },
+    ],
+  };
+  const leegToets = { type: "toets", naam: "kolom", tool: "rc_column", status: "niet-getoetst" };
+  const leegFem = { type: "fem", naam: "plaat", taal: "nl", status: "niet-gerekend", gevallen: [] };
+  const uit = regels([toetsKnoop, femKnoop, leegToets, leegFem], 100, { bron }).regels;
+  const [t, f, lt, lf] = uit;
+
+  meld(t.version === "1.8.2" && t.date === "2026-03-01T10:00:00Z", "toets: de versie en datum van FEM Studio staan erbij", JSON.stringify(t));
+  meld(t.resultStatus === "Ok" && t.passes === true && t.governing === "T2", "toets: het oordeel, ook als passes/governing", JSON.stringify(t));
+  meld(t.items.length === 2 && t.items[1].clause === "22.2.2.4.4" && t.items[1].uc === 0.87 && t.items[1].title === "Knik", "toets: elke toets met artikel, titel en UC", JSON.stringify(t.items));
+  meld(t.members.length === 2 && t.members[1].governing === "T2", "toets: per staaf de UC en de maatgevende toets", JSON.stringify(t.members));
+  meld(t.uc === 0.87 && t.check === "pass" && t.status === "klaar", "toets: de oude velden blijven zoals ze waren", JSON.stringify({ uc: t.uc, check: t.check, status: t.status }));
+
+  meld(zelfde(f.model, { nodes: 120, elements: 98, mesh: 40, springs: 12, lineSupports: 3, thicknesses: [0.2, 0.25] }), "fem: het model in het kort", JSON.stringify(f.model));
+  meld(f.cases.length === 2 && f.cases[0].totalLoad === 210.5 && f.cases[1].name === "veranderlijk", "fem: per geval de belasting en de reactie", JSON.stringify(f.cases));
+  meld(f.extremes[0].mx.max === 32.1 && f.extremes[0].mx.unit === "kN m/m" && f.extremes[0].deflection.max === 6.1 && f.extremes[0].reaction.min === -3.1, "fem: de uitersten met hun eenheid", JSON.stringify(f.extremes));
+  meld(f.check === "unchecked" && f.version === "1.8.2", "fem: nooit 'pass' zonder容許waarde, versie erbij", JSON.stringify({ check: f.check, version: f.version }));
+
+  meld(lt.items === undefined && lt.passes === undefined && lt.version === undefined && lt.check === "unchecked", "zonder antwoord: geen antwoordvelden, check blijft unchecked", JSON.stringify(lt));
+  meld(lf.cases === undefined && lf.model === undefined && lf.check === "unchecked", "fem zonder antwoord: alleen de stand", JSON.stringify(lf));
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────

@@ -17,7 +17,7 @@
  */
 import { parse, evaluate, naarSI, vasteEenheid, gebrokenExponent } from "@ifc-calc/core";
 import { metToetsingen } from "../rekenen/toetsCache.ts";
-import type { AstNode, EvaluatedNode, LusNietKlaar } from "@ifc-calc/core";
+import type { AstNode, EvaluatedNode, FemUitersten, LusNietKlaar, ToetsUitkomst } from "@ifc-calc/core";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes.ts";
 import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../components/calc/bladLezen.ts";
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
@@ -234,6 +234,50 @@ function verrijking(
 }
 
 /**
+ * Het antwoord van een `@toets`-blok als JSON: het oordeel en elke toets op
+ * zichzelf. `status` blijft de stand van het blok; het oordeel van FEM Studio
+ * staat in `resultStatus` (`Ok`, `NotOk`, `NotApplicable`).
+ */
+function toetsAntwoord(u: ToetsUitkomst): Record<string, unknown> {
+  const uit: Record<string, unknown> = {
+    resultStatus: u.status,
+    passes: u.voldoet,
+    items: u.toetsen.map((t) => ({
+      id: t.id,
+      clause: t.artikel,
+      title: t.titel,
+      uc: jsonGetal(t.uc),
+      status: t.status,
+    })),
+  };
+  if (u.maatgevend) uit.governing = u.maatgevend;
+  if (u.staven && u.staven.length > 0) {
+    uit.members = u.staven.map((s) => ({
+      id: s.id,
+      uc: jsonGetal(s.uc_max),
+      status: s.status,
+      ...(s.maatgevend ? { governing: s.maatgevend } : {}),
+    }));
+  }
+  if (u.fout) uit.resultError = u.fout;
+  if (u.toetsen.length === 0) delete uit.items;
+  return uit;
+}
+
+/** De uitersten van één geval of combinatie, met de eenheid erbij. */
+function femUitersten(u: FemUitersten): Record<string, unknown> {
+  return {
+    name: u.naam,
+    kind: u.soort,
+    mx: { max: jsonGetal(u.mxMax), min: jsonGetal(u.mxMin), unit: "kN m/m" },
+    my: { max: jsonGetal(u.myMax), min: jsonGetal(u.myMin), unit: "kN m/m" },
+    mxy: { max: jsonGetal(u.mxyMax), min: jsonGetal(u.mxyMin), unit: "kN m/m" },
+    deflection: { max: jsonGetal(u.wMax), min: jsonGetal(u.wMin), unit: "mm" },
+    reaction: { max: jsonGetal(u.RMax), min: jsonGetal(u.RMin), unit: "kN" },
+  };
+}
+
+/**
  * De uitgerekende knopen als platte lijst regels. Een voorwaardelijk blok
  * levert zijn gekozen tak; figuren worden één regel `figure`. Na `max` regels
  * stopt de lijst (`afgekapt`).
@@ -298,6 +342,11 @@ export function regels(
           const uc = n.uitkomst?.uc_max;
           if (typeof uc === "number") regel.uc = jsonGetal(uc);
           if (n.melding) regel.message = n.melding;
+          // Het volledige antwoord van FEM Studio, zodat een client niet in de
+          // tekst van het blad hoeft te zoeken (OCSS 規格 P3-17).
+          if (n.versie) regel.version = n.versie;
+          if (n.datum) regel.date = n.datum;
+          if (n.uitkomst) Object.assign(regel, toetsAntwoord(n.uitkomst));
           // Geen antwoord of geen oordeel: nooit "pass".
           regel.check =
             n.status === "klaar" && n.uitkomst
@@ -311,6 +360,27 @@ export function regels(
         case "fem": {
           const regel: McpRegel = { type: "fem", name: n.naam, status: n.status };
           if (n.melding) regel.message = n.melding;
+          if (n.versie) regel.version = n.versie;
+          if (n.datum) regel.date = n.datum;
+          if (n.model) {
+            regel.model = {
+              nodes: n.model.knopen,
+              elements: n.model.elementen,
+              mesh: n.model.maas,
+              springs: n.model.veren,
+              lineSupports: n.model.lijnen,
+              thicknesses: n.model.dikten.map((d) => jsonGetal(d)),
+            };
+          }
+          if (n.gevallen.length > 0) {
+            regel.cases = n.gevallen.map((g) => ({
+              name: g.naam,
+              ...(g.hash ? { hash: g.hash } : {}),
+              ...(typeof g.somLast === "number" ? { totalLoad: jsonGetal(g.somLast) } : {}),
+              ...(typeof g.somR === "number" ? { totalReaction: jsonGetal(g.somR) } : {}),
+            }));
+          }
+          if (n.uitersten && n.uitersten.length > 0) regel.extremes = n.uitersten.map(femUitersten);
           regel.check = "unchecked";
           uit.push(regel);
           break;

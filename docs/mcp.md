@@ -110,7 +110,17 @@ Elke regel uit `calc_evaluate` (en uit `sheet_evaluate` met `lines: true`) is
 machineleesbaar: `name`, `expr`, `value`, `unit`, `si_value`/`si_unit`, `clause`
 (het normartikel dat de bron op die regel noemt), en `check` met `pass`, `fail`
 of `unchecked`, plus `uc` bij een UC. Een `@toets`- of `@fem`-blok zonder
-antwoord is altijd `unchecked`, nooit `pass`. `conventionalUnits: true` geeft
+antwoord is altijd `unchecked`, nooit `pass`.
+
+Een `@toets`-blok met antwoord geeft daarnaast het volledige antwoord van FEM
+Studio: `version`, `date`, `resultStatus` (`Ok`/`NotOk`/`NotApplicable`),
+`passes`, `governing` en `items[]` (per toets `id`, `clause`, `title`, `uc`,
+`status`), plus `members[]` als het antwoord per staaf of plaat komt. Een
+`@fem`-blok geeft `version`, `date`, `model` (knopen, elementen, maas, veren,
+lijnsteunen, dikten), `cases[]` (naam, totaalbelasting, totaalreactie) en
+`extremes[]` (per geval of combinatie `mx`/`my`/`mxy` in kN m/m, `deflection` in
+mm, `reaction` in kN, elk met `max`, `min` en `unit`). Zonder antwoord staan die
+velden er niet. `conventionalUnits: true` geeft
 daarnaast de gebruikelijke eenheid waar die bestaat (`kN/mm^2` → `MPa`,
 `tf/m^2` → `kPa`). Een gebroken exponent in de dimensie (`R^(2/3)` → `m^0.667`)
 geeft een waarschuwing in `warnings[]` met code, regel en naam; met `strict:
