@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（OCSS 接入 P2-12）：繪圖表的尺寸與文字可以綁定計算變數（`p.x.e = "L/2"`、文字中的 `{{R_paal}}`），值由該表自己的計算文字算出，與繪圖編輯器一致。`sheet_read` 對繪圖表回傳每個視圖的元素種類、mm 界的範圍與每條綁定的值／單位／錯誤（算不出的列在 `unbound`）；新工具 `sheet_drawing`（`GET /api/v1/sheets/{id}/drawing`）匯出 SVG 或 DXF：座標為實際 mm，SVG 在檔案內以 `data-eenheid="mm"` 與 mm 尺寸標明，DXF 以 `$INSUNITS`（4 = mm、6 = m，`unit` 選擇）標明、y 軸向上；符號與弧線無法化為正確的 DXF 實體，會計入 `skipped` 而非靜默省略。工具數 59 → 60。
+
 - 台灣版（OCSS 接入 P2-13）：Markdown 表與報告文字可以內插其他計算表的值，語法沿用計算語言的跨表參照並加上大括號：`{#2.R_paal}`（`{#2.M:1}` 取一位小數），值以該表顯示的單位呈現（`450 kN`）。Markdown 的程式碼區塊與行內程式碼不動；找不到值時原樣保留，`sheet_read` 的 `markdown.references` 會列出每個參照的數值、單位或錯誤原因。報告文字沿用既有的 `{專案變數}` 機制，同一段文字可混用兩者；Markdown 表開進報告時，目錄中的標題也會先內插。
 
 - 台灣版（OCSS 接入 P2-14）：計算表會記住「交付時的輸入值」（`sheet_add`／`sheet_set_input` 寫入的值）。之後使用者在 App 內改動欄位，`sheet_get` 的每個欄位會帶 `modified` 與 `original`，`sheet_get`／`sheet_evaluate` 另列 `modifiedInputs`；新工具 `sheet_reset_input`（`POST /sheets/{id}/inputs/reset`）可還原個別或全部欄位，`sheet_set_input` 新增 `design: false`（像使用者一樣改值、不更新交付值）。輸入畫面會標示被改過的欄位、提供逐欄與全部還原及「設為交付值」，若以交付值計算為合格而修改後不合格，會在表單上方明顯提示。交付值存進專案檔（`ocss::blad::ontwerp`）；App 內手動加入、未經 API 填值的表不追蹤。工具數 58 → 59。

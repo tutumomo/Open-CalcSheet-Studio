@@ -119,7 +119,7 @@ console.log("Dispatcher:");
   const verwacht = [
     "project_get", "project_set_data", "modules_list", "sheet_add", "sheet_get", "sheet_set_source",
     "sheet_set_input", "sheet_rename", "sheet_remove", "sheet_select", "sheet_evaluate", "calc_evaluate",
-    "module_schema", "sheet_read", "sheet_run", "sheet_reset_input", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
+    "module_schema", "sheet_read", "sheet_run", "sheet_drawing", "sheet_reset_input", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
   ];
   meld(verwacht.every((n) => namen.includes(n)), "tools/list: de twaalf oorspronkelijke tools", verwacht.filter((n) => !namen.includes(n)).join());
   meld(namen.length === MCP_TOOLS.length && new Set(namen).size === namen.length, `tools/list: alle ${MCP_TOOLS.length} tools, elk één keer`);
@@ -644,7 +644,8 @@ console.log("Inhoud per bladsoort (sheet_read, sheet_run):");
   const zonder = await MCP_TOOLS.find((t) => t.name === "sheet_run").handler({ id: jp.data.id }, { ...maakContext({ ...app.omgeving, notebooks: undefined }, vlaggen)() });
   meld(zonder.ok === false && zonder.code === "NOT_AVAILABLE", "sheet_run: 沒有 App 視窗時 NOT_AVAILABLE");
   const dr = await roep("sheet_add", { kind: "drawing", name: "圖" });
-  meld((await roep("sheet_read", { id: dr.data.id })).data.code === "VALIDATION", "sheet_read: 繪圖表導向 sheet_get");
+  const leeg = await roep("sheet_read", { id: dr.data.id });
+  meld(!leeg.isError && leeg.data.kind === "drawing" && leeg.data.drawing.views.length === 1 && leeg.data.drawing.views[0].elements === 0 && leeg.data.drawing.bindings.length === 0, "sheet_read: een leeg tekenblad geeft zijn lege view en geen koppelingen", JSON.stringify(leeg.data.drawing));
 
   for (const id of [ss.data.id, gr.data.id, jp.data.id, mr.data.id, dr.data.id]) await roep("sheet_remove", { id });
   zetWerkmapKern(null);
@@ -799,6 +800,80 @@ console.log("Waarden uit andere bladen in Markdown en rapport:");
   meld(!("filled" in stuk.data.markdown) && stuk.data.markdown.references.every((r) => r.value === null && typeof r.error === "string"), "onbekende verwijzing: blijft staan (geen filled), met de reden", JSON.stringify(stuk.data.markdown.references));
 
   for (const id of [mdToe.data.id, reken.data.id]) await roep("sheet_remove", { id });
+}
+
+// ── 5i. Tekening: maten aan het rekenblad, SVG en DXF (P2-12) ───────────────
+console.log("Tekening met maten uit het rekenblad (sheet_drawing):");
+{
+  const zelfde = (x, y) => JSON.stringify(x) === JSON.stringify(y);
+  const vel = {
+    formaat: "A3",
+    ligging: "liggend",
+    views: [
+      {
+        id: "voor",
+        titel: "Vooraanzicht",
+        x: 20,
+        y: 20,
+        breedte: 380,
+        hoogte: 250,
+        schaal: 20,
+        x0: 0,
+        y0: 0,
+        elementen: [
+          { id: "e1", soort: "rechthoek", p: { x: { v: 0 }, y: { v: 0 }, w: { v: 0, e: "L" }, h: { v: 0, e: "h_balk" } } },
+          { id: "e2", soort: "maat", p: { x1: { v: 0 }, y1: { v: -40 }, x2: { v: 0, e: "L" }, y2: { v: -40 } } },
+          { id: "e3", soort: "tekst", p: { x: { v: 0 }, y: { v: -80 } }, tekst: "L = {{L}}", grootte: 20 },
+          { id: "e4", soort: "cirkel", p: { cx: { v: 0, e: "L/2" }, cy: { v: 100 }, r: { v: 50 } } },
+        ],
+      },
+    ],
+  };
+  const tekenId = app.omgeving.acties.voegTekenbladToe("圖", vel);
+  // Geen `b`: dat is in de rekentaal een eenheid (barn) en geen naam van het blad.
+  app.omgeving.acties.zetBron(tekenId, "L = 6000 mm\nh_balk = 300 mm");
+
+  const gelezen = await roep("sheet_read", { id: tekenId });
+  meld(!gelezen.isError && gelezen.data.kind === "drawing" && gelezen.data.drawing.views.length === 1, "sheet_read: een tekenblad geeft zijn views", JSON.stringify(gelezen.data).slice(0, 200));
+  meld(zelfde(gelezen.data.drawing.views[0].kinds, { rechthoek: 1, maat: 1, tekst: 1, cirkel: 1 }), "sheet_read: de soorten elementen per view", JSON.stringify(gelezen.data.drawing.views[0].kinds));
+  const koppel = gelezen.data.drawing.bindings;
+  meld(koppel.find((k) => k.expression === "L")?.value === 6000 && koppel.find((k) => k.expression === "L/2")?.value === 3000, "sheet_read: elke koppeling met de waarde uit het blad", JSON.stringify(koppel));
+  meld(zelfde(gelezen.data.drawing.unbound, []) && gelezen.data.drawing.views[0].bounds.height > 300, "sheet_read: niets ongebonden, grenzen in mm", JSON.stringify(gelezen.data.drawing.views[0].bounds));
+
+  // SVG: mm, met de maten van het blad erin.
+  const svg = await roep("sheet_drawing", { id: tekenId });
+  const svgTekst = svg.data.drawings[0].content;
+  meld(!svg.isError && svg.data.format === "svg" && svgTekst.startsWith("<svg") && svgTekst.includes('data-eenheid="mm"') && svgTekst.includes("mm\" height="), "sheet_drawing: SVG zegt zelf dat de maat mm is", svgTekst.slice(0, 120));
+  meld(svgTekst.includes("L = 6000") && svgTekst.includes("3000"), "sheet_drawing: de maat en de {{…}}-tekst komen uit het blad", svgTekst.slice(-200));
+  meld(svg.data.views[0].bindings.some((k) => k.expression === "h_balk" && k.kind === "maat"), "sheet_drawing: de koppelingen staan er ook bij");
+
+  // DXF: mm en m, met de eenheid in het bestand zelf.
+  const dxfMm = await roep("sheet_drawing", { id: tekenId, format: "dxf" });
+  const dxfM = await roep("sheet_drawing", { id: tekenId, format: "dxf", unit: "m" });
+  const lijnen = (t) => t.split("\n").map((r) => r.trim());
+  meld(dxfMm.data.insunits === 4 && dxfM.data.insunits === 6 && dxfM.data.unit === "m", "$INSUNITS 4 voor mm en 6 voor m", `${dxfMm.data.insunits} / ${dxfM.data.insunits}`);
+  meld(lijnen(dxfMm.data.drawings[0].content).includes("6000") && lijnen(dxfM.data.drawings[0].content).includes("6"), "DXF: dezelfde tekening in mm (6000) en in m (6)", "");
+  const dxfTekst = dxfMm.data.drawings[0].content;
+  meld(dxfTekst.startsWith("0\nSECTION") && dxfTekst.includes("AC1009") && dxfTekst.includes("CIRCLE") && dxfTekst.includes("LINE") && dxfTekst.includes("TEXT"), "DXF: R12 met lijn, cirkel en tekst", dxfTekst.slice(0, 80));
+  meld(lijnen(dxfMm.data.drawings[0].content).filter((r) => r === "CIRCLE").length === 1, "DXF: één cirkel");
+
+  // Wat het blad niet kan uitrekenen, staat in unbound en niet stil in de tekening.
+  app.omgeving.acties.zetBron(tekenId, "L = 6000 mm");
+  const half = await roep("sheet_read", { id: tekenId });
+  meld(zelfde(half.data.drawing.unbound.map((u) => u.expression), ["h_balk"]) && typeof half.data.drawing.unbound[0].error === "string", "een onbekende naam staat in unbound, met de reden", JSON.stringify(half.data.drawing.unbound));
+  meld(half.data.drawing.bindings.find((k) => k.expression === "h_balk").value === null, "en de koppeling heeft geen waarde");
+
+  // Wat geen lijn, cirkel of tekst is gaat niet als losse DXF-entiteit mee.
+  const metSymbool = await roep("sheet_drawing", { id: tekenId, format: "dxf" });
+  meld(!metSymbool.isError && metSymbool.data.drawings[0].skipped.count === 0, "zonder symbool of boog wordt er niets overgeslagen", JSON.stringify(metSymbool.data.drawings[0].skipped));
+
+  const gevraagd = await roep("sheet_drawing", { id: tekenId, view: "bestaat-niet" });
+  meld(gevraagd.isError && gevraagd.data.code === "VALIDATION" && /voor/.test(gevraagd.data.error), "een onbekende view: VALIDATION met de beschikbare", gevraagd.data.error);
+  const reken = await roep("sheet_add", { templateId: "ligger", name: "Balk" });
+  const verkeerd = await roep("sheet_drawing", { id: reken.data.id });
+  meld(verkeerd.isError && verkeerd.data.code === "VALIDATION" && /not a drawing/.test(verkeerd.data.error), "geen tekenblad: VALIDATION", verkeerd.data.error);
+  await roep("sheet_remove", { id: reken.data.id });
+  await roep("sheet_remove", { id: tekenId });
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────

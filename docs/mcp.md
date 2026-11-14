@@ -62,7 +62,7 @@ leesbare tekst: deel ze niet.
 
 ## Tools
 
-59 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
+60 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
 De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 [api.md](api.md#routes). In het kort:
 
@@ -73,7 +73,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Rapport | `report_get`, `report_set` |
 | Geschiedenis | `undo`, `redo` |
 | Modules | `modules_list`, `module_schema`, `library_list`, `library_install`, `library_remove` |
-| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_reset_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_read`, `sheet_run`, `sheet_insert_formula` |
+| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_reset_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_read`, `sheet_run`, `sheet_drawing`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate`, `calc_evaluate_batch`, `job_start`, `job_status`, `job_cancel` |
 | Formules | `formulas_list`, `formula_get` |
 | Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
@@ -164,7 +164,18 @@ eenheid of fout in `markdown.references`. `sheet_run` laat een Jupyter- of
 Marimo-blad in de app draaien (het blad gaat open; alleen in de desktop-app) en
 geeft daarna dezelfde inhoud terug; `completed: false` betekent dat de ronde
 niet op tijd klaar was en de uitvoer niet te vertrouwen is. Een graaf,
-spreadsheet of rekenblad rekent al bij het lezen.
+spreadsheet of rekenblad rekent al bij het lezen. Een tekenblad geeft bij
+`sheet_read` zijn views (soorten elementen, grenzen in mm) en elke koppeling met
+de waarde uit het rekenblad; wat het blad niet kan uitrekenen staat in `unbound`.
+
+`sheet_drawing` schrijft een tekenblad als SVG of DXF uit, met de maten en
+`{{…}}`-teksten die aan het rekenblad hangen ingevuld (een maat `L/2` volgt de
+waarde van `L`). De coördinaten zijn millimeters in het echt; de SVG zegt dat in
+het bestand zelf (`data-eenheid="mm"`, breedte en hoogte in mm) en de DXF in
+`$INSUNITS` (4 = mm, 6 = m; `unit` kiest welke). In DXF staat de y-as omhoog,
+zoals DXF het wil. Wat geen lijn, cirkel of tekst is (een parametrisch symbool,
+een boog) zou als losse entiteit verkeerd uitkomen: dat wordt geteld in
+`skipped` en niet stil weggelaten zonder melding.
 
 ## Hoe het werkt
 

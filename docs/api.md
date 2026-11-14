@@ -154,6 +154,7 @@ de alleen-lezenstand.
 | `POST /sheets/{id}/evaluate` | `sheet_evaluate` | lezen | id, numbers, names, lines, conventionalUnits, strict |
 | `GET /sheets/{id}/content` | `sheet_read` | lezen | id, maxCells (markdown: ook `filled` en `references`) |
 | `POST /sheets/{id}/run` | `sheet_run` | wijzigen | **id**, timeoutSeconds, maxCells |
+| `GET /sheets/{id}/drawing` | `sheet_drawing` | lezen | **id**, format (svg/DXF), view, unit (mm/m) |
 | `POST /sheets/{id}/formulas` | `sheet_insert_formula` | wijzigen | **id**, **formulaId**, position, language |
 | `POST /evaluate` | `calc_evaluate` | lezen | **source**, values, useProjectData, maxLines, conventionalUnits, strict |
 | `POST /evaluate/batch` | `calc_evaluate_batch` | lezen | **items** (elk de argumenten van `calc_evaluate`) |

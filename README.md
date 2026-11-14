@@ -114,7 +114,7 @@ Every sheet with its text, input and results is in the IFCX file. Drawings that 
 
 ## MCP
 
-The app has a built-in MCP server and a REST API with the same 59 tools: open and save projects, add sheets, set input, calculate, export and print. It only listens on your own computer (`127.0.0.1`), behind a token. You can switch it off, make it read-only or pause it under **Settings › API and AI assistant**. See [the MCP documentation](docs/mcp.md) and [the REST API](docs/api.md).
+The app has a built-in MCP server and a REST API with the same 60 tools: open and save projects, add sheets, set input, calculate, export and print. It only listens on your own computer (`127.0.0.1`), behind a token. You can switch it off, make it read-only or pause it under **Settings › API and AI assistant**. See [the MCP documentation](docs/mcp.md) and [the REST API](docs/api.md).
 
 ## Testing and reliability
 

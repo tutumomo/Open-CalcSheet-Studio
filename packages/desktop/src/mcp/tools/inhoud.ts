@@ -7,11 +7,15 @@
  *   uitvoer van een Jupyter- of Marimo-notebook, de regels van een rekenblad.
  * - `sheet_run`: een notebook in de app laten draaien en de nieuwe uitvoer teruggeven;
  *   een graaf, spreadsheet of rekenblad rekent bij het lezen al door.
+ * - `sheet_drawing`: een tekenblad als SVG of DXF, met de maten die aan het blad
+ *   hangen ingevuld (docs/OCSS_TW_開發需求規格.md, P2-12).
  *
- * De leesregels staan in ../bladInhoud.ts.
+ * De leesregels staan in ../bladInhoud.ts en ../tekenInhoud.ts.
  */
 import type { McpBlad, McpContext, McpToolDef, McpToolResultaat } from "../contracts.ts";
 import { graafInhoud, jupyterInhoud, marimoInhoud, werkmapInhoud } from "../bladInhoud.ts";
+import { koppelUitkomsten, tekenDxf, tekenInhoud, tekenSvg, type TekenInhoud } from "../tekenInhoud.ts";
+import { velMaat, type TekenVel } from "../../store/tekenBlad.ts";
 import { regels } from "../rekenen.ts";
 import { markdownVerwijzingen, rekenTekstVerwijzingen, vulMarkdownIn } from "../../rekenen/tekstInvulling.ts";
 import { projectScope } from "../../store/projectGegevens.ts";
@@ -22,6 +26,8 @@ import { LEZEN, WIJZIGEN, bladSoort, bladUit, fout, idOptioneel, idVerplicht, me
 const STANDAARD_CELLEN = 2000;
 const MAX_CELLEN = 20000;
 const STANDAARD_TIJD_S = 90;
+/** Ruim boven een gewone tekening, maar niet zo ruim dat één antwoord de client verstopt. */
+const MAX_TEKENS = 4000000;
 /** Onder de 120 s van de brug, zodat er nog een antwoord terug kan. */
 const MAX_TIJD_S = 110;
 
@@ -88,9 +94,36 @@ async function inhoudVan(blad: McpBlad, ctx: McpContext, maxCellen: number): Pro
       const { regels: lijst, afgekapt } = regels(uitkomst.d.nodes, 5000, { bron: blad.source });
       return ok({ ...basis, result: resultaatJson(uitkomst.d.resultaat), lines: lijst, truncated: afgekapt });
     }
+    case "drawing": {
+      const { inhoud } = tekenVan(blad, ctx);
+      return ok({ ...basis, drawing: inhoud });
+    }
     default:
-      return fout("VALIDATION", `A ${basis.kind} sheet has no content to read here; use sheet_get (full=true for a drawing).`);
+      return fout("VALIDATION", `A ${basis.kind} sheet has no content to read here; use sheet_get for the whole sheet.`);
   }
+}
+
+/** Het tekenvel van een blad, of een leeg A4 als het vel ontbreekt. */
+function velVan(blad: McpBlad): TekenVel {
+  return blad.tekenvel ?? { formaat: "A4", ligging: "staand", views: [] };
+}
+
+/**
+ * De tekening van een blad met de waarden uit het rekenblad erin. De maten en
+ * `{{…}}`-teksten van de tekening worden in het blad zelf uitgerekend, net als
+ * in de editor (components/tekenen/waarden.ts).
+ */
+function tekenVan(blad: McpBlad, ctx: McpContext): { inhoud: TekenInhoud; uitkomsten: ReturnType<typeof koppelUitkomsten>; vel: TekenVel } {
+  const stand = ctx.omgeving.stand();
+  const vel = velVan(blad);
+  const scope = projectScope(stand.gegevens);
+  const opties = { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls };
+  const evalOpties = evalOptiesVan(stand.gegevens);
+  return {
+    vel,
+    uitkomsten: koppelUitkomsten(vel, blad.source, blad.waarden, scope, opties, evalOpties),
+    inhoud: tekenInhoud(vel, blad.source, blad.waarden, scope, opties, evalOpties, velMaat(vel)),
+  };
 }
 
 function maxCellenUit(args: Record<string, unknown>): number {
@@ -160,6 +193,69 @@ export const INHOUDTOOLS: McpToolDef[] = [
       const r = await inhoudVan(nu, ctx, maxCellenUit(args));
       if (!r.ok) return r;
       return ok({ ...r.data, ran: true, completed: ronde.klaar, ...(ronde.melding ? { message: ronde.melding } : {}) });
+    },
+  },
+  {
+    name: "sheet_drawing",
+    kind: "read",
+    description:
+      "Export a drawing sheet as SVG or DXF, with the dimensions and {{…}} texts that hang on the calculation sheet filled in (a dimension 'L/2' follows the value of L). " +
+      "Coordinates are millimetres in reality; SVG says so in the file (data-eenheid=\"mm\", width/height in mm) and DXF in $INSUNITS (4 = mm, 6 = m; unit sets which). In DXF the y-axis points up, as DXF expects. " +
+      "The answer also lists every binding (expression, value, unit, error) and each view with its bounds in mm; bindings the calculation sheet cannot resolve are in unbound. " +
+      "Symbols and arcs cannot become plain DXF entities without drawing them wrong: they are counted in skipped and left out of the DXF.",
+    inputSchema: objectSchema(
+      {
+        id: idVerplicht,
+        format: { type: "string", enum: ["svg", "dxf"], description: "Default svg." },
+        view: { type: "string", minLength: 1, description: "Id or title of one view. Default: every view of the sheet." },
+        unit: { type: "string", enum: ["mm", "m"], description: "DXF only: the unit of the coordinates. Default mm." },
+      },
+      ["id"],
+    ),
+    annotations: LEZEN,
+    rest: [{ method: "GET", path: "/sheets/{id}/drawing" }],
+    handler: (args, ctx) => {
+      const gevonden = bladUit(args, ctx, true);
+      if ("fout" in gevonden) return gevonden.fout;
+      const { blad } = gevonden;
+      if (bladSoort(blad) !== "drawing") return fout("VALIDATION", `Sheet "${blad.naam}" is not a drawing; sheet_read gives the content of the other kinds.`);
+      const { inhoud, uitkomsten, vel } = tekenVan(blad, ctx);
+      const format = args.format === "dxf" ? "dxf" : "svg";
+      const unit = args.unit === "m" ? "m" : "mm";
+      const gevraagd = typeof args.view === "string" && args.view.trim() !== "" ? args.view.trim() : null;
+      const views = gevraagd ? vel.views.filter((v) => v.id === gevraagd || v.titel === gevraagd) : vel.views;
+      if (gevraagd && views.length === 0) {
+        const hebben = vel.views.map((v) => v.id).join(", ") || "none";
+        return fout("VALIDATION", `This sheet has no view "${gevraagd}". The views are: ${hebben}.`);
+      }
+      const tekeningen = views.map((v) => {
+        if (format === "dxf") {
+          const { dxf, skipped, insunits } = tekenDxf(v, uitkomsten, unit);
+          return { view: v.id, title: v.titel, unit, insunits, skipped, content: dxf, characters: dxf.length };
+        }
+        const { svg, bounds } = tekenSvg(v, uitkomsten);
+        return { view: v.id, title: v.titel, bounds, content: svg, characters: svg.length, unit: "mm" };
+      });
+      const teGroot = tekeningen.find((t) => t.characters > MAX_TEKENS);
+      if (teGroot) {
+        return fout(
+          "VALIDATION",
+          `The ${format} of view "${teGroot.view}" is ${teGroot.characters} characters, above the limit of ${MAX_TEKENS}; export one view at a time${format === "dxf" ? " or use SVG" : ""}.`,
+          { id: blad.id, format, views: tekeningen.map((t) => ({ view: t.view, characters: t.characters })) },
+        );
+      }
+      return ok({
+        id: blad.id,
+        name: blad.naam,
+        kind: "drawing",
+        sheet: inhoud.sheet,
+        format,
+        ...(format === "dxf" ? { unit, insunits: tekeningen[0]?.insunits ?? (unit === "m" ? 6 : 4) } : {}),
+        views: inhoud.views,
+        bindings: inhoud.bindings,
+        unbound: inhoud.unbound,
+        drawings: tekeningen,
+      });
     },
   },
 ];
