@@ -44,7 +44,7 @@
     "tooltip": "位於 {{adres}} 的 MCP 與 REST API——在「設定 › API 與 AI 助理」中配置",
     "tooltipBrowser": "MCP 與 REST API 的伺服器僅存在於桌面版應用程式。"
   },
-  "version": "Open CalcSheet Studio v2026.46.1",
+  "version": "Open CalcSheet Studio v2026.46.2",
   "section": "章節 {{number}}",
   "contentPlaceholder": "此處為內容",
   "sendFeedback": "提供意見反應",

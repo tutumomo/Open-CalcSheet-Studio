@@ -3180,7 +3180,7 @@ dependencies = [
 
 [[package]]
 name = "open-calcsheet-studio"
-version = "2026.46.1"
+version = "2026.46.2"
 dependencies = [
  "keyring",
  "ocss-fem-brug",
