@@ -6,9 +6,10 @@ import "./VoetplaatDesigner.css";
 /**
  * Parametrisch beeld bij het blad 鋼筋混凝土箱涵設計與檢核 (templates/tw-box-culvert.ts):
  * dwarsdoorsnede van de duiker met dak, wanden, bodem, de vouten in de hoeken en de
- * grondoverdekking erboven. Bij meerdere barrels (n_barrels) worden de buizen naast
- * elkaar getekend, met een eventuele tussenruimte s_gap. Het beeld rekent niet; de kop
- * toont de UC en het oordeel van het blad zelf. Maten in m, zoals in het blad.
+ * grondoverdekking erboven. Bij meerdere pijpen (n_barrels) staat er één doorlopend
+ * betonlichaam: de wand tussen twee pijpen is gemeenschappelijk (dikte tw), en alleen
+ * bij een tussenruimte s_gap > 0 komt er grond tussen de pijpen. Het beeld rekent niet;
+ * de kop toont de UC en het oordeel van het blad zelf. Maten in m, zoals in het blad.
  */
 const MARKER = "鋼筋混凝土箱涵設計與檢核";
 
@@ -32,22 +33,23 @@ export default function TwBoxCulvertDesigner() {
   const n = clamp(Math.round(d("n_barrels") || 1), 1, 6);
   const sg = Math.max(0, d("s_gap") || 0);
 
-  const barrelW = B + 2 * tw; // buitenbreedte van een barrel
-  const totB = n * barrelW + (n - 1) * sg; // totale breedte over alle barrels
+  // Elke pijp heeft één eigen buitenwand; de wand tussen twee pijpen is
+  // gemeenschappelijk (dikte tw), niet twee wanden tegen elkaar.
+  const xL = (k: number) => tw + k * (B + tw + sg); // linkerkant van de holle ruimte k
+  const totB = n * B + (n + 1) * tw + (n - 1) * sg; // totale breedte over alle pijpen
   const totH = hc + tt + Hh + tb;
   const W = box.w;
   const sc = Math.max(8, Math.min((W - 190) / totB, (Math.max(box.h, 380) - 140) / totH));
   const x0 = 70, y0 = 40;
   const X = (m: number) => x0 + m * sc, Y = (m: number) => y0 + m * sc; // m vanaf linkerkant / bovenkant
   const yDak = hc, yBin = hc + tt, yBodem = hc + tt + Hh;
-  const xi0 = tw, xi1 = tw + B;
-  // holle ruimte met vouten, per barrel met eigen linkerrand
-  const holle = (off: number) =>
+  // holle ruimte met vouten
+  const holle = (links: number) =>
     [
-      [xi0 + cc, yBin], [xi1 - cc, yBin], [xi1, yBin + cc], [xi1, yBodem - cc],
-      [xi1 - cc, yBodem], [xi0 + cc, yBodem], [xi0, yBodem - cc], [xi0, yBin + cc],
-    ].map(([x, y]) => `${X(off + x)},${Y(y)}`).join(" ");
-  const barrels = Array.from({ length: n }, (_, k) => k * (barrelW + sg));
+      [links + cc, yBin], [links + B - cc, yBin], [links + B, yBin + cc], [links + B, yBodem - cc],
+      [links + B - cc, yBodem], [links + cc, yBodem], [links, yBodem - cc], [links, yBin + cc],
+    ].map(([x, y]) => `${X(x)},${Y(y)}`).join(" ");
+  const pijpen = Array.from({ length: n }, (_, k) => xL(k));
   const H = Y(totH) + 70;
 
   return (
@@ -80,23 +82,27 @@ export default function TwBoxCulvertDesigner() {
               <svg width={W} height={H} className="vd-svg">
                 <Defs k="bc" />
                 {hc > 0 && <rect x={x0 - 24} y={y0} width={totB * sc + 48} height={hc * sc} fill="#d6c3a1" opacity={0.7} stroke="#a8916a" strokeWidth={1} />}
-                {barrels.map((off, k) => (
-                  <g key={k}>
-                    <rect x={X(off)} y={Y(yDak)} width={barrelW * sc} height={(tt + Hh + tb) * sc} fill={betonFill("bc")} stroke="#374151" strokeWidth={1.4} />
-                    <polygon points={holle(off)} fill="#ffffff" stroke="#374151" strokeWidth={1.2} />
-                  </g>
+                {/* één doorlopend betonlichaam; de holle ruimten worden eruit gesneden,
+                    zodat de wand tussen twee pijpen automatisch gemeenschappelijk is */}
+                <rect x={X(0)} y={Y(yDak)} width={totB * sc} height={(tt + Hh + tb) * sc} fill={betonFill("bc")} stroke="#374151" strokeWidth={1.4} />
+                {pijpen.map((links, k) => (
+                  <polygon key={k} points={holle(links)} fill="#ffffff" stroke="#374151" strokeWidth={1.2} />
                 ))}
-                <HDim k="bc" x0={X(xi0)} x1={X(xi1)} y={Y(totH) + 34} ext={Y(totH) + 4} />
-                {n > 1 && sg > 0 && <HDim k="bc" x0={X(barrelW)} x1={X(barrelW + sg)} y={Y(totH) + 34} ext={Y(totH) + 4} />}
+                {/* tussenruimte s_gap: grond tussen twee pijpen in plaats van beton */}
+                {n > 1 && sg > 0 && pijpen.slice(0, -1).map((links, k) => (
+                  <rect key={`gap${k}`} x={X(links + B + tw)} y={Y(yDak)} width={sg * sc} height={(tt + Hh + tb) * sc} fill="#d6c3a1" opacity={0.7} stroke="#a8916a" strokeWidth={1} />
+                ))}
+                <HDim k="bc" x0={X(xL(0))} x1={X(xL(0) + B)} y={Y(totH) + 34} ext={Y(totH) + 4} />
+                {n > 1 && sg > 0 && <HDim k="bc" x0={X(xL(0) + B + tw)} x1={X(xL(1) - tw)} y={Y(totH) + 34} ext={Y(totH) + 4} />}
                 <VDim k="bc" y0={Y(yBin)} y1={Y(yBodem)} x={X(totB) + 34} ext={X(totB) + 4} />
               </svg>
-              <Dim ctx={ctx} name="B_clear" value={B} x={X(totB / 2) - 40} y={Y(totH) + 24} step={0.1} dec={2} label={SYM.B} eenheid="m" />
+              <Dim ctx={ctx} name="B_clear" value={B} x={X(xL(0) + B / 2) - 20} y={Y(totH) + 24} step={0.1} dec={2} label={SYM.B} eenheid="m" />
               <Dim ctx={ctx} name="H_clear" value={Hh} x={X(totB) + 42} y={Y(yBin + Hh / 2) - 10} step={0.1} dec={2} label={SYM.H} eenheid="m" />
               <Dim ctx={ctx} name="t_top" value={tt} x={X(totB / 2) - 24} y={Y(yDak + tt / 2) - 11} step={0.05} dec={2} label={SYM.tt} eenheid="m" />
               <Dim ctx={ctx} name="t_bot" value={tb} x={X(totB / 2) - 24} y={Y(yBodem + tb / 2) - 11} step={0.05} dec={2} label={SYM.tb} eenheid="m" />
               <Dim ctx={ctx} name="t_wall" value={tw} x={X(-0.05) - 74} y={Y(yBin + Hh / 2) - 10} step={0.05} dec={2} label={SYM.tw} eenheid="m" />
               {n > 1 && sg > 0 && (
-                <Dim ctx={ctx} name="s_gap" value={sg} x={X(barrelW + sg / 2) - 24} y={Y(totH) + 24} step={0.1} dec={2} label={SYM.sg} eenheid="m" />
+                <Dim ctx={ctx} name="s_gap" value={sg} x={X(xL(0) + B + tw) - 10} y={Y(totH) + 24} step={0.1} dec={2} label={SYM.sg} eenheid="m" />
               )}
             </div>
           </div>
