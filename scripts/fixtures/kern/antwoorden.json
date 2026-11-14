@@ -93,7 +93,7 @@
      }
     }
    },
-   "datum": "2026-11-14T03:07:36.641Z",
+   "datum": "2026-11-14T03:19:31.645Z",
    "herkomst": {
     "versie": "2026.46.1",
     "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
@@ -379,7 +379,7 @@
      }
     ]
    },
-   "datum": "2026-11-14T03:07:36.646Z",
+   "datum": "2026-11-14T03:19:31.651Z",
    "herkomst": {
     "versie": "2026.46.1",
     "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
@@ -735,7 +735,7 @@
      "status": "partial_check_exceeded"
     }
    },
-   "datum": "2026-11-14T03:07:36.652Z",
+   "datum": "2026-11-14T03:19:31.658Z",
    "herkomst": {
     "versie": "2026.46.1",
     "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
@@ -783,7 +783,7 @@
      "utilization": 0.8997993952996605
     }
    },
-   "datum": "2026-11-14T03:07:36.666Z",
+   "datum": "2026-11-14T03:19:31.673Z",
    "herkomst": {
     "versie": "2026.46.1",
     "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
@@ -881,11 +881,1760 @@
      }
     }
    },
-   "datum": "2026-11-14T03:07:36.682Z",
+   "datum": "2026-11-14T03:19:31.690Z",
    "herkomst": {
     "versie": "2026.46.1",
     "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
     "schema": "seaaaf098569344b9"
+   }
+  },
+  "t2d0679fa9c3d049a": {
+   "tool": "concrete_column_check",
+   "verzoek": {
+    "beam_id": 1,
+    "bijlage": "NL",
+    "concrete_class": "C30/37",
+    "reinforcement_grade": "B500B",
+    "design_situation": "PersistentTransient",
+    "steel_branch": "Horizontal",
+    "tweede_orde_in_krachten": "Geen",
+    "length_m": 3.5,
+    "section": {
+     "shape": "Rectangle",
+     "b_mm": 500,
+     "h_mm": 500
+    },
+    "cage": {
+     "cover_mm": 40,
+     "stirrup_diameter_mm": 9.53,
+     "stirrup_legs": 4,
+     "stirrup_spacing_mm": 150,
+     "bottom": {
+      "count": 3,
+      "diameter_mm": 25.4
+     },
+     "top": {
+      "count": 3,
+      "diameter_mm": 25.4
+     },
+     "sides": {
+      "count": 1,
+      "diameter_mm": 25.4
+     }
+    },
+    "column": {
+     "bracing": "Geschoord",
+     "buckling_length": {
+      "soort": "Opgegeven",
+      "l0_m": 3.5
+     },
+     "bracing_z": "Geschoord",
+     "buckling_length_z": {
+      "soort": "Opgegeven",
+      "l0_m": 3.5
+     }
+    },
+    "forces_envelope": [
+     {
+      "combination_id": 1,
+      "position_mm": 0,
+      "forces": {
+       "mt_ed": 0,
+       "my_ed": 0,
+       "mz_ed": 0,
+       "n_ed": -1800,
+       "vy_ed": 0,
+       "vz_ed": 0
+      }
+     }
+    ]
+   },
+   "uitkomst": {
+    "beam_id": 1,
+    "checks": [
+     {
+      "id": "5.8.3.1_slankheidsgrens",
+      "kind": {
+       "data": {
+        "article": "art. 5.8.3.1(1) — NB: \"De waarde van λ_lim moet gelijk aan 20·A·B·C/√n zijn genomen\"",
+        "deelstappen": [
+         {
+          "article": "art. 5.8.1",
+          "formula_latex": "",
+          "id": "schoring",
+          "ingevuld_latex": "",
+          "notes": [
+           "geschoord: in het ontwerp is aangenomen dat dit element niet bijdraagt aan de totale horizontale stabiliteit (§5.8.1)",
+           "§5.8.1 definieert geschoord en schorend allebei met de woorden \"is aangenomen\": het is een ontwerpbesluit en geen eigenschap die uit het model volgt. De app vraagt het daarom en leidt het niet af."
+          ],
+          "symbol": "",
+          "titel": "Geschoord of ongeschoord",
+          "unit": "",
+          "value": null,
+          "variables": []
+         },
+         {
+          "article": "art. 5.8.3.2",
+          "formula_latex": "l_0",
+          "id": "l0",
+          "ingevuld_latex": "l_0 = 3500\\ \\mathrm{mm}",
+          "notes": [
+           "l₀ is rechtstreeks opgegeven; de herkomst staat niet in deze afleiding."
+          ],
+          "symbol": "l_0",
+          "titel": "Effectieve lengte (kniklengte)",
+          "unit": "mm",
+          "value": 3500,
+          "variables": [
+           {
+            "symbol": "l",
+            "unit": "mm",
+            "value": 3500
+           },
+           {
+            "symbol": "l₀",
+            "unit": "mm",
+            "value": 3500
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.3.2(1) (5.14)",
+          "formula_latex": "\\lambda = \\frac{l_0}{i}",
+          "id": "lambda",
+          "ingevuld_latex": "\\lambda = \\frac{3500}{144{,}3} = 24{,}2",
+          "notes": [
+           "i is de traagheidsstraal van de NIET-GESCHEURDE betondoorsnede (§5.8.3.2(1)): zonder wapening en zonder scheurvorming. Dat is een andere stijfheid dan die van §5.8.3.2(5), waar de scheurvorming in de verhinderende elementen juist wél moet worden meegenomen."
+          ],
+          "symbol": "\\lambda",
+          "titel": "Slankheid",
+          "unit": "-",
+          "value": 24.248711305964285,
+          "variables": [
+           {
+            "symbol": "l₀",
+            "unit": "mm",
+            "value": 3500
+           },
+           {
+            "symbol": "i",
+            "unit": "mm",
+            "value": 144.33756729740642
+           },
+           {
+            "symbol": "λ",
+            "unit": "-",
+            "value": 24.248711305964285
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.3.1(1)",
+          "formula_latex": "n = \\frac{N_{Ed}}{A_c f_{cd}} \\qquad \\omega = \\frac{A_s f_{yd}}{A_c f_{cd}}",
+          "id": "n_omega",
+          "ingevuld_latex": "n = 0{,}360 \\qquad \\omega = 0{,}352",
+          "notes": [
+           "N_Ed is hier de DRUKkracht en positief: 1800,00 kN. Aan de buitengrens van deze kern is N positief bij trek; de omzetting gebeurt op één plek. A_s is de TOTALE langswapening van de doorsnede."
+          ],
+          "symbol": "n,\\ \\omega",
+          "titel": "Relatieve normaalkracht en mechanische wapeningsverhouding",
+          "unit": "-",
+          "value": 0.36,
+          "variables": [
+           {
+            "symbol": "n",
+            "unit": "-",
+            "value": 0.36
+           },
+           {
+            "symbol": "ω",
+            "unit": "-",
+            "value": 0.3524921593721723
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.4(2) (5.19), met art. 5.8.4(4)",
+          "formula_latex": "\\varphi_{ef} = \\varphi(\\infty,t_0)\\cdot\\frac{M_{0Eqp}}{M_{0Ed}}",
+          "id": "phi_ef",
+          "ingevuld_latex": "",
+          "notes": [
+           "φ_ef is niet uit (5.19) bepaald. Hoe A dan is genomen — de standaardwaarde 0,7 van §5.8.3.1(1) of φ(∞,t₀) als bovengrens — en onder welke voorwaarde, staat bij de factoren A, B en C.",
+           "De nationale bijlage wijkt van §5.8.4 niet af: op de bladzijden met (5.19) en de drie voorwaarden staat geen NB-tekst."
+          ],
+          "symbol": "\\varphi_{ef}",
+          "titel": "Effectieve kruipcoëfficiënt",
+          "unit": "-",
+          "value": null,
+          "variables": []
+         },
+         {
+          "article": "art. 5.8.3.1(1), zoals door de nationale bijlage als eis gesteld",
+          "formula_latex": "A = \\frac{1}{1+0{,}2\\varphi_{ef}} \\qquad B = \\sqrt{1+2\\omega} \\qquad C = 1{,}7 - r_m",
+          "id": "abc",
+          "ingevuld_latex": "A = 0{,}700 \\qquad B = 1{,}306 \\qquad C = 0{,}700",
+          "notes": [
+           "C = 0,7: de eerste-orde-eindmomenten zijn niet opgegeven, en §5.8.3.1(1) staat dan de standaardwaarde toe (\"als r_m onbekend is, mag C = 0,7 zijn gebruikt\").",
+           "A = 0,7 is de standaardwaarde die §5.8.3.1(1) toestaat als φ_ef onbekend is. WAARSCHUWING: φ(∞,t₀) is niet opgegeven, dus niet na te gaan of 0,7 aan de veilige kant ligt — dat is alleen zo bij φ_ef ≤ 2,14."
+          ],
+          "symbol": "A,\\ B,\\ C",
+          "titel": "De factoren A, B en C",
+          "unit": "-",
+          "value": null,
+          "variables": [
+           {
+            "symbol": "A",
+            "unit": "-",
+            "value": 0.7
+           },
+           {
+            "symbol": "B",
+            "unit": "-",
+            "value": 1.3057504810431222
+           },
+           {
+            "symbol": "C",
+            "unit": "-",
+            "value": 0.7
+           }
+          ]
+         },
+         {
+          "article": "NB bij art. 5.8.3.1(1) — de EN-aanbeveling (5.13N) is als eis overgenomen",
+          "formula_latex": "\\lambda_{lim} = \\frac{20\\,A\\,B\\,C}{\\sqrt{n}}",
+          "id": "lambda_lim",
+          "ingevuld_latex": "\\lambda_{lim} = \\frac{20 \\cdot 0{,}700 \\cdot 1{,}306 \\cdot 0{,}700}{\\sqrt{0{,}360}} = 21{,}3",
+          "notes": [
+           "λ = 24,2 en λ_lim = 21,3: de tweede-orde-effecten mogen NIET worden verwaarloosd (§5.8.3.1(1)).",
+           "Bij λ ≥ λ_lim is de kolom niet afgekeurd; er moet dan tweede orde worden gerekend. In deze app is dat de algemene methode van §5.8.6."
+          ],
+          "symbol": "\\lambda_{lim}",
+          "titel": "Slankheidsgrens",
+          "unit": "-",
+          "value": 21.327257857037665,
+          "variables": [
+           {
+            "symbol": "λ",
+            "unit": "-",
+            "value": 24.248711305964285
+           },
+           {
+            "symbol": "λ_lim",
+            "unit": "-",
+            "value": 21.327257857037665
+           }
+          ]
+         }
+        ],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "\\lambda < \\lambda_{lim} = \\frac{20\\,A\\,B\\,C}{\\sqrt{n}}",
+        "id": "5.8.3.1_slankheidsgrens",
+        "notes": [
+         "De maatgevende snede is gezocht op de grootste normaalDRUK en niet op het grootste moment: n = N_Ed/(A_c·f_cd) staat onder een wortel in de NOEMER van λ_lim, dus hoe groter de druk hoe kleiner λ_lim. Gekozen is x = 0 mm uit combinatie 1 met N_Ed = 1800,0 kN druk en M₀Ed = 0,0 kNm, uit 1 punten van de omhullende. Moment en normaalkracht komen uit DEZELFDE snede en dus uit dezelfde combinatie.",
+         "λ = 24,2 ≥ λ_lim = 21,3: de tweede-orde-effecten mogen NIET worden verwaarloosd. Dit is GEEN bezwijken van de doorsnede. Het betekent dat de krachten waarop de doorsnedetoetsen hierboven zijn gedraaid uit een tweede-orde-berekening moeten komen — in deze app de algemene methode van §5.8.6, de fysisch niet-lineaire keten met de secante buigstijfheid per segment. Deze toets kan aan een krachtsverloop niet zien of dat al is gebeurd; is de omhullende al tweede orde, lees deze regel dan als de verantwoording waarom die berekening nodig was.",
+         "De twee eerste-orde-eindmomenten waren in het krachtsverloop van de maatgevende combinatie niet allebei terug te vinden (er staat geen punt op x = 0 én op x = l). r_m blijft dus onbekend en §5.8.3.1(1) staat dan C = 0,7 toe.",
+         "Grondslag van C: C = 0,7: de eerste-orde-eindmomenten zijn niet opgegeven, en §5.8.3.1(1) staat dan de standaardwaarde toe (\"als r_m onbekend is, mag C = 0,7 zijn gebruikt\").",
+         "ω = A_s·f_yd/(A_c·f_cd) = 0,352 is genomen met A_s = 4054 mm², de TOTALE langswapening: de onderrij (1520 mm²), de bovenrij (1520 mm²) en de zijstaven van beide zijkanten samen (1013 mm²).",
+         "§5.8.4(4) — of φ_ef = 0 mag worden aangehouden — is NIET nagegaan: daarvoor zijn φ(∞,t₀), M₀Ed én de doorsnedehoogte h in de beschouwde richting nodig. Zolang dat niet is nagegaan, is rekenen met φ_ef = 0 een aanname en geen normuitspraak.",
+         "WAARSCHUWING — A = 0,7 zonder kruipgegevens: φ(∞,t₀) is niet opgegeven, dus φ_ef is onbekend en §5.8.3.1(1) staat A = 0,7 toe (\"als φ_ef onbekend is mag A = 0,7 zijn gebruikt\"). Die 0,7 is GEEN veilige kant maar de waarde bij φ_ef ≈ 2,14: bij zwaardere kruip is de werkelijke A kleiner en λ_lim lager dan hier staat. Geef φ(∞,t₀) op (§3.1.4) — als projectwaarde of per staaf — om A uit (5.19) te bepalen.",
+         "λ_lim komt uit de Nederlandse bijlage bij §5.8.3.1(1): daar is de OPMERKING met (5.13N) doorgehaald en woordelijk als EIS teruggezet — \"De waarde van λ_lim moet gelijk aan 20·A·B·C/√n zijn genomen\". De getallen zijn dezelfde als de EN-aanbeveling; de status is een andere.",
+         "λ < λ_lim betekent alleen dat de tweede-orde-effecten mogen worden verwaarloosd (§5.8.3.1(1)). Het is geen sterktetoets: de doorsnede moet nog steeds op M en N worden getoetst."
+        ],
+        "status": "NotOk",
+        "title": "Slankheidsgrens λ_lim — mogen de tweede-orde-effecten vervallen?",
+        "uc": {
+         "ed": 24.248711305964285,
+         "formula_latex": "\\lambda / \\lambda_{lim}",
+         "rd": 21.327257857037665,
+         "uc": 1.1369821412818237
+        },
+        "unit": "-",
+        "value": 21.327257857037665,
+        "variables": [
+         {
+          "symbol": "l",
+          "unit": "mm",
+          "value": 3500
+         },
+         {
+          "symbol": "l_0",
+          "unit": "mm",
+          "value": 3500
+         },
+         {
+          "symbol": "i",
+          "unit": "mm",
+          "value": 144.33756729740642
+         },
+         {
+          "symbol": "λ",
+          "unit": "-",
+          "value": 24.248711305964285
+         },
+         {
+          "symbol": "n",
+          "unit": "-",
+          "value": 0.36
+         },
+         {
+          "symbol": "ω",
+          "unit": "-",
+          "value": 0.3524921593721723
+         },
+         {
+          "symbol": "A",
+          "unit": "-",
+          "value": 0.7
+         },
+         {
+          "symbol": "B",
+          "unit": "-",
+          "value": 1.3057504810431222
+         },
+         {
+          "symbol": "C",
+          "unit": "-",
+          "value": 0.7
+         },
+         {
+          "symbol": "λ_lim",
+          "unit": "-",
+          "value": 21.327257857037665
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "5.8.8_moment_y",
+      "kind": {
+       "data": {
+        "article": "art. 5.8.8 (5.31)–(5.37), 5.2(7), 6.1(4) en 6.1",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "M_{Edy} = \\max\\{M_{0e} + N_{Ed}(e_i + e_2)\\ ;\\ |M_{02}|\\ ;\\ N_{Ed} e_0\\} \\le M_{Rdy}",
+        "id": "5.8.8_moment_y",
+        "notes": [
+         "λ = 24,25 ≥ λ_lim = 21,33 en het krachtsverloop is eerste orde: het tweede-orde-moment om y is bepaald met de NOMINALE KROMMING van §5.8.8. De NB bij 5.8.5 staat die methode toe voor geschoorde, op zichzelf staande elementen; deze kolom is als geschoord opgegeven.",
+         "φ(∞,t₀) is niet opgegeven: K_φ is met φ_ef = 0 bepaald, een ONDERGRENS van e₂.",
+         "M₀e = max(0,6·M₀₂ + 0,4·M₀₁; 0,4·M₀₂) = 0,00 kNm (5.32) uit de eerste-orde-momenten van combinatie 1; |M₀₂| = 0,00 kNm.",
+         "e_i = θ_i·l₀/2 = 0,00333·3500/2 = 5,83 mm (§5.2(7), θ₀ = 1/300 uit de NB, α_h = 1,000).",
+         "d = h/2 + i_s = 250,0 + 162,6 = 412,6 mm (5.8.8.3(2): de wapening ligt niet alleen op twee tegenover elkaar liggende zijden).",
+         "n = 0,360, n_u = 1 + ω = 1,352, K_r = (n_u − n)/(n_u − 0,4) = 1,000 (5.36); β = 0,35 + f_ck/200 − λ/150 = 0,3383, K_φ = 1 + β·φ_ef = 1,000 (5.37); 1/r₀ = ε_yd/(0,45·d) = 11,708·10⁻⁶/mm; 1/r = K_r·K_φ/r₀ = 11,708·10⁻⁶/mm (5.34); c = 10 (5.8.8.2(4)); e₂ = (1/r)·l₀²/c = 14,34 mm (5.33); M₂ = N_Ed·e₂ = 25,82 kNm.",
+         "M_Edy = max(M₀e + N_Ed·e_i + M₂; |M₀₂|; N_Ed·e₀) = max(0,00 + 10,50 + 25,82; 0,00; 36,00) = 36,32 kNm. Dit moment gaat ook in (5.38b)/(5.39) van §5.8.9.",
+         "NIET UITGEVOERD: φ(∞,t₀) ontbreekt. Zonder kruip is M_Edy een ONDERGRENS en komt de verhouding uit op 0,068 — dat bewijst niet dat de kolom voldoet, want kruip vergroot e₂. Geef φ(∞,t₀) op om deze toets uit te voeren."
+        ],
+        "status": "NotApplicable",
+        "title": "Moment om de y-as inclusief tweede orde (nominale kromming)",
+        "uc": null,
+        "unit": "kNm",
+        "value": 36.316342867602536,
+        "variables": [
+         {
+          "symbol": "N_Ed",
+          "unit": "kN",
+          "value": 1800
+         },
+         {
+          "symbol": "M_0e",
+          "unit": "kNm",
+          "value": 0
+         },
+         {
+          "symbol": "e_i",
+          "unit": "mm",
+          "value": 5.833333333333334
+         },
+         {
+          "symbol": "K_r",
+          "unit": "-",
+          "value": 1
+         },
+         {
+          "symbol": "K_φ",
+          "unit": "-",
+          "value": 1
+         },
+         {
+          "symbol": "d",
+          "unit": "mm",
+          "value": 412.613590068604
+         },
+         {
+          "symbol": "c",
+          "unit": "-",
+          "value": 10
+         },
+         {
+          "symbol": "e_2",
+          "unit": "mm",
+          "value": 14.342412704223628
+         },
+         {
+          "symbol": "M_2",
+          "unit": "kNm",
+          "value": 25.816342867602533
+         },
+         {
+          "symbol": "M_Edy",
+          "unit": "kNm",
+          "value": 36.316342867602536
+         },
+         {
+          "symbol": "M_Rdy",
+          "unit": "kNm",
+          "value": 531.0287676804927
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "5.8.3.1_slankheidsgrens_z",
+      "kind": {
+       "data": {
+        "article": "art. 5.8.3.1(1) en (2), om de z-as; NB: λ_lim = 20·A·B·C/√n als eis",
+        "deelstappen": [
+         {
+          "article": "art. 5.8.1",
+          "formula_latex": "",
+          "id": "schoring",
+          "ingevuld_latex": "",
+          "notes": [
+           "geschoord: in het ontwerp is aangenomen dat dit element niet bijdraagt aan de totale horizontale stabiliteit (§5.8.1)",
+           "§5.8.1 definieert geschoord en schorend allebei met de woorden \"is aangenomen\": het is een ontwerpbesluit en geen eigenschap die uit het model volgt. De app vraagt het daarom en leidt het niet af."
+          ],
+          "symbol": "",
+          "titel": "Geschoord of ongeschoord — om de z-as",
+          "unit": "",
+          "value": null,
+          "variables": []
+         },
+         {
+          "article": "art. 5.8.3.2",
+          "formula_latex": "l_{0,z}",
+          "id": "l0",
+          "ingevuld_latex": "l_{0,z} = 3500\\ \\mathrm{mm}",
+          "notes": [
+           "l₀ is rechtstreeks opgegeven; de herkomst staat niet in deze afleiding."
+          ],
+          "symbol": "l_{0,z}",
+          "titel": "Effectieve lengte (kniklengte) — om de z-as",
+          "unit": "mm",
+          "value": 3500,
+          "variables": [
+           {
+            "symbol": "l",
+            "unit": "mm",
+            "value": 3500
+           },
+           {
+            "symbol": "l₀,z",
+            "unit": "mm",
+            "value": 3500
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.3.2(1) (5.14)",
+          "formula_latex": "\\lambda_{z} = \\frac{l_{0,z}}{i_z}",
+          "id": "lambda",
+          "ingevuld_latex": "\\lambda_{z} = \\frac{3500}{144{,}3} = 24{,}2",
+          "notes": [
+           "i is de traagheidsstraal van de NIET-GESCHEURDE betondoorsnede (§5.8.3.2(1)): zonder wapening en zonder scheurvorming. Dat is een andere stijfheid dan die van §5.8.3.2(5), waar de scheurvorming in de verhinderende elementen juist wél moet worden meegenomen."
+          ],
+          "symbol": "\\lambda_{z}",
+          "titel": "Slankheid — om de z-as",
+          "unit": "-",
+          "value": 24.248711305964285,
+          "variables": [
+           {
+            "symbol": "l₀,z",
+            "unit": "mm",
+            "value": 3500
+           },
+           {
+            "symbol": "i_z",
+            "unit": "mm",
+            "value": 144.33756729740642
+           },
+           {
+            "symbol": "λ_z",
+            "unit": "-",
+            "value": 24.248711305964285
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.3.1(1)",
+          "formula_latex": "n = \\frac{N_{Ed}}{A_c f_{cd}} \\qquad \\omega = \\frac{A_s f_{yd}}{A_c f_{cd}}",
+          "id": "n_omega",
+          "ingevuld_latex": "n = 0{,}360 \\qquad \\omega = 0{,}352",
+          "notes": [
+           "N_Ed is hier de DRUKkracht en positief: 1800,00 kN. Aan de buitengrens van deze kern is N positief bij trek; de omzetting gebeurt op één plek. A_s is de TOTALE langswapening van de doorsnede."
+          ],
+          "symbol": "n,\\ \\omega",
+          "titel": "Relatieve normaalkracht en mechanische wapeningsverhouding — om de z-as",
+          "unit": "-",
+          "value": 0.36,
+          "variables": [
+           {
+            "symbol": "n",
+            "unit": "-",
+            "value": 0.36
+           },
+           {
+            "symbol": "ω",
+            "unit": "-",
+            "value": 0.3524921593721723
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.4(2) (5.19), met art. 5.8.4(4)",
+          "formula_latex": "\\varphi_{ef} = \\varphi(\\infty,t_0)\\cdot\\frac{M_{0Eqp}}{M_{0Ed}}",
+          "id": "phi_ef",
+          "ingevuld_latex": "",
+          "notes": [
+           "φ_ef is niet uit (5.19) bepaald. Hoe A dan is genomen — de standaardwaarde 0,7 van §5.8.3.1(1) of φ(∞,t₀) als bovengrens — en onder welke voorwaarde, staat bij de factoren A, B en C.",
+           "De nationale bijlage wijkt van §5.8.4 niet af: op de bladzijden met (5.19) en de drie voorwaarden staat geen NB-tekst."
+          ],
+          "symbol": "\\varphi_{ef}",
+          "titel": "Effectieve kruipcoëfficiënt — om de z-as",
+          "unit": "-",
+          "value": null,
+          "variables": []
+         },
+         {
+          "article": "art. 5.8.3.1(1), zoals door de nationale bijlage als eis gesteld",
+          "formula_latex": "A = \\frac{1}{1+0{,}2\\varphi_{ef}} \\qquad B = \\sqrt{1+2\\omega} \\qquad C = 1{,}7 - r_m",
+          "id": "abc",
+          "ingevuld_latex": "A = 0{,}700 \\qquad B = 1{,}306 \\qquad C = 0{,}700",
+          "notes": [
+           "C = 0,7: de eerste-orde-eindmomenten zijn niet opgegeven, en §5.8.3.1(1) staat dan de standaardwaarde toe (\"als r_m onbekend is, mag C = 0,7 zijn gebruikt\").",
+           "A = 0,7 is de standaardwaarde die §5.8.3.1(1) toestaat als φ_ef onbekend is. WAARSCHUWING: φ(∞,t₀) is niet opgegeven, dus niet na te gaan of 0,7 aan de veilige kant ligt — dat is alleen zo bij φ_ef ≤ 2,14."
+          ],
+          "symbol": "A,\\ B,\\ C",
+          "titel": "De factoren A, B en C — om de z-as",
+          "unit": "-",
+          "value": null,
+          "variables": [
+           {
+            "symbol": "A",
+            "unit": "-",
+            "value": 0.7
+           },
+           {
+            "symbol": "B",
+            "unit": "-",
+            "value": 1.3057504810431222
+           },
+           {
+            "symbol": "C",
+            "unit": "-",
+            "value": 0.7
+           }
+          ]
+         },
+         {
+          "article": "NB bij art. 5.8.3.1(1) — de EN-aanbeveling (5.13N) is als eis overgenomen",
+          "formula_latex": "\\lambda_{lim,z} = \\frac{20\\,A\\,B\\,C}{\\sqrt{n}}",
+          "id": "lambda_lim",
+          "ingevuld_latex": "\\lambda_{lim,z} = \\frac{20 \\cdot 0{,}700 \\cdot 1{,}306 \\cdot 0{,}700}{\\sqrt{0{,}360}} = 21{,}3",
+          "notes": [
+           "λ = 24,2 en λ_lim = 21,3: de tweede-orde-effecten mogen NIET worden verwaarloosd (§5.8.3.1(1)).",
+           "Bij λ ≥ λ_lim is de kolom niet afgekeurd; er moet dan tweede orde worden gerekend. In deze app is dat de algemene methode van §5.8.6."
+          ],
+          "symbol": "\\lambda_{lim,z}",
+          "titel": "Slankheidsgrens — om de z-as",
+          "unit": "-",
+          "value": 21.327257857037665,
+          "variables": [
+           {
+            "symbol": "λ_z",
+            "unit": "-",
+            "value": 24.248711305964285
+           },
+           {
+            "symbol": "λ_lim,z",
+            "unit": "-",
+            "value": 21.327257857037665
+           }
+          ]
+         }
+        ],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "\\lambda_z < \\lambda_{lim,z} = \\frac{20\\,A\\,B\\,C}{\\sqrt{n}}",
+        "id": "5.8.3.1_slankheidsgrens_z",
+        "notes": [
+         "Om de z-as buigt de kolom UIT het vlak van het model. De raamwerkberekening ziet die richting niet — ook niet als zij tweede orde rekent — en levert daar M_z = 0. Daarom bepaalt deze toets de imperfectie en e₂ om z zelf, in plaats van op de krachten uit het model te vertrouwen.",
+         "Om de z-as geldt: schoring geschoord (apart opgegeven voor deze as), kniklengte rechtstreeks opgegeven (apart opgegeven voor deze as). l₀,z = 3500 mm, i_z = √(I_z/A) = 144,34 mm (voor een rechthoek b/√12), λ_z = l₀,z/i_z = 24,2.",
+         "5.8.3.1(2): bij dubbele buiging mag het slankheidscriterium per richting afzonderlijk worden gecontroleerd. λ_z = 24,2 tegen λ_lim,z = 21,3: de tweede-orde-effecten om z mogen NIET worden verwaarloosd. Anders dan om y keurt deze poort daarmee niets af: e₂ om z wordt hieronder met de algemene methode (§5.8.6) bepaald en in M_Edz verwerkt.",
+         "M₀Ed om z voor λ_lim,z en (5.19) is genomen op dezelfde snede als de poort om y (x = 0 mm, combinatie 1): |M_z uit het model + extern M₀Edz| = |0,00 + 0,00| = 0,00 kNm, plus het imperfectiemoment N_Ed·e_i = 1800,0 · 5,83 mm = 10,50 kNm (5.8.8.2(1): M₀Ed is inclusief het effect van imperfecties), samen 10,50 kNm. Er is geen quasi-blijvende combinatie met normaaldruk meegestuurd, dus M₀Eqp om z en daarmee φ_ef,z zijn onbekend.",
+         "De twee eindmomenten om z waren niet allebei terug te vinden in de omhullende; r_m blijft onbekend en §5.8.3.1(1) staat dan C = 0,7 toe.",
+         "§5.8.4(4) — of φ_ef = 0 mag worden aangehouden — is NIET nagegaan: daarvoor zijn φ(∞,t₀), M₀Ed én de doorsnedehoogte h in de beschouwde richting nodig. Zolang dat niet is nagegaan, is rekenen met φ_ef = 0 een aanname en geen normuitspraak.",
+         "WAARSCHUWING — A = 0,7 zonder kruipgegevens: φ(∞,t₀) is niet opgegeven, dus φ_ef is onbekend en §5.8.3.1(1) staat A = 0,7 toe (\"als φ_ef onbekend is mag A = 0,7 zijn gebruikt\"). Die 0,7 is GEEN veilige kant maar de waarde bij φ_ef ≈ 2,14: bij zwaardere kruip is de werkelijke A kleiner en λ_lim lager dan hier staat. Geef φ(∞,t₀) op (§3.1.4) — als projectwaarde of per staaf — om A uit (5.19) te bepalen.",
+         "λ_lim komt uit de Nederlandse bijlage bij §5.8.3.1(1): daar is de OPMERKING met (5.13N) doorgehaald en woordelijk als EIS teruggezet — \"De waarde van λ_lim moet gelijk aan 20·A·B·C/√n zijn genomen\". De getallen zijn dezelfde als de EN-aanbeveling; de status is een andere.",
+         "λ < λ_lim betekent alleen dat de tweede-orde-effecten mogen worden verwaarloosd (§5.8.3.1(1)). Het is geen sterktetoets: de doorsnede moet nog steeds op M en N worden getoetst."
+        ],
+        "status": "Ok",
+        "title": "Slankheidsgrens om de z-as — moet e₂ om z worden meegenomen?",
+        "uc": null,
+        "unit": "-",
+        "value": 21.327257857037665,
+        "variables": [
+         {
+          "symbol": "l_0,z",
+          "unit": "mm",
+          "value": 3500
+         },
+         {
+          "symbol": "i_z",
+          "unit": "mm",
+          "value": 144.33756729740642
+         },
+         {
+          "symbol": "λ_z",
+          "unit": "-",
+          "value": 24.248711305964285
+         },
+         {
+          "symbol": "n",
+          "unit": "-",
+          "value": 0.36
+         },
+         {
+          "symbol": "ω",
+          "unit": "-",
+          "value": 0.3524921593721723
+         },
+         {
+          "symbol": "A",
+          "unit": "-",
+          "value": 0.7
+         },
+         {
+          "symbol": "B",
+          "unit": "-",
+          "value": 1.3057504810431222
+         },
+         {
+          "symbol": "C",
+          "unit": "-",
+          "value": 0.7
+         },
+         {
+          "symbol": "λ_lim,z",
+          "unit": "-",
+          "value": 21.327257857037665
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "5.8.9_moment_z",
+      "kind": {
+       "data": {
+        "article": "art. 5.2(7) (5.2), 5.8.6(6), 5.8.9(2) en 6.1",
+        "deelstappen": [
+         {
+          "article": "art. 5.2(5) (5.1), NB: θ₀ = 1/300",
+          "formula_latex": "\\theta_i = \\theta_0 \\cdot \\alpha_h \\cdot \\alpha_m",
+          "id": "theta_i",
+          "ingevuld_latex": "\\theta_i = \\frac{1}{300} \\cdot 1 \\cdot 1 = 0{,}003333",
+          "notes": [
+           "θ₀ = 1/300 is de waarde van de nationale bijlage bij §5.2(5); de EN-aanbeveling 1/200 is daar doorgehaald.",
+           "Voor een afzonderlijk element is l de feitelijke lengte van het element en m = 1 (§5.2(6)): α_m = √(0,5·(1 + 1/1)) = 1. α_h = 2/√l = 2/√3,500 = 1,0690, binnen 2/3 ≤ α_h ≤ 1.",
+           "2/√l ligt boven 1; α_h is op de bovengrens 1 gezet."
+          ],
+          "symbol": "\\theta_i",
+          "titel": "Scheefstand",
+          "unit": "rad",
+          "value": 0.0033333333333333335,
+          "variables": [
+           {
+            "symbol": "l",
+            "unit": "m",
+            "value": 3.5
+           },
+           {
+            "symbol": "m",
+            "unit": "-",
+            "value": 1
+           },
+           {
+            "symbol": "α_h",
+            "unit": "-",
+            "value": 1
+           },
+           {
+            "symbol": "α_m",
+            "unit": "-",
+            "value": 1
+           },
+           {
+            "symbol": "θ_i",
+            "unit": "rad",
+            "value": 0.0033333333333333335
+           }
+          ]
+         },
+         {
+          "article": "art. 5.2(7)a (5.2)",
+          "formula_latex": "e_i = \\theta_i \\cdot l_0 / 2",
+          "id": "e_i",
+          "ingevuld_latex": "e_i = 0{,}003333 \\cdot 3500 / 2 = 5{,}83\\ \\mathrm{mm}",
+          "notes": [
+           "l₀ is de effectieve lengte om DEZE as (§5.8.3.2), niet die van het rekenvlak. De vereenvoudiging e_i = l₀/400 van §5.2(7)a is niet gebruikt: zij hoort bij θ₀ = 1/200.",
+           "§5.8.9(2) staat toe met imperfecties alleen rekening te houden in de richting waarin zij het meest ongunstig werken. Hier is de imperfectie om deze as ALTIJD meegenomen; dat is de veilige kant, want welke richting het ongunstigst is blijkt pas uit de uitkomst."
+          ],
+          "symbol": "e_i",
+          "titel": "Imperfectie als excentriciteit",
+          "unit": "mm",
+          "value": 5.833333333333334,
+          "variables": [
+           {
+            "symbol": "θ_i",
+            "unit": "rad",
+            "value": 0.0033333333333333335
+           },
+           {
+            "symbol": "l_0",
+            "unit": "mm",
+            "value": 3500
+           },
+           {
+            "symbol": "e_i",
+            "unit": "mm",
+            "value": 5.833333333333334
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.6(6) met de krommingsverdeling van 5.8.8.2(3)/(4)",
+          "formula_latex": "e_2 = \\frac{1}{r} \\cdot \\frac{l_0^2}{c}",
+          "id": "e_2",
+          "ingevuld_latex": "e_2 = 0{,}00009 \\cdot 10^{-3} \\cdot \\frac{3500^2}{8} = 0{,}13\\ \\mathrm{mm}",
+          "notes": [
+           "λ = 24,2 ≥ λ_lim = 21,3 om deze as: de tweede-orde-effecten mogen NIET worden verwaarloosd (§5.8.3.1(1)).",
+           "De algemene methode van §5.8.6, in de vereenvoudigde vorm van §5.8.6(6): alleen de maatgevende doorsnede is beschouwd, met een aangenomen verloop van de kromming daartussen. 1/r is de kromming uit het M-N-κ-diagram van de doorsnede om deze as — met de (3.14)-kromme op rekenwaarden f_cd en E_cd = E_cm/γ_cE van §5.8.6(3), zonder betontrek (§5.8.6(5)), en met alle betonrekken vermenigvuldigd met (1 + φ_ef) = 1,000 volgens §5.8.6(4) — bij het TOTALE moment M₀Ed + N_Ed·(e_i + e₂). Omdat e₂ zelf in dat moment zit, is dit een evenwichtsiteratie; zij is na 3 stappen niet meer veranderd.",
+           "c = 8 is de factor voor de krommingsverdeling. §5.8.8.2(4): voor een constante doorsnede is in het algemeen c = 10 (≈ π²); is het eerste-orde-moment constant, dan behoort een lagere waarde te zijn overwogen, met 8 als ondergrens (constant totaal moment). Het eerste-orde-moment om deze as is hier constant over de lengte (imperfectie en een vast opgegeven M₀Ed), dus c = 8: de veilige kant."
+          ],
+          "symbol": "e_2",
+          "titel": "Tweede-orde-uitbuiging (algemene methode)",
+          "unit": "mm",
+          "value": 0.131269664518593,
+          "variables": [
+           {
+            "symbol": "1/r",
+            "unit": "1/m",
+            "value": 0.00008572712784887706
+           },
+           {
+            "symbol": "l_0",
+            "unit": "mm",
+            "value": 3500
+           },
+           {
+            "symbol": "c",
+            "unit": "-",
+            "value": 8
+           },
+           {
+            "symbol": "φ_ef",
+            "unit": "-",
+            "value": 0
+           },
+           {
+            "symbol": "λ",
+            "unit": "-",
+            "value": 24.248711305964285
+           },
+           {
+            "symbol": "λ_lim",
+            "unit": "-",
+            "value": 21.327257857037665
+           },
+           {
+            "symbol": "e_2",
+            "unit": "mm",
+            "value": 0.131269664518593
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.8.2(1) (5.31) en 6.1(4)",
+          "formula_latex": "M_{Ed} = \\max\\left\\{M_{0Ed} + N_{Ed}\\,(e_i + e_2)\\ ;\\ N_{Ed}\\,e_0\\right\\}",
+          "id": "m_ed_tweede_as",
+          "ingevuld_latex": "M_{Ed} = \\max\\left\\{0 + 1800 \\cdot (5{,}83 + 0{,}13) \\cdot 10^{-3}\\ ;\\ 1800 \\cdot 20 \\cdot 10^{-3}\\right\\} = 36\\ \\mathrm{kNm}",
+          "notes": [
+           "M₀Ed = 0,00 kNm is het eerste-orde-moment om deze as uit het model (plus een eventueel extern opgegeven deel), zonder imperfectie. N_Ed·(e_i + e₂) = 1800,0 · (5,83 + 0,13) mm = 10,74 kNm.",
+           "6.1(4): bij druk geldt een minimale excentriciteit e₀ = max(b/30; 20 mm) = 20,0 mm in de richting van de excentriciteit, dus M_Ed ≥ N_Ed·e₀ = 36,00 kNm. Die ondergrens is hier BINDEND: het moment uit imperfectie en tweede orde ligt eronder."
+          ],
+          "symbol": "M_{Ed}",
+          "titel": "Rekenwaarde van het moment om de tweede as",
+          "unit": "kNm",
+          "value": 36,
+          "variables": [
+           {
+            "symbol": "N_Ed",
+            "unit": "kN",
+            "value": 1800
+           },
+           {
+            "symbol": "M_0Ed",
+            "unit": "kNm",
+            "value": 0
+           },
+           {
+            "symbol": "e_i",
+            "unit": "mm",
+            "value": 5.833333333333334
+           },
+           {
+            "symbol": "e_2",
+            "unit": "mm",
+            "value": 0.131269664518593
+           },
+           {
+            "symbol": "e_0",
+            "unit": "mm",
+            "value": 20
+           },
+           {
+            "symbol": "M_Ed",
+            "unit": "kNm",
+            "value": 36
+           }
+          ]
+         },
+         {
+          "article": "art. 6.1",
+          "formula_latex": "M_{Rd} = \\max M(\\kappa)\\ \\text{bij}\\ N_{Ed}",
+          "id": "m_rd_tweede_as",
+          "ingevuld_latex": "M_{Rd} = 531{,}03\\ \\mathrm{kNm}",
+          "notes": [
+           "Het grootste moment op het M-N-κ-diagram om deze as bij N_Ed, met het parabool-rechthoekdiagram van 3.1.7(1) en het bilineaire staaldiagram van 3.2.7 — dezelfde doorsnedeberekening als de momenttoets om de eerste as. De staven zijn daarvoor op hun plaats over de BREEDTE in lagen gelegd."
+          ],
+          "symbol": "M_{Rd}",
+          "titel": "Momentweerstand om de tweede as",
+          "unit": "kNm",
+          "value": 531.0287676804928,
+          "variables": [
+           {
+            "symbol": "M_Rd",
+            "unit": "kNm",
+            "value": 531.0287676804928
+           }
+          ]
+         }
+        ],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "M_{Edz} = \\max\\{M_{0Edz} + N_{Ed}(e_i + e_2)\\ ;\\ N_{Ed} e_0\\} \\le M_{Rdz}",
+        "id": "5.8.9_moment_z",
+        "notes": [
+         "De raamwerkoplosser van deze app rekent in één vlak en levert M_z = 0. Dat is een eigenschap van het model en niet van de kolom: om de z-as werken de imperfectie van §5.2 (een gegeven van de uitvoering) en het tweede-orde-effect net zo goed, en 6.1(4) stelt bovendien een minimale excentriciteit. M₀Edz = 0 betekent dus NIET M_Edz = 0. Een extern M₀Edz (invoerveld, nul als niets is opgegeven) en een M_z in de omhullende — uit een ruimtelijk model — tellen hier gewoon mee.",
+         "Om de z-as geldt: schoring geschoord (apart opgegeven voor deze as), kniklengte rechtstreeks opgegeven (apart opgegeven voor deze as). l₀,z = 3500 mm, i_z = √(I_z/A) = 144,34 mm (voor een rechthoek b/√12), λ_z = l₀,z/i_z = 24,2.",
+         "NIET UITGEVOERD ZONDER KRUIPCOËFFICIËNT — φ(∞,t₀) is niet opgegeven, dus φ_ef om z is onbekend. §5.8.4(1)P eist dat kruip in de tweede-orde-berekening wordt meegenomen, §5.8.6(4) doet dat met (1 + φ_ef), en de norm geeft voor φ_ef in de algemene methode geen standaardwaarde (de 0,7 voor A in λ_lim geldt alleen daar). e₂ om z is daarom ZONDER kruip bepaald, en dat is een ONDERGRENS: kruip vergroot de kromming, dus e₂ en M_Edz. Een overschrijding met die ondergrens blijft staan; een toets die ermee voldoet wordt niet goedgekeurd maar als niet uitgevoerd gemeld. Geef φ(∞,t₀) op (§3.1.4) — als projectwaarde of per staaf — en stuur de quasi-blijvende combinatie mee.",
+         "Maatgevend is de snede x = 0 mm van combinatie 1 — de snede met de grootste M_Edz/M_Rdz over alle sneden met normaaldruk (1 sneden). e₂ is bepaald op de snede met de grootste normaaldruk (x = 0 mm, combinatie 1) en op elke snede gebruikt: e₂ groeit met N, dus dat is de veilige kant. De imperfectie e_i geldt langs de hele staaf.",
+         "NIET UITGEVOERD: φ(∞,t₀) ontbreekt. Zonder kruip is M_Edz een ONDERGRENS en komt de verhouding uit op 0,068 — dat bewijst niet dat de kolom voldoet, want kruip vergroot e₂. Geef φ(∞,t₀) op om deze toets uit te voeren."
+        ],
+        "status": "NotApplicable",
+        "title": "Moment om de z-as: imperfectie, tweede orde en weerstand",
+        "uc": null,
+        "unit": "kNm",
+        "value": 36,
+        "variables": [
+         {
+          "symbol": "N_Ed",
+          "unit": "kN",
+          "value": 1800
+         },
+         {
+          "symbol": "M_0Edz",
+          "unit": "kNm",
+          "value": 0
+         },
+         {
+          "symbol": "e_i",
+          "unit": "mm",
+          "value": 5.833333333333334
+         },
+         {
+          "symbol": "e_2",
+          "unit": "mm",
+          "value": 0.131269664518593
+         },
+         {
+          "symbol": "e_0",
+          "unit": "mm",
+          "value": 20
+         },
+         {
+          "symbol": "M_Edz",
+          "unit": "kNm",
+          "value": 36
+         },
+         {
+          "symbol": "M_Rdz",
+          "unit": "kNm",
+          "value": 531.0287676804928
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "5.8.9_dubbele_buiging",
+      "kind": {
+       "data": {
+        "article": "art. 5.8.9(3) (5.38a), (5.38b) en 5.8.9(4) (5.39)",
+        "deelstappen": [
+         {
+          "article": "art. 5.8.9(3) (5.38a)",
+          "formula_latex": "\\lambda_y/\\lambda_z \\le 2 \\ \\text{en}\\ \\lambda_z/\\lambda_y \\le 2",
+          "id": "voorwaarde_5_38a",
+          "ingevuld_latex": "24{,}2/24{,}2 = 1 \\ \\text{en}\\ 24{,}2/24{,}2 = 1",
+          "notes": [
+           "λ_y = l₀,y/i_y en λ_z = l₀,z/i_z, elk met de eigen kniklengte. (5.38a) is vervuld."
+          ],
+          "symbol": "",
+          "titel": "Slankheidsvoorwaarde",
+          "unit": "-",
+          "value": null,
+          "variables": [
+           {
+            "symbol": "λ_y",
+            "unit": "-",
+            "value": 24.248711305964285
+           },
+           {
+            "symbol": "λ_z",
+            "unit": "-",
+            "value": 24.248711305964285
+           },
+           {
+            "symbol": "λ_y/λ_z",
+            "unit": "-",
+            "value": 1
+           },
+           {
+            "symbol": "λ_z/λ_y",
+            "unit": "-",
+            "value": 1
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.9(3) (5.38b), figuur 5.8",
+          "formula_latex": "\\frac{e_y/h_{eq}}{e_z/b_{eq}} \\le 0{,}2\\ \\text{of}\\ \\frac{e_z/b_{eq}}{e_y/h_{eq}} \\le 0{,}2",
+          "id": "voorwaarde_5_38b",
+          "ingevuld_latex": "\\frac{6/500}{20{,}2/500} = 0{,}296\\ \\text{of}\\ \\frac{20{,}2/500}{6/500} = 3{,}383",
+          "notes": [
+           "e_y = M_Edz/N_Ed = 10,74/1800,0 = 6,0 mm en e_z = M_Edy/N_Ed = 36,32/1800,0 = 20,2 mm, met de momenten inclusief imperfectie en tweede-orde-deel. b_eq = i_y·√12 = 500,0 mm en h_eq = i_z·√12 = 500,0 mm zijn de maten van de gelijkwaardige rechthoek: figuur 5.8 tekent h langs de y-as en b langs de z-as, dus h_eq hoort bij e_y en b_eq bij e_z.",
+           "(5.38b) is NIET vervuld. Er is dus niet aan (5.38) voldaan en §5.8.9(4) vraagt de interactie (5.39)."
+          ],
+          "symbol": "",
+          "titel": "Excentriciteitsvoorwaarde",
+          "unit": "-",
+          "value": null,
+          "variables": [
+           {
+            "symbol": "e_y",
+            "unit": "mm",
+            "value": 5.964602997851927
+           },
+           {
+            "symbol": "e_z",
+            "unit": "mm",
+            "value": 20.17574603755696
+           },
+           {
+            "symbol": "i_y",
+            "unit": "mm",
+            "value": 144.33756729740642
+           },
+           {
+            "symbol": "i_z",
+            "unit": "mm",
+            "value": 144.33756729740642
+           },
+           {
+            "symbol": "b_eq",
+            "unit": "mm",
+            "value": 499.9999999999999
+           },
+           {
+            "symbol": "h_eq",
+            "unit": "mm",
+            "value": 499.9999999999999
+           },
+           {
+            "symbol": "e_y/h_eq",
+            "unit": "-",
+            "value": 0.011929205995703856
+           },
+           {
+            "symbol": "e_z/b_eq",
+            "unit": "-",
+            "value": 0.040351492075113925
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.9(4)",
+          "formula_latex": "N_{Rd} = A_c f_{cd} + A_s f_{yd}",
+          "id": "n_rd",
+          "ingevuld_latex": "N_{Rd} = (250000 \\cdot 20 + 4054 \\cdot 434{,}8) \\cdot 10^{-3} = 6762{,}5\\ \\mathrm{kN}",
+          "notes": [
+           "A_c is de bruto betondoorsnede en A_s de totale langswapening."
+          ],
+          "symbol": "N_{Rd}",
+          "titel": "Opneembare normaalkracht",
+          "unit": "kN",
+          "value": 6762.460796860862,
+          "variables": [
+           {
+            "symbol": "A_c",
+            "unit": "mm²",
+            "value": 250000
+           },
+           {
+            "symbol": "f_cd",
+            "unit": "N/mm²",
+            "value": 20
+           },
+           {
+            "symbol": "A_s",
+            "unit": "mm²",
+            "value": 4053.6598327799816
+           },
+           {
+            "symbol": "f_yd",
+            "unit": "N/mm²",
+            "value": 434.7826086956522
+           },
+           {
+            "symbol": "N_Rd",
+            "unit": "kN",
+            "value": 6762.460796860862
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.9(4), tabel bij (5.39)",
+          "formula_latex": "a = f(N_{Ed}/N_{Rd})",
+          "id": "exponent_a",
+          "ingevuld_latex": "N_{Ed}/N_{Rd} = 1800/6762{,}5 = 0{,}266 \\Rightarrow a = 1{,}138",
+          "notes": [
+           "Rechthoekige doorsnede: a = 1,0 bij N_Ed/N_Rd = 0,1, 1,5 bij 0,7 en 2,0 bij 1,0, met lineaire interpolatie voor tussenliggende waarden."
+          ],
+          "symbol": "a",
+          "titel": "Exponent van de interactie",
+          "unit": "-",
+          "value": 1.1384794128043303,
+          "variables": [
+           {
+            "symbol": "N_Ed/N_Rd",
+            "unit": "-",
+            "value": 0.26617529536519624
+           },
+           {
+            "symbol": "a",
+            "unit": "-",
+            "value": 1.1384794128043303
+           }
+          ]
+         },
+         {
+          "article": "art. 5.8.9(4) (5.39)",
+          "formula_latex": "\\left(\\frac{M_{Edz}}{M_{Rdz}}\\right)^a + \\left(\\frac{M_{Edy}}{M_{Rdy}}\\right)^a \\le 1{,}0",
+          "id": "interactie_5_39",
+          "ingevuld_latex": "\\left(\\frac{10{,}74}{531{,}03}\\right)^{1{,}138} + \\left(\\frac{36{,}32}{531{,}03}\\right)^{1{,}138} = 0{,}059",
+          "notes": [
+           "M_Edz en M_Edy zijn de rekenwaarden inclusief tweede-orde-moment; M_Rdz en M_Rdy de momentweerstanden bij N_Ed in de respectievelijke richtingen (§6.1)."
+          ],
+          "symbol": "",
+          "titel": "Interactie van de twee momenten",
+          "unit": "-",
+          "value": 0.058947824854174546,
+          "variables": [
+           {
+            "symbol": "M_Edz",
+            "unit": "kNm",
+            "value": 10.736285396133468
+           },
+           {
+            "symbol": "M_Rdz",
+            "unit": "kNm",
+            "value": 531.0287676804928
+           },
+           {
+            "symbol": "M_Edy",
+            "unit": "kNm",
+            "value": 36.31634286760253
+           },
+           {
+            "symbol": "M_Rdy",
+            "unit": "kNm",
+            "value": 531.0287676804927
+           },
+           {
+            "symbol": "a",
+            "unit": "-",
+            "value": 1.1384794128043303
+           }
+          ]
+         }
+        ],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "\\left(\\frac{M_{Edz}}{M_{Rdz}}\\right)^a + \\left(\\frac{M_{Edy}}{M_{Rdy}}\\right)^a \\le 1{,}0",
+        "id": "5.8.9_dubbele_buiging",
+        "notes": [
+         "M_Edy is per snede max(M₀e + N_Ed·(e_i + e₂); |M_y|), met e₂ volgens de nominale kromming van §5.8.8 (zie 5.8.8_moment_y). M_Edz = M₀Edz + N_Ed·(e_i + e₂) is de rekenwaarde om z inclusief imperfectie en tweede orde. De ondergrens N_Ed·e₀ van 6.1(4) zit in GEEN van beide: (5.38b) en (5.39) vragen de werkelijke rekenmomenten, en 6.1(4) is een eis aan de doorsnedetoets per richting — die staat om y in §6.1 en om z in de toets hierboven. Beide momenten zijn per snede genomen; §5.8.9(1) vraagt bijzondere aandacht voor de doorsnede met de kritieke combinatie van momenten, en daarom is elke snede met normaaldruk nagegaan.",
+         "§5.8.9(3) is niet vervuld: op 1 van de 1 sneden met normaaldruk geldt (5.38b) niet. §5.8.9(4) vraagt dan de interactie (5.39); de grootste som staat op x = 0 mm van combinatie 1: 0,059 met a = 1,138 bij N_Ed/N_Rd = 0,266.",
+         "NIET UITGEVOERD: φ(∞,t₀) ontbreekt. Zonder kruip is de som van (5.39) een ONDERGRENS en komt de verhouding uit op 0,059 — dat bewijst niet dat de kolom voldoet, want kruip vergroot e₂. Geef φ(∞,t₀) op om deze toets uit te voeren."
+        ],
+        "status": "NotApplicable",
+        "title": "Dubbele buiging — de twee richtingen samen",
+        "uc": null,
+        "unit": "-",
+        "value": 0.058947824854174546,
+        "variables": [
+         {
+          "symbol": "λ_y",
+          "unit": "-",
+          "value": 24.248711305964285
+         },
+         {
+          "symbol": "λ_z",
+          "unit": "-",
+          "value": 24.248711305964285
+         },
+         {
+          "symbol": "e_y",
+          "unit": "mm",
+          "value": 5.964602997851927
+         },
+         {
+          "symbol": "e_z",
+          "unit": "mm",
+          "value": 20.17574603755696
+         },
+         {
+          "symbol": "N_Ed",
+          "unit": "kN",
+          "value": 1800
+         },
+         {
+          "symbol": "N_Rd",
+          "unit": "kN",
+          "value": 6762.460796860862
+         },
+         {
+          "symbol": "a",
+          "unit": "-",
+          "value": 1.1384794128043303
+         },
+         {
+          "symbol": "M_Edz",
+          "unit": "kNm",
+          "value": 10.736285396133468
+         },
+         {
+          "symbol": "M_Rdz",
+          "unit": "kNm",
+          "value": 531.0287676804928
+         },
+         {
+          "symbol": "M_Edy",
+          "unit": "kNm",
+          "value": 36.31634286760253
+         },
+         {
+          "symbol": "M_Rdy",
+          "unit": "kNm",
+          "value": 531.0287676804927
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "5.8.4_kruip",
+      "kind": {
+       "data": {
+        "article": "art. 5.8.4 (5.19) en 5.8.4(4)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "\\varphi_{ef} = \\varphi(\\infty,t_0)\\,\\frac{M_{0Eqp}}{M_{0Ed}}",
+        "id": "5.8.4_kruip",
+        "notes": [
+         "WAARSCHUWING — φ(∞,t₀) is niet opgegeven, dus (5.19) kon niet worden ingevuld en de drie voorwaarden van §5.8.4(4) konden niet worden nagegaan. φ(∞,t₀) volgt uit §3.1.4 met de relatieve luchtvochtigheid, de fictieve dikte h₀, de cementklasse en de ouderdom t₀ bij eerste belasting; bijlage B rekent hem uit (`concrete_creep_coefficient`). λ_lim hierboven — en λ_lim,z om de z-as — is daarom met A = 0,7 gerekend, de waarde die §5.8.3.1(1) toestaat als φ_ef onbekend is. LET OP: 0,7 is geen veilige kant maar de waarde bij φ_ef ≈ 2,14; bij zwaardere kruip is de werkelijke A kleiner en λ_lim dus lager dan hier staat. Om de z-as, waar deze toets e₂ zelf bepaalt, geeft de norm voor φ_ef geen standaardwaarde (§5.8.4(1)P, §5.8.6(4)); moet e₂ daar worden meegenomen, dan wordt het moment om z zonder φ(∞,t₀) niet goedgekeurd. Geef φ(∞,t₀) op als projectwaarde of per staaf in het §5.8-blok."
+        ],
+        "status": "NotApplicable",
+        "title": "Effectieve kruipcoëfficiënt φ_ef",
+        "uc": null,
+        "unit": "-",
+        "value": 0,
+        "variables": []
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.1_toepassingsgebied",
+      "kind": {
+       "data": {
+        "article": "art. 9.5.1(1)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "h \\ \\le\\ 4\\,b",
+        "id": "9.5.1_toepassingsgebied",
+        "notes": [
+         "Boven h = 4b is het element voor de norm geen kolom maar een WAND en gelden de regels van §9.6, met andere minimale wapeningspercentages en een andere beugelregel. Deze toets keurt niets af; hij zegt of §9.5 hier de juiste paragraaf is."
+        ],
+        "status": "Ok",
+        "title": "Toepassingsgebied van §9.5 (kolom of wand)",
+        "uc": {
+         "ed": 500,
+         "formula_latex": "h / (4b)",
+         "rd": 2000,
+         "uc": 0.25
+        },
+        "unit": "mm",
+        "value": 500,
+        "variables": [
+         {
+          "symbol": "h",
+          "unit": "mm",
+          "value": 500
+         },
+         {
+          "symbol": "b",
+          "unit": "mm",
+          "value": 500
+         },
+         {
+          "symbol": "4b",
+          "unit": "mm",
+          "value": 2000
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.1_min_dwarsafmeting",
+      "kind": {
+       "data": {
+        "article": "NB bij art. 9.5.1(2) — eis die alleen in de nationale bijlage staat",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "b_{\\min} \\ \\ge\\ 200\\ \\text{mm}",
+        "id": "9.5.1_min_dwarsafmeting",
+        "notes": [
+         "De EN-tekst van §9.5.1 kent alleen lid (1) over de verhouding h ≤ 4b. De zin \"De kleinste dwarsafmeting moet ten minste 200 mm bedragen\" is een TOEVOEGING van de Nederlandse bijlage."
+        ],
+        "status": "Ok",
+        "title": "Kleinste dwarsafmeting van de kolom",
+        "uc": {
+         "ed": 200,
+         "formula_latex": "b_{\\min,eis} / b_{\\min}",
+         "rd": 500,
+         "uc": 0.4
+        },
+        "unit": "mm",
+        "value": 500,
+        "variables": [
+         {
+          "symbol": "b_min",
+          "unit": "mm",
+          "value": 500
+         },
+         {
+          "symbol": "b_min,eis",
+          "unit": "mm",
+          "value": 200
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.2_min_diameter_langs",
+      "kind": {
+       "data": {
+        "article": "NB bij art. 9.5.2(1)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "\\phi_l \\ \\ge\\ 8\\ \\text{mm}",
+        "id": "9.5.2_min_diameter_langs",
+        "notes": [
+         "De EN-aanbeveling van 8 mm is door de NB doorgehaald en met dezelfde waarde als eis teruggezet. Let op het verschil met een BALK: daar eist de NB bij §9.2.1.1(5) 6 mm."
+        ],
+        "status": "Ok",
+        "title": "Minimumdiameter langsstaven in een kolom",
+        "uc": {
+         "ed": 8,
+         "formula_latex": "\\phi_{\\min,eis} / \\phi_{l,\\min}",
+         "rd": 25.4,
+         "uc": 0.31496062992125984
+        },
+        "unit": "mm",
+        "value": 25.4,
+        "variables": [
+         {
+          "symbol": "φ_l,min",
+          "unit": "mm",
+          "value": 25.4
+         },
+         {
+          "symbol": "φ_min,eis",
+          "unit": "mm",
+          "value": 8
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.2_as_min",
+      "kind": {
+       "data": {
+        "article": "NB bij art. 9.5.2(2), (9.12N)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "A_s \\ \\ge\\ \\max\\left\\{\\frac{0{,}10\\,N_{Ed}}{f_{yd}}\\ ;\\ 0{,}002\\,A_c\\right\\}",
+        "id": "9.5.2_as_min",
+        "notes": [
+         "Maatgevend is 0,002·A_c: 500 mm² tegen 414 mm².",
+         "De NB heeft de EN-aanbeveling doorgehaald en met dezelfde inhoud als eis teruggezet. N_Ed is hier de aangrijpende normaalDRUKkracht; de norm schrijft dat woordelijk zo.",
+         "A_s is de TOTALE langswapening van de doorsnede, dus alle vier de zijden — §9.5.2(2) spreekt letterlijk van \"de totale hoeveelheid langswapening\". De aanroeper vult hem uit de korf, met de zijstaven erbij; deze module kent de doorsnede niet en kan hem dus niet zelf aflezen."
+        ],
+        "status": "Ok",
+        "title": "Minimale langswapening in een kolom",
+        "uc": {
+         "ed": 500,
+         "formula_latex": "A_{s,\\min} / A_s",
+         "rd": 4053.6598327799816,
+         "uc": 0.12334532758687407
+        },
+        "unit": "mm²",
+        "value": 500,
+        "variables": [
+         {
+          "symbol": "A_s",
+          "unit": "mm²",
+          "value": 4053.6598327799816
+         },
+         {
+          "symbol": "0,10·N_Ed/f_yd",
+          "unit": "mm²",
+          "value": 414
+         },
+         {
+          "symbol": "0,002·A_c",
+          "unit": "mm²",
+          "value": 500
+         },
+         {
+          "symbol": "A_s,min",
+          "unit": "mm²",
+          "value": 500
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.2_as_max",
+      "kind": {
+       "data": {
+        "article": "NB bij art. 9.5.2(3)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "",
+        "id": "9.5.2_as_max",
+        "notes": [
+         "de overlappingssituatie is niet opgegeven. De nationale bijlage bij §9.5.2(3) geeft A_s,max = 0,04·A_c buiten een overlappingslas en 0,08·A_c ter plaatse ervan — een factor twee. Er wordt niets aangenomen: \"geen lassen\" is de RUIMSTE tak, en die stilzwijgend aanhouden zou een te zware wapening kunnen goedkeuren."
+        ],
+        "status": "NotApplicable",
+        "title": "Maximale langswapening in een kolom",
+        "uc": null,
+        "unit": "",
+        "value": 0,
+        "variables": []
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.2_hoekstaven",
+      "kind": {
+       "data": {
+        "article": "art. 9.5.2(4)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "n_{\\text{hoek}} \\ \\ge\\ 4",
+        "id": "9.5.2_hoekstaven",
+        "notes": [
+         "\"Voor kolommen met een veelhoekige dwarsdoorsnede behoort ten minste één staaf in iedere hoek te zijn geplaatst. Het aantal langsstaven in cirkelvormige kolommen behoort niet kleiner te zijn dan vier.\" Zwarte EN-tekst; de nationale bijlage wijzigt §9.5.2(4) niet.",
+         "Als hoekstaaf telt de buitenste staaf van de onder- en van de bovenrij. Een rij met één staaf bezet geen hoek — die staat in het midden van de rij — en de zijstaven liggen tussen de hoeken in. Een rechthoek heeft dus vier hoekstaven zodra de onder- én de bovenrij elk ten minste twee staven tellen.",
+         "Ronde kolommen kent dit doorsnedemodel niet; de tweede zin van het lid komt op hetzelfde getal vier uit, dus de toets is voor beide vormen dezelfde grens.",
+         "Van de 8 langsstaven in de doorsnede bezetten er 4 een hoek."
+        ],
+        "status": "Ok",
+        "title": "Een staaf in iedere hoek",
+        "uc": {
+         "ed": 4,
+         "formula_latex": "n_{\\text{hoek,eis}} / n_{\\text{hoek}}",
+         "rd": 4,
+         "uc": 1
+        },
+        "unit": "staven",
+        "value": 4,
+        "variables": [
+         {
+          "symbol": "n_hoek",
+          "unit": "staven",
+          "value": 4
+         },
+         {
+          "symbol": "n_hoek,eis",
+          "unit": "staven",
+          "value": 4
+         },
+         {
+          "symbol": "n_langs",
+          "unit": "staven",
+          "value": 8
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.3_min_diameter_dwars",
+      "kind": {
+       "data": {
+        "article": "art. 9.5.3(1)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "\\phi_{sw} \\ \\ge\\ \\max\\{6\\ \\text{mm}\\ ;\\ \\phi_{l,\\max}/4\\}",
+        "id": "9.5.3_min_diameter_dwars",
+        "notes": [
+         "Maatgevend is een kwart van de grootste langsstaafdiameter.",
+         "Zwarte EN-tekst; de NB wijzigt §9.5.3(1) niet. De aparte regel voor gepuntlaste wapeningsnetten (5 mm) is hier niet gebouwd — dat is een andere wapeningsvorm."
+        ],
+        "status": "Ok",
+        "title": "Minimumdiameter dwarswapening in een kolom",
+        "uc": {
+         "ed": 6.35,
+         "formula_latex": "\\phi_{sw,\\min} / \\phi_{sw}",
+         "rd": 9.53,
+         "uc": 0.6663168940188877
+        },
+        "unit": "mm",
+        "value": 6.35,
+        "variables": [
+         {
+          "symbol": "φ_sw",
+          "unit": "mm",
+          "value": 9.53
+         },
+         {
+          "symbol": "φ_l,max",
+          "unit": "mm",
+          "value": 25.4
+         },
+         {
+          "symbol": "φ_l,max/4",
+          "unit": "mm",
+          "value": 6.35
+         },
+         {
+          "symbol": "φ_sw,min",
+          "unit": "mm",
+          "value": 6.35
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.3_s_cl_tmax",
+      "kind": {
+       "data": {
+        "article": "art. 9.5.3(3) en (4)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "",
+        "id": "9.5.3_s_cl_tmax",
+        "notes": [
+         "de beugelzone is niet opgegeven. §9.5.3(4) eist een reductie met factor 0,6 binnen een afstand gelijk aan de grootste kolomafmeting boven of onder een balk of plaat, en nabij een overlappingslas met Φ_l > 14 mm. Zonder die keuze wordt de REGULIERE, dus ruimste, tak niet stilzwijgend aangehouden — die zou een te grote beugelafstand kunnen goedkeuren op juist de plaatsen waar de norm hem halveert."
+        ],
+        "status": "NotApplicable",
+        "title": "Hart-op-hartafstand van de dwarswapening in een kolom",
+        "uc": null,
+        "unit": "",
+        "value": 0,
+        "variables": []
+       },
+       "type": "Resistance"
+      }
+     },
+     {
+      "id": "9.5.3_opgesloten_staven",
+      "kind": {
+       "data": {
+        "article": "art. 9.5.3(6)",
+        "deelstappen": [],
+        "force_state": {
+         "combination_id": 1,
+         "forces": {
+          "mt_ed": 0,
+          "my_ed": 0,
+          "mz_ed": 0,
+          "n_ed": -1800,
+          "vy_ed": 0,
+          "vz_ed": 0
+         },
+         "position_mm": 0
+        },
+        "formula_latex": "a_{\\max} \\ \\le\\ 150\\ \\text{mm}",
+        "id": "9.5.3_opgesloten_staven",
+        "notes": [
+         "\"Elke langsstaaf of staafbundel in een hoek behoort op zijn plaats te zijn gehouden door dwarswapening. Geen enkele staaf binnen een drukzone behoort verder dan 150 mm vanaf een opgesloten staaf te liggen.\" Zwarte EN-tekst; de nationale bijlage wijzigt §9.5.3(6) niet.",
+         "Als OPGESLOTEN gelden hier de vier staven in de beugelhoeken. Bij één gesloten beugel — twee benen — zijn dat er precies vier en is de toets exact.",
+         "\"Binnen een drukzone\" is hier op ALLE langsstaven toegepast. Welk deel van de doorsnede gedrukt is, verschilt per belastingcombinatie; de eis op alle staven leggen kan nooit te ruim zijn.",
+         "Er staan 8 langsstaven in de doorsnede, waarvan 4 in een hoek en dus opgesloten door de beugel Ø9,5 mm. De staaf die het verst van een opgesloten staaf ligt, ligt er 187,8 mm vandaan.",
+         "Niet te toetsen: er zijn 4 beugelbenen opgegeven. Alles boven twee betekent een tussenbeugel of een haarspeld, en die sluit staven op die hier niet als opgesloten gelden — hun ligging is in dit model geen invoer. De 187,8 mm hierboven is dus de afstand ZONDER die extra benen; met de hand na te gaan."
+        ],
+        "status": "NotApplicable",
+        "title": "Opgesloten staven en de 150 mm-regel",
+        "uc": null,
+        "unit": "mm",
+        "value": 187.76999999999998,
+        "variables": [
+         {
+          "symbol": "a_max",
+          "unit": "mm",
+          "value": 187.76999999999998
+         },
+         {
+          "symbol": "a_eis",
+          "unit": "mm",
+          "value": 150
+         },
+         {
+          "symbol": "n_langs",
+          "unit": "staven",
+          "value": 8
+         },
+         {
+          "symbol": "n_hoek",
+          "unit": "staven",
+          "value": 4
+         }
+        ]
+       },
+       "type": "Resistance"
+      }
+     }
+    ],
+    "e_2_y_mm": null,
+    "e_2_z_mm": null,
+    "e_i_y_mm": 5.833333333333334,
+    "e_i_z_mm": 5.833333333333334,
+    "interactie_5_39": null,
+    "l0_mm": 3500,
+    "l0_z_mm": 3500,
+    "lambda": 24.248711305964285,
+    "lambda_lim": 21.327257857037665,
+    "lambda_lim_z": 21.327257857037665,
+    "lambda_z": 24.248711305964285,
+    "m_edy_knm": null,
+    "m_edz_knm": null,
+    "m_rdy_knm": 531.0287676804927,
+    "m_rdz_knm": 531.0287676804928,
+    "phi_ef": null,
+    "phi_ef_z": null,
+    "section_name": "500 x 500",
+    "tweede_orde_verwaarloosbaar": false,
+    "tweede_orde_verwaarloosbaar_z": false
+   },
+   "datum": "2026-11-14T03:19:31.767Z",
+   "herkomst": {
+    "versie": "2026.46.1",
+    "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
+    "schema": "s74ca075e63e9667e"
    }
   }
  }

@@ -7,6 +7,7 @@
  * van `solve_native_fem`: maten in mm en mm², momenten in kNm/m.
  */
 
+import { twRcColumn } from "../../../packages/desktop/src/templates/tw-rc-column.ts";
 import { twRcSlab } from "../../../packages/desktop/src/templates/tw-rc-slab.ts";
 
 /** Een plaat van 250 mm, de wapening op 42 mm (onder) en 40 mm (boven) uit het vlak. */
@@ -118,7 +119,6 @@ UC_w = scheur.result.utilization
 /** Een invoer die de kern weigert: ν' groter dan 1. */
 export const GEWEIGERD = DRIE.replace("nuPrime = 0.88", "nuPrime = 1.5");
 
-
 /**
  * De Taiwanse plaat (tw-rc-slab) met dezelfde doorsnede als bij Open FEM Studio:
  * het blad met de rc112-formule (A_s_rc112) naast de kern van Open FEM Studio
@@ -148,4 +148,60 @@ A_s_rc112 = M_u*1000000/(0.9*f_y*z_rc112)
 A_s_fem = tw_plaat.result.bottom.requiredAsXmm2PerM
 `;
 
-export const BLADEN = { DRIE, REEKS, BATCH, SCHEUR, TW_PLAAT };
+/**
+ * De Taiwanse kolom (tw-rc-column) met dezelfde doorsnede als bij Open FEM Studio:
+ * 500 x 500 mm, 8 D25 (3 onder, 3 boven, 1 per zijkant), beugel D10-150, dekking 40 mm.
+ * De materialen zijn gelijkgetrokken: f'c = 30 MPa is C30/37 (f_ck = 30) en f_y = 500 MPa
+ * is B500B (f_yk = 500). Het blad rekent de rc112-driehoek (phiMn_cap bij P_u), de kern
+ * de kolomtoets van EN 1992-1-1 paragraaf 5.8 (m_rdz_knm bij dezelfde N_Ed).
+ *
+ * Eén aanroep: bij N_Ed = 0 rekent de kern de kolomtoets niet (geen normaaldruk), dus de
+ * vergelijking gaat over de ontwerpwaarde bij P_u = 1800 kN.
+ */
+const KOLOM = twRcColumn
+  .replace("f_c = ?{28}*(MPa)", "f_c = ?{30}*(MPa)")
+  .replace("f_y = ?{420}*(MPa)", "f_y = ?{500}*(MPa)")
+  .replace("M_1 = ?{80}*(kN*m)", "M_1 = ?{0}*(kN*m)")
+  .replace("M_2 = ?{120}*(kN*m)", "M_2 = ?{0}*(kN*m)")
+  .replace("V_u = ?{150}*(kN)", "V_u = ?{0}*(kN)");
+
+const KOLOM_KERN = `
+@kern tw_kolom = concrete_column_check
+  beam_id = 1
+  bijlage = "NL"
+  concrete_class = "C30/37"
+  reinforcement_grade = "B500B"
+  design_situation = "PersistentTransient"
+  steel_branch = "Horizontal"
+  tweede_orde_in_krachten = "Geen"
+  length_m = l_u
+  section.shape = "Rectangle"
+  section.b_mm = b
+  section.h_mm = h
+  cage.cover_mm = c_c
+  cage.stirrup_diameter_mm = d_tie
+  cage.stirrup_legs = n_legs
+  cage.stirrup_spacing_mm = s_tie
+  cage.bottom.count = n_face
+  cage.bottom.diameter_mm = d_b
+  cage.top.count = n_face
+  cage.top.diameter_mm = d_b
+  cage.sides.count = n_side
+  cage.sides.diameter_mm = d_b
+  column.bracing = "Geschoord"
+  column.buckling_length.soort = "Opgegeven"
+  column.buckling_length.l0_m = l_u
+  column.bracing_z = "Geschoord"
+  column.buckling_length_z.soort = "Opgegeven"
+  column.buckling_length_z.l0_m = l_u
+  forces_envelope[1].combination_id = 1
+  forces_envelope[1].position_mm = 0
+  forces_envelope[1].forces = {mt_ed: 0, my_ed: 0, mz_ed: 0, n_ed: -P_u/(1 kN), vy_ed: 0, vz_ed: 0}
+@end
+M_rd_ec2 = tw_kolom.m_rdz_knm
+
+`;
+
+export const TW_KOLOM = KOLOM + KOLOM_KERN;
+
+export const BLADEN = { DRIE, REEKS, BATCH, SCHEUR, TW_PLAAT, TW_KOLOM };

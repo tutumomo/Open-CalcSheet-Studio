@@ -228,7 +228,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 **上游與發佈**
 
 11. **上游協作**：MKS 單位制與多語結尾行解析兩個 PR 分支已推送，後續向 OpenAEC 上游送出並追蹤審查；持續以 `docs/tw/上游同步流程.md` 合併上游新版（目前同步至 v2026.46.1）。
-12. **Open FEM Studio 與 `@kern` 對接**：以 `@kern` 計算工具作為台灣模組的第二套獨立對照，已完成 `tw-rc-slab` 單向板與 drielagenmodel（Eurocode 附錄 F）的對照（rc112 與 FEM Studio 的 A_s·z 相同，差異僅為力臂慣例）；後續續作其他台灣模組的對照，待上游開放 FEM 專案整合後評估板、牆模型的台灣規範檢核。
+12. **Open FEM Studio 與 `@kern` 對接**：以 `@kern` 計算工具作為台灣模組的第二套獨立對照，已完成 `tw-rc-slab` 單向板（drielagenmodel，Eurocode 附錄 F；兩者 A_s·z 相同，差異僅為力臂慣例）與 `tw-rc-column`（`concrete_column_check`，EN 1992-1-1 §5.8；rc112 折線較 Eurocode 嚴約 26 %，來源為側筋不計與 φ／分項係數之別）的對照；鋼構與基樁待續，並於上游開放 FEM 專案整合後評估板、牆模型的台灣規範檢核。
 13. **文件與統計一致性**：已新增 `scripts/check-tw-readme.mjs` 檢查 `README.zh-TW.md`（檢查腳本數、共用數字、模組清單），避免數字再次過時；待辦：評估台灣版安裝檔的程式碼簽署。
 
 ## 核心架構

@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（rc112 柱）：`@kern` 第二套獨立對照擴充到 `tw-rc-column`。新增 `scripts/fixtures/kern/bladen.mjs` 的 `TW_KOLOM`（沿用 `tw-rc-column` 範本文字、材料對齊 C30/37 與 B500B，呼叫 `concrete_column_check`），並在 `scripts/check-kern-blok.mjs` 新增章節「De Taiwanse kolom tegen Open FEM Studio」：同一斷面在 P_u = 1800 kN 下，rc112 三點折線得 φMn,cap = 393.89 kN·m、EN 1992-1-1 §5.8 得 M_Rdz = 531.03 kN·m（比值 0.742），差異來源為側筋不計、φ 與分項係數之別及折線之保守近似。
+
 - 台灣版（rc112 單向板）：啟用以 Open FEM Studio 的 `@kern` 計算核心作為第二套獨立對照。新增 `scripts/fixtures/kern/bladen.mjs` 的 `TW_PLAAT`（沿用 `tw-rc-slab` 範本文字，附加 `@kern` 的 `solve_native_fem` drielagenmodel 呼叫），並在 `scripts/check-kern-blok.mjs` 新增章節「De Taiwanse plaat tegen Open FEM Studio」：同一斷面以相同設計值（混凝土 0.85f'c、鋼筋 0.9f_y）比對所需鋼筋量，rc112 得 147.53 mm²/m、Open FEM Studio 得 173.36 mm²/m，兩者的 A_s·z 完全相同，差異全由力臂慣例造成。答案由 `node scripts/proef-kern-blok.mjs --bewaar` 產生並存入 `scripts/fixtures/kern/antwoorden.json`，CI 不需啟動 FEM Studio 伺服器。
 
 - 台灣版（水土保持技術規範 排水溝）：`tw-drainage-channel` 新增可選之變量流水面線串接：輸入下游控制水深、串接渠段長度與演算步數後，以能量方程式的標準步進法推算水面線（緩流自下游向上游、急流自上游向下游推算），出水高與流速檢核改採水面線之最大水深與流速範圍；水面線到達臨界水深即停止推算並顯示壅水可推算之渠段長度，其上游的水躍由設計者另行檢核。預設仍採等速流，既有表單不受影響。

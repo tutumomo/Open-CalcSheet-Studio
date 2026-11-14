@@ -58,7 +58,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as kern from "../packages/core/dist/index.js";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
-import { BATCH, DRIE, GEWEIGERD, REEKS, SCHEUR, TW_PLAAT } from "./fixtures/kern/bladen.mjs";
+import { BATCH, DRIE, GEWEIGERD, REEKS, SCHEUR, TW_KOLOM, TW_PLAAT } from "./fixtures/kern/bladen.mjs";
 
 const { parse, evaluateMetScope, render, rekenUitdrukking, toetsHash, alsAntwoord, leesVastgelegdeToetsingen, eenheidVanVeld } = kern;
 
@@ -278,6 +278,50 @@ await deel("De Taiwanse plaat tegen Open FEM Studio", () => {
   meld(dichtbij(A_s_rc112 * z_rc112, A_s_fem * z_fem, 1e-9), "beide vragen hetzelfde A_s*z: het verschil is alleen de arm", `${(A_s_rc112 * z_rc112).toFixed(6)} tegen ${(A_s_fem * z_fem).toFixed(6)}`);
   meld(dichtbij(A_s_fem / A_s_rc112, z_rc112 / z_fem, 1e-9), `de verhouding is de verhouding van de armen: ${(A_s_fem / A_s_rc112).toFixed(5)}`);
   meld(A_s_rc112 < 844.6666666666666 && A_s_fem < 844.6666666666666, "beide eisen minder dan de aanwezige A_s = 844,67 mm2/m");
+});
+
+await deel("De Taiwanse kolom tegen Open FEM Studio", () => {
+  // Zelfde doorsnede, zelfde materialen: f'c = 30 MPa is C30/37 (f_ck = 30) en
+  // f_y = 500 MPa is B500B (f_yk = 500). Het blad rekent de rc112-driehoek, de kern
+  // de kolomtoets van EN 1992-1-1 paragraaf 5.8 met dezelfde N_Ed.
+  const k = kernVan(reken(TW_KOLOM, { toetsModus: "vragen" }).nodes);
+  const a = k?.verzoek?.argumenten ?? {};
+  meld(a.concrete_class === "C30/37" && a.reinforcement_grade === "B500B" && a.bijlage === "NL", "de beton- en staalklasse en de nationale bijlage", JSON.stringify({ c: a.concrete_class, s: a.reinforcement_grade, b: a.bijlage }));
+  meld(dichtbij(a.section?.b_mm, 500) && dichtbij(a.section?.h_mm, 500) && dichtbij(a.length_m, 3.5), "de doorsnede 500 x 500 mm en de vrije lengte 3,5 m", JSON.stringify(a.section));
+  const c = a.cage ?? {};
+  meld(dichtbij(c.cover_mm, 40) && dichtbij(c.stirrup_diameter_mm, 9.53) && dichtbij(c.stirrup_spacing_mm, 150) && c.stirrup_legs === 4, "de korf: dekking 40 mm, beugel D10-150 met vier benen", JSON.stringify(c));
+  meld(c.bottom?.count === 3 && c.top?.count === 3 && c.sides?.count === 1 && dichtbij(c.bottom?.diameter_mm, 25.4), "8 D25: drie onder, drie boven en een per zijkant", JSON.stringify({ b: c.bottom, t: c.top, s: c.sides }));
+  const kol = a.column ?? {};
+  meld(kol.bracing === "Geschoord" && kol.buckling_length?.soort === "Opgegeven" && dichtbij(kol.buckling_length?.l0_m, 3.5), "geschoord, met de kniklengte van het blad", JSON.stringify(kol.buckling_length));
+  meld(dichtbij(a.forces_envelope?.[0]?.forces?.n_ed, -1800) && dichtbij(a.forces_envelope?.[0]?.forces?.my_ed, 0), "de axiale kracht -1800 kN en geen moment", JSON.stringify(a.forces_envelope?.[0]?.forces));
+  meld(!!antwoorden[k.hash], "de fixture heeft het antwoord op de Taiwanse kolom", k.hash);
+
+  const klaar = reken(TW_KOLOM, { toetsingen: antwoorden });
+  // Het blad met de hand: d' = c_c + d_tie + d_b/2, d = h - d',
+  // M_n0 = A_s,face * f_y * (d - d') en P_0 = 0.85 f'c (A_g - A_st) + f_y A_st.
+  const dPrime = 40 + 9.53 + 25.4 / 2;
+  const d = 500 - dPrime;
+  const AsFace = 3 * 506.7;
+  const Mn0 = (AsFace * 500 * (d - dPrime)) / 1e6;
+  const P0 = (0.85 * 30 * (500 * 500 - 8 * 506.7) + 500 * 8 * 506.7) / 1000;
+  meld(Math.abs(dPrime - 62.23) < 1e-9 && Math.abs(d - 437.77) < 1e-9, `het blad met de hand: d' = ${dPrime} mm, d = ${d} mm`);
+  meld(dichtbij(getal(klaar.scope.phiMn_0, "kN*m"), 0.9 * Mn0, 1e-9), `phi M_n0 = 0,9 * A_s,face * f_y * (d - d') = ${(0.9 * Mn0).toFixed(4)} kNm`);
+  meld(dichtbij(getal(klaar.scope.phiPn_max, "kN"), 0.65 * 0.8 * P0, 1e-9), `phi P_n,max = 0,65 * 0,8 * P_0 = ${(0.65 * 0.8 * P0).toFixed(4)} kN (P_0 = ${P0.toFixed(4)} kN)`);
+  const phiMnCap = getal(klaar.scope.phiMn_cap, "kN*m");
+  meld(dichtbij(phiMnCap, 393.8925268022461, 1e-9), `bij P_u = 1800 kN geeft de driehoek van het blad phi M_n,cap = ${phiMnCap.toFixed(4)} kNm`);
+
+  const mRd = getal(klaar.scope.M_rd_ec2);
+  meld(dichtbij(mRd, 531.0287676804928, 1e-9), `Open FEM Studio geeft bij dezelfde N_Ed M_Rdz = ${mRd.toFixed(4)} kNm`);
+
+  // Het blad is hier duidelijk voorzichtiger, en om drie redenen die alle drie in het
+  // blad staan: de driehoek gebruikt alleen de wapening in de uiterste vlakken (de twee
+  // zijstaven tellen niet mee), de phi van 0,65 tot 0,90 staat tegenover de partiele
+  // factoren 1,5 en 1,15 van de Eurocode, en de driehoek is een benadering van de echte
+  // interactiekromme. De verhouding hoort daarom tussen 0,6 en 0,85 te liggen; wijkt hij
+  // daarvan af, dan is er iets in een van beide modellen veranderd.
+  const verhouding = phiMnCap / mRd;
+  meld(verhouding > 0.6 && verhouding < 0.85, `het blad is voorzichtiger: ${verhouding.toFixed(5)} van de Eurocode-waarde`, `${phiMnCap.toFixed(4)} tegen ${mRd.toFixed(4)}`);
+  meld(phiMnCap < mRd && 0.9 * Mn0 < phiMnCap, "de driehoek ligt tussen de zuivere buiging en de Eurocode-waarde in", `${(0.9 * Mn0).toFixed(4)} < ${phiMnCap.toFixed(4)} < ${mRd.toFixed(4)}`);
 });
 
 await deel("De weergave", () => {
