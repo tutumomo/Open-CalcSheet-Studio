@@ -99,6 +99,12 @@ export interface AgentUitkomst {
  * dus de grens staat ruim; de gebruiker kan hem in de instellingen verzetten.
  */
 export const STANDAARD_MAX_RONDES = 40;
+/**
+ * Hoeveel tokens één antwoord mag kosten. Een berekening met tabellen en
+ * tussenstappen haalt 4096 ruim niet, dus de standaard staat op 16384; de
+ * gebruiker kan hem in de instellingen verzetten (256–64000).
+ */
+export const STANDAARD_MAX_TOKENS = 16384;
 const STANDAARD_MAX_TEKENS = 20000;
 
 /** De goedkeuringen die de gebruiker deze sessie al gaf ("altijd"). */
@@ -149,7 +155,7 @@ export async function voerVraagUit(
         systeem: deps.systeem,
         berichten,
         gereedschap: deps.gereedschap,
-        max_tokens: deps.maxTokens ?? 4096,
+        max_tokens: deps.maxTokens ?? STANDAARD_MAX_TOKENS,
         ...(deps.temperatuur !== undefined ? { temperatuur: deps.temperatuur } : {}),
         ...(deps.extraKoppen && Object.keys(deps.extraKoppen).length > 0
           ? { extra_koppen: deps.extraKoppen }

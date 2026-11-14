@@ -167,5 +167,7 @@
   "breedteAanpassen": "Sleep om de zijbalk breder of smaller te maken (pijltjestoetsen voor fijnregeling)",
   "maxRondes": "Maximaal aantal rondes per vraag",
   "maxRondesHint": "Hoeveel tool-rondes de assistent per vraag mag doen (4–200). Verhoog het voor ingewikkeld werk; \"ga door\" na de limiet werkt ook.",
-  "foutRondes": "De assistent stopte na {{max}} rondes voor deze vraag; typ \"ga door\" om verder te gaan, of verhoog de limiet bij de AI-instellingen."
+  "foutRondes": "De assistent stopte na {{max}} rondes voor deze vraag; typ \"ga door\" om verder te gaan, of verhoog de limiet bij de AI-instellingen.",
+  "maxTokens": "Maximale tokens per antwoord",
+  "maxTokensHint": "Hoeveel tokens één antwoord mag bevatten (256–64000). Lange berekeningen, tabellen en stapsgewijze uitleg vragen 16384 of meer."
 }

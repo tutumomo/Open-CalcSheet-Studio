@@ -47,6 +47,7 @@ import { MCP_SERVERNAAM } from "../mcp/koppeling.ts";
 import { bouwSysteemtekst, parseBereik, type ActiefBlad, type BladKort, type ExternServerKort, type LaatsteUitkomst } from "../components/ai/prompt.ts";
 import {
   STANDAARD_MAX_RONDES,
+  STANDAARD_MAX_TOKENS,
   voerVraagUit,
   type Antwoord,
   type Goedkeuring,
@@ -83,6 +84,9 @@ import type { McpToolDef } from "../mcp/contracts.ts";
 const SLEUTEL = "aiInstellingen";
 const SLEUTEL_MCP = "aiMcpServers";
 const SLEUTEL_RONDES = "aiMaxRondes";
+const SLEUTEL_TOKENS = "aiMaxTokens";
+/** Plafond voor de geschiedenis die meegaat (~50k tokens aan tekst). */
+const MAX_GESPREK_TEKENS = 200_000;
 
 export interface AiInstellingen {
   actiefId: string;
@@ -140,6 +144,8 @@ interface AiStand {
   bezig: boolean;
   /** Hoeveel tool-rondes één vraag mag kosten (instelbaar). */
   maxRondes: number;
+  /** Hoeveel tokens één antwoord mag kosten (instelbaar). */
+  maxTokens: number;
   /** Wat er misging bij de laatste vraag (netwerk, sleutel, OAuth, limiet). */
   fout: string | null;
   goedkeuring: Goedkeuring | null;
@@ -170,6 +176,8 @@ interface AiStand {
   haalModellenOp(): Promise<void>;
   /** Het maximum aantal tool-rondes per vraag (4–200) instellen en bewaren. */
   zetMaxRondes(aantal: number): Promise<void>;
+  /** Het maximum aantal tokens per antwoord (256–64000) instellen en bewaren. */
+  zetMaxTokens(aantal: number): Promise<void>;
   voegMcpServerToe(sjabloonId: string, naam?: string): Promise<string>;
   werkMcpServerBij(id: string, wijziging: Partial<McpExternServerConfig>): Promise<void>;
   verwijderMcpServer(id: string): Promise<void>;
@@ -283,6 +291,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
   stappen: [],
   bezig: false,
   maxRondes: STANDAARD_MAX_RONDES,
+  maxTokens: STANDAARD_MAX_TOKENS,
   fout: null,
   goedkeuring: null,
   taal: "zh-TW",
@@ -298,6 +307,12 @@ export const useAiStore = create<AiStand>((set, get) => ({
     await setSetting(SLEUTEL_RONDES, maxRondes);
   },
 
+  async zetMaxTokens(aantal) {
+    const maxTokens = Math.max(256, Math.min(64_000, Math.round(aantal) || STANDAARD_MAX_TOKENS));
+    set({ maxTokens });
+    await setSetting(SLEUTEL_TOKENS, maxTokens);
+  },
+
   async laad() {
     if (get().geladen) return;
     const bewaard = await getSetting<unknown>(SLEUTEL, null);
@@ -308,6 +323,11 @@ export const useAiStore = create<AiStand>((set, get) => ({
       typeof bewaardRondes === "number" && Number.isFinite(bewaardRondes)
         ? Math.max(4, Math.min(200, Math.round(bewaardRondes)))
         : STANDAARD_MAX_RONDES;
+    const bewaardTokens = await getSetting<unknown>(SLEUTEL_TOKENS, null);
+    const maxTokens =
+      typeof bewaardTokens === "number" && Number.isFinite(bewaardTokens)
+        ? Math.max(256, Math.min(64_000, Math.round(bewaardTokens)))
+        : STANDAARD_MAX_TOKENS;
     const beschikbaar = await aiBeschikbaar();
     const statussen: Record<string, AiProfielAuthStatus> = {};
     const mcpStatussen: Record<string, McpExternStatus> = {};
@@ -319,7 +339,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
         mcpStatussen[s.id] = await mcpExternStatus(s.id);
       }
     }
-    set({ geladen: true, beschikbaar, actiefId, profielen, statussen, mcpServers, mcpStatussen, maxRondes });
+    set({ geladen: true, beschikbaar, actiefId, profielen, statussen, mcpServers, mcpStatussen, maxRondes, maxTokens });
     if (beschikbaar) {
       for (const s of mcpServers) {
         if (s.actief && !mcpStatussen[s.id]?.verbonden) {
@@ -779,9 +799,19 @@ export const useAiStore = create<AiStand>((set, get) => ({
     gestopt = false;
 
     const gebruiker = parseBereik(vraag, liveOmgeving.stand().exemplaren.map((b) => ({ id: b.id, naam: b.naam, templateId: b.templateId, ref: b.ref })));
-    const geschiedenis: AiBericht[] = get().regels
+    // Het gesprek gaat volledig mee, maar met een plafond: bij een heel lang
+    // gesprek vallen de oudste beurten af, zodat het contextvenster van de
+    // aanbieder niet volloopt. De laatste beurt blijft altijd staan.
+    const alle: AiBericht[] = get().regels
       .filter((r) => r.tekst.trim() !== "")
       .map((r) => ({ rol: r.rol, tekst: r.tekst }));
+    const geschiedenis: AiBericht[] = [];
+    let tekens = 0;
+    for (let i = alle.length - 1; i >= 0; i--) {
+      tekens += alle[i].tekst.length;
+      if (tekens > MAX_GESPREK_TEKENS && geschiedenis.length >= 2) break;
+      geschiedenis.unshift(alle[i]);
+    }
 
     const vraagRegel: AiRegel = { id: nieuwId("vraag"), rol: "user", tekst: vraag, stappen: [] };
     const antwoordRegel: AiRegel = { id: nieuwId("antwoord"), rol: "assistant", tekst: "", stappen: [], loopt: true };
@@ -871,6 +901,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
             }),
           vraag: (verzoek, bij) => vraagAanbieder(verzoek, bij),
           maxRondes: get().maxRondes,
+          maxTokens: get().maxTokens,
           bij: {
             tekst: (stuk) => werkBij((r) => ({ ...r, tekst: r.tekst + stuk })),
             stap: (stap) => {

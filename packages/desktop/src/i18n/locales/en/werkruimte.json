@@ -74,7 +74,8 @@
       "grafBestand": "Graph file (.dyn)…"
     },
     "inhoud": "Contents",
-    "inhoudZonderPaginas": "The page numbers appear once you open the print preview of the report."
+    "inhoudZonderPaginas": "The page numbers appear once you open the print preview of the report.",
+    "breedteAanpassen": "Drag to resize the sidebar (double-click resets, arrow keys nudge)"
   },
   "catalogus": {
     "groepen": {

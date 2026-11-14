@@ -114,7 +114,7 @@ pub struct Verzoek {
 }
 
 fn standaard_max_tokens() -> u32 {
-    4096
+    16384
 }
 
 /// Eén beurt in de geschiedenis, in de vorm die alle aanbieders kunnen krijgen.
@@ -2510,10 +2510,13 @@ fn argumenten_of_leeg(tekst: &str) -> Value {
 /// de functie komt terug als het antwoord klaar is, bij een fout of bij de stopknop.
 #[tauri::command]
 pub async fn ai_vraag(
-    verzoek: Verzoek,
+    mut verzoek: Verzoek,
     kanaal: Channel<Gebeurtenis>,
     staat: tauri::State<'_, AiState>,
 ) -> Result<(), String> {
+    // Dezelfde grenzen als in de instellingen: nooit minder dan 256 en nooit
+    // meer dan 64000 tokens, wat de aanbieder ook meekrijgt.
+    verzoek.max_tokens = verzoek.max_tokens.clamp(256, 64_000);
     let stop = staat.stop.clone();
     stop.store(false, Ordering::SeqCst);
     let protocol = aanbieder_naam(&verzoek.aanbieder)?;

@@ -212,6 +212,44 @@
 .project-browser {
   width: var(--oa-shell-panel-width);
   user-select: none;
+  /* De breedte zet ProjectBrowser.tsx zelf (met grenzen); de greep hangt aan de rand. */
+  position: relative;
+  flex: 0 0 auto;
+}
+
+/* De greep waarmee de zijbalk breder of smaller wordt. */
+.left-panel-greep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: -3px;
+  width: 7px;
+  cursor: col-resize;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  z-index: 5;
+  touch-action: none;
+}
+
+.left-panel-greep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 3px;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.left-panel-greep:hover::after,
+.left-panel-greep:focus-visible::after {
+  background: var(--oa-accent, var(--theme-accent, #d97706));
+}
+
+.left-panel-greep:focus-visible {
+  outline: none;
 }
 
 .project-browser.ingeklapt {

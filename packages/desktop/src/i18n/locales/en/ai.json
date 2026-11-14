@@ -167,5 +167,7 @@
   "breedteAanpassen": "Drag to resize the sidebar (arrow keys nudge it)",
   "maxRondes": "Maximum rounds per request",
   "maxRondesHint": "How many tool rounds the assistant may run per request (4–200). Raise it for complex work; sending \"continue\" also resumes after the limit.",
-  "foutRondes": "The assistant reached the {{max}}-round limit for one request; send \"continue\" to go on, or raise the limit in the AI settings."
+  "foutRondes": "The assistant reached the {{max}}-round limit for one request; send \"continue\" to go on, or raise the limit in the AI settings.",
+  "maxTokens": "Response token limit",
+  "maxTokensHint": "How many tokens one answer may produce (256–64000). Long calculation sheets, tables and step-by-step explanations need 16384 or more."
 }

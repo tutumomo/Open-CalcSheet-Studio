@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { modulesPerTemplate } from "./projectTree";
 import { useProjectStore, PROJECT_ID, RAPPORT_ID, type Exemplaar } from "../../store/projectStore";
@@ -247,8 +247,45 @@ function KnoopRij({ id, icoon, naam, uitleg, gekozen, onKies, onVerwijder }: {
  * die erin zitten. Opbouw en opmaak volgen het linkerpaneel van de
  * Blueprint-schil (left-panel en panel-section in App.css).
  */
+const BREEDTE_SLEUTEL = "projectBrowserBreedte";
+const MIN_BREEDTE = 180;
+const MAX_BREEDTE = 480;
+const STANDAARD_BREEDTE = 240;
+
+/** Bewaarde breedte van de zijbalk, begrensd op wat er nu op het scherm past. */
+function klemBreedte(px: number): number {
+  const scherm = typeof window === "undefined" ? MAX_BREEDTE : window.innerWidth;
+  return Math.max(MIN_BREEDTE, Math.min(Math.min(MAX_BREEDTE, Math.round(scherm * 0.35)), Math.round(px)));
+}
+
+function leesBreedte(): number {
+  try {
+    const waarde = Number(window.localStorage.getItem(BREEDTE_SLEUTEL));
+    if (Number.isFinite(waarde) && waarde > 0) return klemBreedte(waarde);
+  } catch {
+    // Geen opslag (privémodus of geblokkeerd): de standaardbreedte is goed genoeg.
+  }
+  return STANDAARD_BREEDTE;
+}
+
 export default function ProjectBrowser() {
   const [collapsed, setCollapsed] = useState(false);
+  const [breedte, setBreedte] = useState(leesBreedte);
+  const sleep = useRef<{ x: number; breedte: number } | null>(null);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(BREEDTE_SLEUTEL, String(breedte));
+    } catch {
+      // Geen opslag: de breedte geldt dan alleen voor deze sessie.
+    }
+  }, [breedte]);
+
+  useEffect(() => {
+    const bijMaat = () => setBreedte((huidig) => klemBreedte(huidig));
+    window.addEventListener("resize", bijMaat);
+    return () => window.removeEventListener("resize", bijMaat);
+  }, []);
   // Een vers ingevoegd blad opent meteen met de naam in bewerkstand; zie
   // store/moduleKiezer.ts.
   const nieuwId = useModuleKiezer((s) => s.nieuwId);
@@ -282,7 +319,38 @@ export default function ProjectBrowser() {
   }
 
   return (
-    <aside className="left-panel project-browser">
+    <aside className="left-panel project-browser" style={{ width: breedte } as React.CSSProperties}>
+      {/* De greep waarmee de gebruiker de zijbalk breder of smaller maakt. */}
+      <button
+        type="button"
+        className="left-panel-greep"
+        aria-label={tw("browser.breedteAanpassen")}
+        title={tw("browser.breedteAanpassen")}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.currentTarget.setPointerCapture(e.pointerId);
+          sleep.current = { x: e.clientX, breedte };
+        }}
+        onPointerMove={(e) => {
+          const greep = sleep.current;
+          if (!greep) return;
+          setBreedte(klemBreedte(greep.breedte + (e.clientX - greep.x)));
+        }}
+        onPointerUp={() => {
+          sleep.current = null;
+        }}
+        onPointerCancel={() => {
+          sleep.current = null;
+        }}
+        onDoubleClick={() => setBreedte(STANDAARD_BREEDTE)}
+        onKeyDown={(e) => {
+          const stap = e.shiftKey ? 64 : 24;
+          if (e.key === "ArrowLeft") setBreedte((huidig) => klemBreedte(huidig - stap));
+          else if (e.key === "ArrowRight") setBreedte((huidig) => klemBreedte(huidig + stap));
+          else return;
+          e.preventDefault();
+        }}
+      />
       <div className="left-panel-toolbar">
         <span className="left-panel-title">{tw("algemeen.project")}</span>
         <button className="left-panel-close-btn" onClick={() => setCollapsed(true)} title={tw("browser.inklappen")}>

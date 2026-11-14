@@ -274,6 +274,8 @@ function Instellingen() {
   const haalModellenOp = useAiStore((s) => s.haalModellenOp);
   const maxRondes = useAiStore((s) => s.maxRondes);
   const zetMaxRondes = useAiStore((s) => s.zetMaxRondes);
+  const maxTokens = useAiStore((s) => s.maxTokens);
+  const zetMaxTokens = useAiStore((s) => s.zetMaxTokens);
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -377,6 +379,21 @@ function Instellingen() {
 
       <div className="ai-veld">
         <div className="ai-veld-kop">
+          <span>{t("maxTokens")}</span>
+        </div>
+        <input
+          type="number"
+          min={256}
+          max={64000}
+          step={1024}
+          value={maxTokens}
+          onChange={(e) => void zetMaxTokens(Number(e.target.value))}
+        />
+        <div className="ai-hint">{t("maxTokensHint")}</div>
+      </div>
+
+      <div className="ai-veld">
+        <div className="ai-veld-kop">
           <span>{t("maxRondes")}</span>
         </div>
         <input
@@ -388,6 +405,21 @@ function Instellingen() {
           onChange={(e) => void zetMaxRondes(Number(e.target.value))}
         />
         <div className="ai-hint">{t("maxRondesHint")}</div>
+      </div>
+
+      <div className="ai-veld">
+        <div className="ai-veld-kop">
+          <span>{t("maxTokens")}</span>
+        </div>
+        <input
+          type="number"
+          min={256}
+          max={64000}
+          step={1024}
+          value={maxTokens}
+          onChange={(e) => void zetMaxTokens(Number(e.target.value))}
+        />
+        <div className="ai-hint">{t("maxTokensHint")}</div>
       </div>
 
       <ExterneMcpSectie />
@@ -681,6 +713,9 @@ export default function AiPaneel() {
   const [toonInstellingen, setToonInstellingen] = useState(false);
   const [breedte, setBreedte] = useState(leesBreedte);
   const sleep = useRef<{ x: number; breedte: number } | null>(null);
+  // Een Chinese/Japanse invoermethode zet de tekst pas bij de tweede Enter om:
+  // zolang de samenstelling loopt, mag Enter niet verzenden.
+  const samenstellen = useRef(false);
   const gesprek = useRef<HTMLDivElement>(null);
 
   const actiefProfiel = profielen.find((p) => p.id === actiefId) ?? profielen[0];
@@ -862,13 +897,21 @@ export default function AiPaneel() {
           rows={3}
           disabled={!beschikbaar || bezig}
           onChange={(e) => setTekst(e.target.value)}
+          onCompositionStart={() => {
+            samenstellen.current = true;
+          }}
+          onCompositionEnd={() => {
+            samenstellen.current = false;
+          }}
           onKeyDown={(e) => {
-            if (e.key === "Enter" && !e.shiftKey) {
-              e.preventDefault();
-              const v = tekst;
-              setTekst("");
-              void verstuur(v);
-            }
+            if (e.key !== "Enter" || e.shiftKey) return;
+            // Tijdens het kiezen van een IME-kandidaat hoort Enter bij de
+            // invoermethode, niet bij de assistent.
+            if (samenstellen.current || e.nativeEvent.isComposing || e.nativeEvent.keyCode === 229) return;
+            e.preventDefault();
+            const v = tekst;
+            setTekst("");
+            void verstuur(v);
           }}
         />
         <div className="ai-voet-rij">

@@ -74,7 +74,8 @@
       "grafBestand": "節點圖檔案（.dyn）…"
     },
     "inhoud": "目錄",
-    "inhoudZonderPaginas": "開啟報告的列印預覽後，才會顯示頁碼。"
+    "inhoudZonderPaginas": "開啟報告的列印預覽後，才會顯示頁碼。",
+    "breedteAanpassen": "拖曳調整側邊欄寬度（雙擊回預設，方向鍵微調）"
   },
   "catalogus": {
     "groepen": {

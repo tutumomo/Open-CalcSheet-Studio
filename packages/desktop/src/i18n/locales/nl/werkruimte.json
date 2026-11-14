@@ -74,7 +74,8 @@
       "grafBestand": "Grafblad uit bestand (.dyn)…"
     },
     "inhoud": "Inhoud",
-    "inhoudZonderPaginas": "De paginanummers komen erbij zodra je het afdrukvoorbeeld van het rapport opent."
+    "inhoudZonderPaginas": "De paginanummers komen erbij zodra je het afdrukvoorbeeld van het rapport opent.",
+    "breedteAanpassen": "Sleep om de zijbalk breder of smaller te maken (dubbelklik herstelt, pijltjestoetsen fijnregeling)"
   },
   "catalogus": {
     "groepen": {
