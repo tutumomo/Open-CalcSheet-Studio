@@ -1,5 +1,5 @@
 {
- "versie": "2026.44.2",
+ "versie": "2026.46.1",
  "geweigerd": "Error: nuPrime must not exceed 1",
  "toetsingen": {
   "tc990cf8549b200d5": {
@@ -93,10 +93,10 @@
      }
     }
    },
-   "datum": "2026-11-12T02:04:42.149Z",
+   "datum": "2026-11-14T03:07:36.641Z",
    "herkomst": {
-    "versie": "2026.44.2",
-    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "versie": "2026.46.1",
+    "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
     "schema": "seaaaf098569344b9"
    }
   },
@@ -379,10 +379,10 @@
      }
     ]
    },
-   "datum": "2026-11-12T02:04:42.170Z",
+   "datum": "2026-11-14T03:07:36.646Z",
    "herkomst": {
-    "versie": "2026.44.2",
-    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "versie": "2026.46.1",
+    "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
     "schema": "seaaaf098569344b9"
    }
   },
@@ -735,10 +735,10 @@
      "status": "partial_check_exceeded"
     }
    },
-   "datum": "2026-11-12T02:04:42.185Z",
+   "datum": "2026-11-14T03:07:36.652Z",
    "herkomst": {
-    "versie": "2026.44.2",
-    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "versie": "2026.46.1",
+    "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
     "schema": "seaaaf098569344b9"
    }
   },
@@ -783,10 +783,108 @@
      "utilization": 0.8997993952996605
     }
    },
-   "datum": "2026-11-12T02:04:42.225Z",
+   "datum": "2026-11-14T03:07:36.666Z",
    "herkomst": {
-    "versie": "2026.44.2",
-    "sha256": "e1278052cf53719f1ddcfa32d307daf5473af5afb16513e09bb4d8b57eff3de4",
+    "versie": "2026.46.1",
+    "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
+    "schema": "seaaaf098569344b9"
+   }
+  },
+  "tfc13fecb8ac773b9": {
+   "tool": "solve_native_fem",
+   "verzoek": {
+    "inputs": {
+     "kind": "threeLayer",
+     "input": {
+      "forces": {
+       "nx": 0,
+       "ny": 0,
+       "nxy": 0,
+       "mx": 6.48,
+       "my": 0,
+       "mxy": 0,
+       "vx": 0,
+       "vy": 0
+      },
+      "thicknessMm": 150,
+      "bottomSkinMm": 52.7,
+      "topSkinMm": 49.53,
+      "bottomReinforcement": {
+       "asX": 844.666666667,
+       "asY": 844.666666667
+      },
+      "topReinforcement": {
+       "asX": 285.32,
+       "asY": 285.32
+      },
+      "fcdMpa": 23.8,
+      "fydMpa": 378,
+      "nuPrime": 0.2,
+      "compressionModel": "ec2AnnexF"
+     }
+    }
+   },
+   "uitkomst": {
+    "kind": "threeLayer",
+    "result": {
+     "bottom": {
+      "annexFBranch": "F.2-F.4",
+      "compressionLimitMpa": 2.856,
+      "concreteCompressionMpa": 0,
+      "forces": {
+       "nx": 65.5306669363402,
+       "nxy": 0,
+       "ny": 0
+      },
+      "reinforcementCase": "x-only",
+      "requiredAsXmm2PerM": 173.36155274164074,
+      "requiredAsYmm2PerM": 0,
+      "utilizationAsX": 0.20524256441385832,
+      "utilizationAsY": 0,
+      "utilizationCompression": 0
+     },
+     "core": {
+      "diagonalStressMpa": null,
+      "directionDeg": 0,
+      "requiredShearMm2PerM2": null,
+      "resultantKnPerM": 0,
+      "shearReinforcementRequired": null,
+      "utilizationDiagonal": null,
+      "utilizationShear": null,
+      "vxKnPerM": 0,
+      "vyKnPerM": 0
+     },
+     "leverArmMm": 98.88499999999999,
+     "notAssessed": [
+      "shell cracking state",
+      "automatic layer sizing and reinforcement eccentricity",
+      "reinforcement anchorage and detailing",
+      "National Annex and project applicability",
+      "core layer shear resistance"
+     ],
+     "status": "partial_check_passes",
+     "top": {
+      "annexFBranch": "F.5-F.7",
+      "compressionLimitMpa": 23.8,
+      "concreteCompressionMpa": 1.3230500088096142,
+      "forces": {
+       "nx": -65.5306669363402,
+       "nxy": 0,
+       "ny": 0
+      },
+      "reinforcementCase": "compression-only",
+      "requiredAsXmm2PerM": 0,
+      "requiredAsYmm2PerM": 0,
+      "utilizationAsX": 0,
+      "utilizationAsY": 0,
+      "utilizationCompression": 0.05559033650460564
+     }
+    }
+   },
+   "datum": "2026-11-14T03:07:36.682Z",
+   "herkomst": {
+    "versie": "2026.46.1",
+    "sha256": "44308c125f09814411dc95581dad49236ae9de0352a3f38235d7dbacc0d58938",
     "schema": "seaaaf098569344b9"
    }
   }

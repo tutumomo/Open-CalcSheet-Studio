@@ -20,6 +20,7 @@
  *     scherm, Engels, en nergens een oordeel;
  *   • herkomst en opnieuw rekenen, het vastleggen bij een blad en het aanroepen zelf;
  *   • de uitkomsten van FEM Studio tegen een handberekening.
+ — de Taiwanse plaat (tw-rc-slab) tegen de rc112-formule van het blad zelf.
  *
  * Handberekeningen (de plaat van de fixture: h = 250 mm, de wapening 42 mm van de
  * onderkant en 40 mm van de bovenkant, f_yd = 500/1,15 = 434,78 N/mm²):
@@ -57,7 +58,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import * as kern from "../packages/core/dist/index.js";
 import * as cache from "../packages/desktop/src/rekenen/toetsCache.ts";
-import { BATCH, DRIE, GEWEIGERD, REEKS, SCHEUR } from "./fixtures/kern/bladen.mjs";
+import { BATCH, DRIE, GEWEIGERD, REEKS, SCHEUR, TW_PLAAT } from "./fixtures/kern/bladen.mjs";
 
 const { parse, evaluateMetScope, render, rekenUitdrukking, toetsHash, alsAntwoord, leesVastgelegdeToetsingen, eenheidVanVeld } = kern;
 
@@ -256,6 +257,27 @@ await deel("De scheurwijdte tegen de handberekening", () => {
   meld(dichtbij(getal(klaar.scope.scheur_result_effectiveTensionHeightMm), hcef) && dichtbij(getal(klaar.scope.scheur_result_maximumCrackSpacingMm), sr, 1e-9) && dichtbij(getal(klaar.scope.scheur_result_strainDifference), eps, 1e-9), "FEM Studio geeft dezelfde h_c,ef, s_r,max en ε");
   meld(dichtbij(getal(klaar.scope.w_k, "mm"), wk, 1e-9) && dichtbij(getal(klaar.scope.UC_w), wk / 0.3, 1e-9), `w_k = ${getal(klaar.scope.w_k, "mm").toFixed(4)} mm, UC = ${getal(klaar.scope.UC_w).toFixed(3)} (handberekening 0,270 mm en 0,90)`);
   meld(klaar.scope.scheur_result_passes === 1 && klaar.scope.scheur_result_tensionStiffeningFloorGoverns === 0 && klaar.scope.scheur_result_crackSpacingEquation === "7.11", "ja en nee als 1 en 0; de gebruikte vergelijking als tekst");
+});
+
+await deel("De Taiwanse plaat tegen Open FEM Studio", () => {
+  const k = kernVan(reken(TW_PLAAT, { toetsModus: "vragen" }).nodes);
+  const a = k?.verzoek?.argumenten?.inputs?.input ?? {};
+  meld(dichtbij(a.thicknessMm, 150) && dichtbij(a.bottomSkinMm, 52.7) && dichtbij(a.topSkinMm, 49.53) && dichtbij(a.bottomReinforcement?.asX, 844.6666666666666, 1e-9) && dichtbij(a.topReinforcement?.asX, 285.32), "de doorsnede in mm en mm2/m (h, de lagen wapening, A_s)", JSON.stringify(a));
+  meld(dichtbij(a.forces?.mx, 6.48) && dichtbij(a.fcdMpa, 23.8) && dichtbij(a.fydMpa, 378) && dichtbij(a.nuPrime, 0.2), "het moment per meter en de ontwerpwaarden 0.85f'c en 0.9f_y", JSON.stringify(a.forces));
+  meld(!!antwoorden[k.hash], "de fixture heeft het antwoord op de Taiwanse plaat", k.hash);
+  const klaar = reken(TW_PLAAT, { toetsingen: antwoorden });
+  // rc112 met de hand: z = d - a/2 met a = A_s * f_y/(0.85f'c * b), b = 1000 mm.
+  const z_rc112 = 123.65 - ((844.6666666666666 * 420) / (0.85 * 28 * 1000)) / 2;
+  const A_s_rc112 = (6.48 * 1e6) / (0.9 * 420 * z_rc112);
+  const z_fem = 150 - (20 + 12.7 / 2) - (20 + 9.53 / 2);
+  meld(Math.abs(z_rc112 - 116.19706) < 1e-4 && Math.abs(A_s_rc112 - 147.53263) < 1e-4, `rc112 met de hand: z = ${z_rc112.toFixed(5)} mm, A_s = ${A_s_rc112.toFixed(5)} mm2/m`);
+  const A_s_fem = getal(klaar.scope.A_s_fem);
+  meld(dichtbij(A_s_fem, 173.36155274164074, 1e-9), `FEM Studio vraagt ${A_s_fem.toFixed(5)} mm2/m (drielagenmodel, bijlage F)`);
+  // Het verschil is de arm: rc112 neemt z = d - a/2, de kern de afstand tussen de middens
+  // van de wapeninglagen. Met dezelfde staalspanning volgt A_s*z gelijk.
+  meld(dichtbij(A_s_rc112 * z_rc112, A_s_fem * z_fem, 1e-9), "beide vragen hetzelfde A_s*z: het verschil is alleen de arm", `${(A_s_rc112 * z_rc112).toFixed(6)} tegen ${(A_s_fem * z_fem).toFixed(6)}`);
+  meld(dichtbij(A_s_fem / A_s_rc112, z_rc112 / z_fem, 1e-9), `de verhouding is de verhouding van de armen: ${(A_s_fem / A_s_rc112).toFixed(5)}`);
+  meld(A_s_rc112 < 844.6666666666666 && A_s_fem < 844.6666666666666, "beide eisen minder dan de aanwezige A_s = 844,67 mm2/m");
 });
 
 await deel("De weergave", () => {

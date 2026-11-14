@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（rc112 單向板）：啟用以 Open FEM Studio 的 `@kern` 計算核心作為第二套獨立對照。新增 `scripts/fixtures/kern/bladen.mjs` 的 `TW_PLAAT`（沿用 `tw-rc-slab` 範本文字，附加 `@kern` 的 `solve_native_fem` drielagenmodel 呼叫），並在 `scripts/check-kern-blok.mjs` 新增章節「De Taiwanse plaat tegen Open FEM Studio」：同一斷面以相同設計值（混凝土 0.85f'c、鋼筋 0.9f_y）比對所需鋼筋量，rc112 得 147.53 mm²/m、Open FEM Studio 得 173.36 mm²/m，兩者的 A_s·z 完全相同，差異全由力臂慣例造成。答案由 `node scripts/proef-kern-blok.mjs --bewaar` 產生並存入 `scripts/fixtures/kern/antwoorden.json`，CI 不需啟動 FEM Studio 伺服器。
+
 - 台灣版（水土保持技術規範 排水溝）：`tw-drainage-channel` 新增可選之變量流水面線串接：輸入下游控制水深、串接渠段長度與演算步數後，以能量方程式的標準步進法推算水面線（緩流自下游向上游、急流自上游向下游推算），出水高與流速檢核改採水面線之最大水深與流速範圍；水面線到達臨界水深即停止推算並顯示壅水可推算之渠段長度，其上游的水躍由設計者另行檢核。預設仍採等速流，既有表單不受影響。
 
 - 台灣版（hwbridge / rc112）：`tw-box-culvert` 新增多孔箱涵（孔數 1～6、孔間回填土寬度、涵身長度），依《公路橋梁設計規範》第 4.4 節「多孔箱涵覆土超過兩端支承面距離時不計活載重」判定活載重可忽略，並以單孔從屬寬度計算孔間回填土分擔之垂直載重放大；另新增可選地震土壓工況（依交通部《公路橋梁耐震設計規範》§8.2 之 k_h = 0.2·S_II,S、式 8-3 地震土壓力係數 K_EA〔條文式與 Mononobe–Okabe 常用式〕與式 8-2 地震土壓力）。既有表單請以「Bladen bijwerken」更新。

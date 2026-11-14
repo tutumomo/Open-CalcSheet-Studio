@@ -7,6 +7,8 @@
  * van `solve_native_fem`: maten in mm en mm², momenten in kNm/m.
  */
 
+import { twRcSlab } from "../../../packages/desktop/src/templates/tw-rc-slab.ts";
+
 /** Een plaat van 250 mm, de wapening op 42 mm (onder) en 40 mm (boven) uit het vlak. */
 const PLAAT = `h = 250 mm
 a_o = 42 mm
@@ -116,4 +118,34 @@ UC_w = scheur.result.utilization
 /** Een invoer die de kern weigert: ν' groter dan 1. */
 export const GEWEIGERD = DRIE.replace("nuPrime = 0.88", "nuPrime = 1.5");
 
-export const BLADEN = { DRIE, REEKS, BATCH, SCHEUR };
+
+/**
+ * De Taiwanse plaat (tw-rc-slab) met dezelfde doorsnede als bij Open FEM Studio:
+ * het blad met de rc112-formule (A_s_rc112) naast de kern van Open FEM Studio
+ * (drielagenmodel, bijlage F). De vergelijking staat in scripts/check-kern-blok.mjs.
+ *
+ * De krachten zijn momenten per meter plaat (kNm/m); in het blad is M_u een moment
+ * (kN·m), dus M_u/(1 kN*m) is het getal dat de kern wil.
+ */
+export const TW_PLAAT = `${twRcSlab}
+z_rc112 = d_eff - a_blk/2
+A_s_rc112 = M_u*1000000/(0.9*f_y*z_rc112)
+@kern tw_plaat = solve_native_fem
+  inputs.kind = "threeLayer"
+  inputs.input.forces = {nx: 0, ny: 0, nxy: 0, mx: M_u, my: 0, mxy: 0, vx: 0, vy: 0}
+  inputs.input.thicknessMm = h
+  inputs.input.bottomSkinMm = 2*(cover + db_m/2)
+  inputs.input.topSkinMm = 2*(cover + db_t/2)
+  inputs.input.bottomReinforcement.asX = A_s
+  inputs.input.bottomReinforcement.asY = A_s
+  inputs.input.topReinforcement.asX = A_st
+  inputs.input.topReinforcement.asY = A_st
+  inputs.input.fcdMpa = 0.85*f_c
+  inputs.input.fydMpa = 0.9*f_y
+  inputs.input.nuPrime = 0.2
+  inputs.input.compressionModel = "ec2AnnexF"
+@end
+A_s_fem = tw_plaat.result.bottom.requiredAsXmm2PerM
+`;
+
+export const BLADEN = { DRIE, REEKS, BATCH, SCHEUR, TW_PLAAT };
