@@ -18,6 +18,7 @@ import {
   GROEP_VOLGORDE,
   LEVERANCIERS,
   groepSleutel,
+  leverancierNaam,
   leverancierUitBron,
   zoekLeveranciers,
   type Leverancier,
@@ -32,7 +33,7 @@ function groepNaam(groep: LeverancierGroep, t: (s: string) => string): string {
 }
 
 export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
-  const { t } = useTranslation("ai");
+  const { t, i18n } = useTranslation("ai");
   const profielen = useAiStore((s) => s.profielen);
   const statussen = useAiStore((s) => s.statussen);
   const modellen = useAiStore((s) => s.modellen);
@@ -52,6 +53,7 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
   const [gekozen, setGekozen] = useState<Leverancier | null>(null);
   const [profielId, setProfielId] = useState<string | null>(null);
   const [sleutel, setSleutel] = useState("");
+  const [eindpunt, setEindpunt] = useState("");
   const [model, setModel] = useState("");
   const [bezig, setBezig] = useState(false);
   const [fout, setFout] = useState<string | null>(null);
@@ -67,14 +69,23 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
   const kies = (leverancier: Leverancier) => {
     setGekozen(leverancier);
     setModel(leverancier.modellen[0] ?? "");
+    setEindpunt(leverancier.endpoint);
     setFout(null);
     setStap(2);
   };
 
   const maakProfiel = async (leverancier: Leverancier): Promise<string> => {
-    if (profielId) return profielId;
+    if (profielId) {
+      if (eindpunt.trim() !== "" && eindpunt.trim() !== leverancier.endpoint) {
+        await werkProfielBij(profielId, { endpoint: eindpunt.trim() });
+      }
+      return profielId;
+    }
     const id = await voegLeverancierToe(leverancier);
     setProfielId(id);
+    if (eindpunt.trim() !== "" && eindpunt.trim() !== leverancier.endpoint) {
+      await werkProfielBij(id, { endpoint: eindpunt.trim() });
+    }
     return id;
   };
 
@@ -123,6 +134,7 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
     onKlaar();
   };
 
+  const naamVan = (leverancier: Leverancier) => leverancierNaam(leverancier, i18n.language);
   const modellenLijst = profielId ? (modellen[profielId] ?? []) : [];
   const aanbevolen = gekozen?.modellen ?? [];
   const teKiezen = modellenLijst.length > 0 ? modellenLijst : aanbevolen;
@@ -185,7 +197,7 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
                     className="ai-leverancier"
                     onClick={() => kies(leverancier)}
                   >
-                    <span className="ai-leverancier-naam">{leverancier.naam}</span>
+                    <span className="ai-leverancier-naam">{naamVan(leverancier)}</span>
                     <span className="ai-leverancier-hint">
                       {leverancier.authModus === "oauth"
                         ? t("leverancierMetAbonnement")
@@ -206,7 +218,7 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
 
       {stap === 2 && gekozen && (
         <div className="ai-wizard-inhoud">
-          <div className="ai-wizard-onderwerp">{gekozen.naam}</div>
+          <div className="ai-wizard-onderwerp">{naamVan(gekozen)}</div>
 
           {gekozen.authModus === "none" && (
             <>
@@ -225,6 +237,9 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
           {gekozen.authModus === "oauth" && (
             <>
               <div className="ai-hint">{t("leverancierAbonnementHint")}</div>
+              {gekozen.oauth && gekozen.oauth.clientId.trim() === "" && (
+                <div className="ai-hint">{t("leverancierClientIdHint")}</div>
+              )}
               {profielId ? (
                 <OAuthSectie profiel={profielen.find((p) => p.id === profielId) ?? profielen[0]} />
               ) : (
@@ -261,6 +276,26 @@ export function AanbiederWizard({ onKlaar }: { onKlaar: () => void }) {
                   {t("leverancierSleutelHalen")}
                 </a>
               )}
+              <label className="ai-veld">
+                <span>{t("endpoint")}</span>
+                <input
+                  type="text"
+                  value={eindpunt}
+                  spellCheck={false}
+                  placeholder={t("leverancierEindpuntHint")}
+                  onChange={(e) => setEindpunt(e.target.value)}
+                />
+              </label>
+              <label className="ai-veld">
+                <span>{t("endpoint")}</span>
+                <input
+                  type="url"
+                  value={eindpunt}
+                  spellCheck={false}
+                  onChange={(e) => setEindpunt(e.target.value)}
+                />
+                <span className="ai-hint">{t("leverancierEindpuntHint")}</span>
+              </label>
               <label className="ai-veld">
                 <span>{t("sleutel")}</span>
                 <input

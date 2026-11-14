@@ -54,10 +54,17 @@ App 內建的 AI 助理（OCSS 規格 P2-15）。標題列的 **AI** 按鈕開�
 
 | 分組 | 內容 |
 |---|---|
-| 訂閱帳號登入 | ChatGPT Plus／Pro（Codex 裝置代碼與 PKCE）、OpenRouter（PKCE） |
-| API 金鑰 | Anthropic、OpenAI、Google Gemini、DeepSeek、Groq、xAI、Mistral、智譜 GLM、Moonshot Kimi、SiliconFlow；每列都有「前往取得 API 金鑰」的官方連結與建議模型 |
-| 本機模型 | Ollama、LM Studio、llama.cpp、vLLM、Magpie（預填 localhost 位址，免金鑰） |
+| 訂閱帳號登入 | **Google Antigravity**（Code Assist PKCE）、ChatGPT Plus／Pro（Codex 裝置代碼與 PKCE）、OpenRouter（PKCE） |
+| API 金鑰 | Anthropic、OpenAI、Google Antigravity（AI Studio 金鑰）、DeepSeek、Groq、xAI、Mistral、智譜 GLM（中國大陸／Z.ai）、Moonshot Kimi（中國大陸／全球／Kimi Code）、MiniMax（中國大陸／全球）、阿里雲百鍊（Coding Plan／Token Plan 個人版與團隊版）、智譜 Coding Plan、Z.ai Coding Plan、小米 MiMo（按量／包月）、火山方舟（API／Agent Plan／Coding Plan）、騰訊雲 Coding Plan、硅基流動（中國大陸／全球）、LongCat、OpenCode Go、Vercel AI Gateway、Agnes、OpenHubs、Hinoki、Ollama Cloud、Sub2API；每列都有官方文件／金鑰頁連結與建議模型 |
+| 本機模型 | Ollama、LM Studio、llama.cpp、vLLM、Magpie、LiteLLM（預填 localhost 位址，免金鑰） |
 | 自訂端點 | OpenAI／Anthropic／Gemini 三種協定的自訂端點 |
+
+目錄內容整份沿用 Cindy（`makecindy/cindy` 的 `packages/model-providers/catalog/providers.json`，version 3）：
+同樣的 36 筆 preset（id、名稱、簡中／繁中名稱、官方 `docsUrl`、`baseUrl`、建議模型），
+再加上本 App 需要的 Anthropic、OpenAI（金鑰）、Groq、xAI、Mistral、本機 Ollama 與三筆自訂端點。
+差異只有一處：Cindy 把 `openai-chat` 與 `openai-responses` 當成兩種協定，本 App 只有三種協定、
+Responses API 僅用於 Codex 訂閱登入，因此 `openai-responses` 的 preset 走 OpenAI 相容的 chat 路由
+（這些供應商同時提供該路由）。
 
 ### 本機已偵測
 
@@ -79,9 +86,9 @@ App 內建的 AI 助理（OCSS 規格 P2-15）。標題列的 **AI** 按鈕開�
 |---|---|---|---|---|
 | Anthropic (Claude) | Anthropic | `https://api.anthropic.com` | `claude-sonnet-5-5` | 預設 API 金鑰（`x-api-key`）；支援切換至 OAuth 2.0 PKCE 並設定自訂／企業 OAuth 閘道（`Authorization: Bearer`；Anthropic 未對第三方開放訂閱 OAuth 用戶端） |
 | OpenAI (ChatGPT) | OpenAI | `https://api.openai.com` | `gpt-5` | 開箱即用 PKCE S256（`http://localhost:1455/auth/callback`）與**裝置代碼登入**（`https://auth.openai.com/codex/device`）；OAuth 模式自動改走 ChatGPT Codex Responses API（`https://chatgpt.com/backend-api/codex/responses`、`chatgpt-account-id` JWT 識別） |
-| Google Gemini | Gemini | `https://generativelanguage.googleapis.com` | `gemini-2.5-pro` | 預先帶入 PKCE S256 端點（`http://127.0.0.1:<port>/oauth2callback`）與 Code Assist 範圍；於面板填入自己的 Google Cloud 桌面端 OAuth Client ID 與 Client Secret（亦支援以 `VITE_GEMINI_OAUTH_CLIENT_ID`／`OCSS_GEMINI_OAUTH_CLIENT_SECRET` 提供），OAuth 模式自動走 Google Code Assist（`cloudcode-pa.googleapis.com/v1internal:loadCodeAssist`／`onboardUser` 自動解析 GCP 專案 ID，亦可在面板手填 Project ID） |
+| Google Antigravity | Gemini | `https://cloudcode-pa.googleapis.com` | `gemini-3-pro-preview` | 預設走 **Antigravity／Code Assist**：PKCE S256（`http://127.0.0.1:<port>/oauth2callback`）＋ cloud-platform 範圍，請求送到 `cloudcode-pa.googleapis.com/v1internal`（`loadCodeAssist`／`onboardUser` 自動解析 GCP 專案 ID，亦可在面板手填 Project ID）。Google 依規定要求桌面端 OAuth 帶 `client_secret`，公開發行版不內建憑證，因此需自備 Client ID／Secret（`VITE_ANTIGRAVITY_OAUTH_CLIENT_ID`／`OCSS_GEMINI_OAUTH_CLIENT_SECRET`，或於進階設定填入，存於作業系統金鑰環）。沒有自備憑證時改用目錄中的「Google Antigravity（API 金鑰）」，以 AI Studio 金鑰呼叫 `generativelanguage.googleapis.com` |
 
-> 注意：Anthropic 僅對第一方官方用戶端提供訂閱 OAuth 並禁止第三方工具冒用；Google 桌面端 OAuth 依規定需帶 `client_secret`，為避免在公開程式碼庫存放憑證，請於面板填入自建 Google Cloud Desktop OAuth Client ID／Secret（存於作業系統金鑰環）或直接填 Gemini API 金鑰。
+> 注意：Anthropic 僅對第一方官方用戶端提供訂閱 OAuth 並禁止第三方工具冒用；Google（Antigravity）桌面端 OAuth 依規定需帶 `client_secret`，為避免在公開程式碼庫存放憑證，請於面板填入自建 Google Cloud Desktop OAuth Client ID／Secret（存於作業系統金鑰環），或直接使用 AI Studio 金鑰。Google 一律以 **Antigravity** 呈現，不再使用舊的 Gemini 命名。
 
 ### 自訂端點與進階設定
 
@@ -111,7 +118,7 @@ Gemini `/v1beta/models`，並沿用該供應商目前的 API 金鑰、OAuth 權�
 
 > Anthropic 未對第三方開放訂閱 OAuth，本 App 不會冒用官方 CLI 身分，因此 Anthropic 一律走 API 金鑰。
 > Google 桌面端 OAuth 需帶 `client_secret`，公開發行版未內建，請在「進階設定」填入自建 Client ID／Secret
-> （存於作業系統金鑰環）或改用 Gemini API 金鑰。
+> （存於作業系統金鑰環）或改用 Google Antigravity（API 金鑰）的 AI Studio 金鑰。
 
 **所有金鑰、OAuth 權杖與選填的 Client Secret 只存在作業系統金鑰環**（Windows 認證管理員、macOS Keychain、Secret Service），由 `src-tauri/src/ai.rs` 經 `keyring` 存取（服務名稱 `open-calcsheet-studio-ai`，依設定檔代號隔離成 `<id>`、`oauth:<id>`、`oauth_secret:<id>`）。機密不會寫進 `preferences.json`、專案檔或日誌；App 只能查詢「是否已儲存／帳號／是否過期」，讀不回秘鑰內容。端點、模型、協定與 OAuth 非機密參數則存在 `preferences.json` 的 `aiInstellingen`（相容舊版單筆設定並自動遷移）。
 
@@ -156,7 +163,7 @@ SSE 逐段解析後以 Tauri channel 回傳，所以畫面是逐字出現的。
 ## 驗證
 
 ```bash
-node scripts/check-ai-agent.mjs                     # 104 項：政策、差異、@ 範圍、迴圈、供應商目錄、設定檔／OAuth、外部 MCP
+node scripts/check-ai-agent.mjs                     # 109 項：政策、差異、@ 範圍、迴圈、Cindy 供應商目錄、設定檔／OAuth、外部 MCP
 node scripts/valideer-tw-i18n-keys.mjs ai           # zh-TW 與 en 的 ai 鍵是否對齊
 cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib ai::
 cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib mcp_client::

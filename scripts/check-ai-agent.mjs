@@ -40,6 +40,7 @@ import {
   GROEP_VOLGORDE,
   LEVERANCIERS,
   groepSleutel,
+  leverancierNaam,
   leverancierUitBron,
   leverancierVoorProfiel,
   zoekLeveranciers,
@@ -459,7 +460,7 @@ toets("elke aanbieder heeft een naam, een endpoint en een geldig protocol",
   LEVERANCIERS.every(
     (l) =>
       l.naam.trim() !== "" &&
-      (l.groep === "eigen" || l.endpoint.trim() !== "") &&
+      (l.groep === "eigen" || l.endpoint.trim() !== "" || l.eindpuntInvullen === true) &&
       ["anthropic", "openai", "gemini"].includes(l.aanbieder) &&
       ["apikey", "oauth", "none"].includes(l.authModus) &&
       Array.isArray(l.modellen),
@@ -471,13 +472,16 @@ toets("de groepskoppen hebben een i18n-sleutel per groep",
 
 // Een abonnement moet zonder invoer van de gebruiker kunnen inloggen: een
 // autorisatie- en tokenadres, en een client_id behalve bij OpenRouter (dat
-// werkt met een callback-URL in plaats van een client).
+// werkt met een callback-URL in plaats van een client) en bij Antigravity (de
+// Google-client-id komt uit de build-omgeving: een publieke build mag geen
+// client-secret van Google meesturen).
 toets("abonnementen hebben een volledige OAuth-configuratie",
   LEVERANCIERS.filter((l) => l.groep === "abonnement").every((l) => {
     const o = l.oauth;
     if (!o || o.authUrl === "" || o.tokenUrl === "") return false;
     if (o.soort === "openrouter") return true;
-    return o.clientId.trim() !== "";
+    if (o.clientId.trim() === "") return l.id === "antigravity";
+    return true;
   }),
   LEVERANCIERS.filter((l) => l.groep === "abonnement").map((l) => [l.id, l.oauth?.clientId]));
 toets("elke sleutelaanbieder wijst naar een officiele https-pagina",
@@ -494,9 +498,46 @@ toets("de catalogus biedt geen Anthropic-abonnement aan (bestaat niet in ai.rs)"
 toets("zoeken filtert op naam, endpoint en model",
   zoekLeveranciers("ollama").every((l) => l.naam.toLowerCase().includes("ollama")) &&
   zoekLeveranciers("ollama").length >= 1 &&
-  zoekLeveranciers("bigmodel").some((l) => l.id === "zhipu") &&
-  zoekLeveranciers("grok-3").some((l) => l.id === "xai") &&
+  zoekLeveranciers("bigmodel").some((l) => l.id.startsWith("zhipu")) &&
+  zoekLeveranciers("grok").some((l) => l.id === "xai") &&
   zoekLeveranciers("  ").length === LEVERANCIERS.length);
+
+// De catalogus is een overname van Cindy (makecindy/cindy,
+// packages/model-providers/catalog/providers.json versie 3). Deze ids moeten
+// blijven staan, anders is het geen volledige overname meer.
+const CINDY_IDS = [
+  "sub2api", "openrouter", "deepseek", "zhipu-glm-cn", "zhipu-glm-global",
+  "moonshot-kimi-cn", "moonshot-kimi-global", "moonshot-kimi-code", "minimax-cn",
+  "minimax-global", "aliyun-bailian-coding", "aliyun-bailian-token-plan-cn",
+  "aliyun-bailian-token-plan-team-cn", "litellm", "lmstudio", "llamacpp", "vllm",
+  "longcat", "zhipu-coding-plan-cn", "zai-coding-plan-global", "xiaomi-mimo-api-cn",
+  "xiaomi-mimo-token-plan-cn", "volcengine-api", "siliconflow-cn", "siliconflow-global",
+  "volcengine-agent-plan", "volcengine-coding-plan", "tencentcloud-coding-plan",
+  "opencode-go", "vercel-ai-gateway", "agnes", "openhubs", "hinoki", "ollama-cloud",
+  "magpie",
+];
+const ontbreekt = CINDY_IDS.filter((id) => !LEVERANCIERS.some((l) => l.id === id));
+toets("de Cindy-catalogus is volledig overgenomen", ontbreekt.length === 0, ontbreekt);
+toets("elke vermelding heeft een officiele https-verwijzing",
+  LEVERANCIERS.filter((l) => l.groep !== "eigen").every(
+    (l) => typeof l.sleutelUrl === "string" && l.sleutelUrl.startsWith("https://"),
+  ),
+  LEVERANCIERS.filter((l) => l.groep !== "eigen" && !l.sleutelUrl?.startsWith("https://")).map((l) => l.id));
+
+// Google staat in de catalogus als Antigravity (Cloud Code Assist), niet als
+// het oude losse Gemini-eindpunt. De AI Studio-sleutel blijft een aparte regel.
+const googleAbonnement = LEVERANCIERS.filter((l) => l.groep === "abonnement" && l.aanbieder === "gemini");
+toets("Google is een Antigravity-abonnement op Cloud Code Assist",
+  googleAbonnement.length === 1 &&
+  googleAbonnement[0].id === "antigravity" &&
+  googleAbonnement[0].endpoint.includes("cloudcode-pa") &&
+  googleAbonnement[0].oauth?.callbackPath === "/oauth2callback",
+  googleAbonnement.map((l) => [l.id, l.endpoint]));
+toets("geen enkele vermelding heet nog Gemini",
+  !LEVERANCIERS.some((l) => /gemini/i.test(l.naam) || /gemini/i.test(l.naamZh ?? "")));
+toets("Chinese namen worden alleen bij een Chinese interfacetaal gebruikt",
+  leverancierNaam(LEVERANCIERS.find((l) => l.id === "zhipu-glm-cn"), "zh-TW") === "智譜 GLM（中國大陸）" &&
+  leverancierNaam(LEVERANCIERS.find((l) => l.id === "zhipu-glm-cn"), "en") === "智谱 GLM（中国大陆）");
 
 const bronAlsAanbieder = leverancierUitBron({
   id: "config:codex",

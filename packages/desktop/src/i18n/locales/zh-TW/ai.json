@@ -161,5 +161,7 @@
   "leverancierVerbonden": "已連線",
   "leverancierNietVerbonden": "尚未連線",
   "leverancierInstellen": "設定",
-  "leverancierGeavanceerd": "進階設定"
+  "leverancierGeavanceerd": "進階設定",
+  "leverancierEindpuntHint": "端點可用「官方網址／取得金鑰」連結開啟官方說明；若供應商給的是範本網址（例如 Sub2API），請在這裡填入自己的主機。",
+  "leverancierClientIdHint": "此供應商需要自己的 OAuth Client ID：請在進階設定填入，或改用下方的 API 金鑰方式連線。"
 }

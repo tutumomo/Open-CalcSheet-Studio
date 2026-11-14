@@ -161,5 +161,7 @@
   "leverancierVerbonden": "Verbonden",
   "leverancierNietVerbonden": "Niet verbonden",
   "leverancierInstellen": "Instellen",
-  "leverancierGeavanceerd": "Geavanceerde instellingen"
+  "leverancierGeavanceerd": "Geavanceerde instellingen",
+  "leverancierEindpuntHint": "De endpointlink opent de documentatie van de aanbieder; geeft de aanbieder een voorbeeldadres (bijvoorbeeld Sub2API), vul hier dan je eigen host in.",
+  "leverancierClientIdHint": "Deze aanbieder vraagt een eigen OAuth-client-id: vul die in bij de geavanceerde instellingen, of gebruik in plaats daarvan de API-sleutel van dezelfde aanbieder."
 }

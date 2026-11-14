@@ -99,16 +99,23 @@ export const OPENAI_OAUTH: AiOAuthConfig = {
   },
 };
 
-const BUILD_GEMINI_CLIENT_ID =
+const BUILD_ANTIGRAVITY_CLIENT_ID =
+  (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_ANTIGRAVITY_OAUTH_CLIENT_ID ??
   (import.meta as { env?: Record<string, string | undefined> }).env?.VITE_GEMINI_OAUTH_CLIENT_ID ??
   "";
 
-/** De OAuth-client voor Google / Gemini (Code Assist): eigen Desktop OAuth-client-id invullen of via build-env meegeven. */
-export const GEMINI_OAUTH: AiOAuthConfig = {
+/**
+ * De OAuth-client voor Google Antigravity (Cloud Code Assist). Antigravity is
+ * de opvolger van de losse Gemini-integratie: dezelfde Code Assist-envelope,
+ * maar het eigen eindpunt en de eigen modellen. De client-id komt uit de
+ * build-omgeving (`VITE_ANTIGRAVITY_OAUTH_CLIENT_ID`); zonder eigen client-id
+ * blijft de aanmelding dicht en gebruikt de gebruiker de AI Studio-sleutel.
+ */
+export const ANTIGRAVITY_OAUTH: AiOAuthConfig = {
   soort: "pkce",
   authUrl: "https://accounts.google.com/o/oauth2/v2/auth",
   tokenUrl: "https://oauth2.googleapis.com/token",
-  clientId: BUILD_GEMINI_CLIENT_ID,
+  clientId: BUILD_ANTIGRAVITY_CLIENT_ID,
   scopes:
     "https://www.googleapis.com/auth/cloud-platform https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile",
   callbackPath: "/oauth2callback",
@@ -116,6 +123,9 @@ export const GEMINI_OAUTH: AiOAuthConfig = {
   tokenFormat: "form",
   extraParams: { access_type: "offline", prompt: "consent" },
 };
+
+/** Oude naam, blijft staan zodat bestaande imports en opgeslagen profielen blijven werken. */
+export const GEMINI_OAUTH: AiOAuthConfig = ANTIGRAVITY_OAUTH;
 
 export const OPENROUTER_OAUTH: AiOAuthConfig = {
   soort: "openrouter",
@@ -127,7 +137,7 @@ export const OPENROUTER_OAUTH: AiOAuthConfig = {
 
 export const OAUTH_SJABLONEN: AiOAuthSjabloon[] = [
   { id: "openai", naam: "ChatGPT (Codex, Plus/Pro)", config: OPENAI_OAUTH },
-  { id: "google", naam: "Google / Gemini (Code Assist)", config: GEMINI_OAUTH },
+  { id: "google", naam: "Google Antigravity (Code Assist)", config: ANTIGRAVITY_OAUTH },
   { id: "openrouter", naam: "OpenRouter (OAuth PKCE)", config: OPENROUTER_OAUTH },
   {
     id: "github",
@@ -180,12 +190,12 @@ export const STANDAARD_PROFIELEN: AiProfiel[] = [
   },
   {
     id: "gemini",
-    naam: "Google Gemini",
+    naam: "Google Antigravity",
     aanbieder: "gemini",
-    endpoint: "https://generativelanguage.googleapis.com",
-    model: "gemini-2.5-pro",
-    authModus: "apikey",
-    oauth: oauthVan(GEMINI_OAUTH),
+    endpoint: "https://cloudcode-pa.googleapis.com",
+    model: "gemini-3-pro-preview",
+    authModus: "oauth",
+    oauth: oauthVan(ANTIGRAVITY_OAUTH),
     ingebouwd: true,
   },
 ];

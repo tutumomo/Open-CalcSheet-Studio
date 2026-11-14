@@ -161,5 +161,7 @@
   "leverancierVerbonden": "Connected",
   "leverancierNietVerbonden": "Not connected",
   "leverancierInstellen": "Settings",
-  "leverancierGeavanceerd": "Advanced settings"
+  "leverancierGeavanceerd": "Advanced settings",
+  "leverancierEindpuntHint": "The endpoint link opens the provider's own documentation; if the provider gives you a template URL (for example Sub2API), enter your own host here.",
+  "leverancierClientIdHint": "This provider needs its own OAuth client ID: fill it in under advanced settings, or use the API-key provider instead."
 }
