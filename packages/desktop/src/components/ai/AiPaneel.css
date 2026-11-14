@@ -4,7 +4,13 @@
    invoerscherm: het paneel volgt het thema van de app, ook in het donker. */
 
 .ai-paneel {
-  flex: 0 0 384px;
+  /* De breedte stelt de gebruiker zelf in met de greep links; de waarde komt
+     uit AiPaneel.tsx en is daar al begrensd. */
+  flex: 0 0 auto;
+  width: var(--ai-breedte, 384px);
+  min-width: 320px;
+  max-width: 760px;
+  position: relative;
   align-self: stretch;
   min-height: 0;
   display: flex;
@@ -14,6 +20,42 @@
   font-family: var(--oa-font-body);
   font-size: var(--oa-size-body);
   color: var(--oa-text);
+}
+
+/* De greep waarmee de zijbalk breder of smaller wordt. */
+.ai-greep {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: -3px;
+  width: 7px;
+  cursor: col-resize;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  z-index: 4;
+  touch-action: none;
+}
+
+.ai-greep::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 2px;
+  background: transparent;
+  transition: background 0.15s;
+}
+
+.ai-greep:hover::after,
+.ai-greep:focus-visible::after,
+.ai-greep[data-sleep="ja"]::after {
+  background: var(--oa-accent, var(--theme-accent, #d97706));
+}
+
+.ai-greep:focus-visible {
+  outline: none;
 }
 
 .ai-kop {

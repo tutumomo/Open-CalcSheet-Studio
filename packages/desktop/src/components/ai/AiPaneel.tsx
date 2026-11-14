@@ -603,6 +603,27 @@ function ExterneMcpSectie() {
   );
 }
 
+const BREEDTE_SLEUTEL = "aiPaneelBreedte";
+const MIN_BREEDTE = 320;
+const MAX_BREEDTE = 760;
+const STANDAARD_BREEDTE = 384;
+
+/** De bewaarde breedte van de zijbalk, begrensd op wat nu op het scherm past. */
+function klemBreedte(px: number): number {
+  const scherm = typeof window === "undefined" ? MAX_BREEDTE : window.innerWidth;
+  return Math.max(MIN_BREEDTE, Math.min(Math.min(MAX_BREEDTE, Math.round(scherm * 0.6)), Math.round(px)));
+}
+
+function leesBreedte(): number {
+  try {
+    const waarde = Number(window.localStorage.getItem(BREEDTE_SLEUTEL));
+    if (Number.isFinite(waarde) && waarde > 0) return klemBreedte(waarde);
+  } catch {
+    // Geen opslag (privémodus of geblokkeerd): de standaardbreedte is goed genoeg.
+  }
+  return STANDAARD_BREEDTE;
+}
+
 export default function AiPaneel() {
   const { t } = useTranslation("ai");
   const open = useAiStore((s) => s.open);
@@ -626,6 +647,8 @@ export default function AiPaneel() {
   const wisGesprek = useAiStore((s) => s.wisGesprek);
   const [tekst, setTekst] = useState("");
   const [toonInstellingen, setToonInstellingen] = useState(false);
+  const [breedte, setBreedte] = useState(leesBreedte);
+  const sleep = useRef<{ x: number; breedte: number } | null>(null);
   const gesprek = useRef<HTMLDivElement>(null);
 
   const actiefProfiel = profielen.find((p) => p.id === actiefId) ?? profielen[0];
@@ -649,12 +672,65 @@ export default function AiPaneel() {
     if (onderaan) el.scrollTop = el.scrollHeight;
   }, [regels, stappen]);
 
+  // De gekozen breedte onthouden, en bij een kleiner venster weer binnen de
+  // grenzen trekken zodat de werkruimte nooit helemaal dichtgedrukt wordt.
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(BREEDTE_SLEUTEL, String(breedte));
+    } catch {
+      // Geen opslag: de breedte geldt dan alleen voor deze sessie.
+    }
+  }, [breedte]);
+
+  useEffect(() => {
+    const bijMaat = () => setBreedte((huidig) => klemBreedte(huidig));
+    window.addEventListener("resize", bijMaat);
+    return () => window.removeEventListener("resize", bijMaat);
+  }, []);
+
   if (!open) return null;
 
   const stappenBij = (ids: string[]) => stappen.filter((s) => ids.includes(s.id));
+  const sleepBij = (e: React.PointerEvent<HTMLButtonElement>) => {
+    const greep = sleep.current;
+    if (!greep) return;
+    setBreedte(klemBreedte(greep.breedte + (greep.x - e.clientX)));
+  };
+  const toetsBij = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const stap = e.shiftKey ? 64 : 24;
+    if (e.key === "ArrowLeft") setBreedte((huidig) => klemBreedte(huidig + stap));
+    else if (e.key === "ArrowRight") setBreedte((huidig) => klemBreedte(huidig - stap));
+    else return;
+    e.preventDefault();
+  };
 
   return (
-    <aside className="ai-paneel" aria-label={t("titel")}>
+    <aside
+      className="ai-paneel"
+      aria-label={t("titel")}
+      style={{ "--ai-breedte": `${breedte}px` } as React.CSSProperties}
+    >
+      <button
+        type="button"
+        className="ai-greep"
+        aria-label={t("breedteAanpassen")}
+        title={t("breedteAanpassen")}
+        data-sleep={sleep.current ? "ja" : undefined}
+        onPointerDown={(e) => {
+          e.preventDefault();
+          e.currentTarget.setPointerCapture(e.pointerId);
+          sleep.current = { x: e.clientX, breedte };
+        }}
+        onPointerMove={sleepBij}
+        onPointerUp={() => {
+          sleep.current = null;
+        }}
+        onPointerCancel={() => {
+          sleep.current = null;
+        }}
+        onDoubleClick={() => setBreedte(STANDAARD_BREEDTE)}
+        onKeyDown={toetsBij}
+      />
       <header className="ai-kop">
         <div className="ai-kop-links">
           <span className="ai-titel">{t("titel")}</span>
