@@ -433,6 +433,13 @@ console.log("\n10. 第二套獨立求解器掃描（SI 單位、Mcr 兩種算法
 // ASD（容許應力設計法，steel99 第（一）篇；design_method = 2）
 // 釘死值（regs_formula，A 級）：
 //   steel99_Fb_compact：Fb = 0.66Fy；steel99_Lc：Lc = min(20bf/√Fy, 1400/((d/Af)Fy))
+//   steel99_Fb_ltb_asd_723（7.2.3，式 7.2-6～7.2-8；RH400×200×8×13、Fy = 3.3140777 tf/cm²、Cb = 1、d = 40 cm、
+//     Af = 26 cm²、rT = 5.289385771 cm）：
+//     L = 300 cm → Fb = 1.88103 tf/cm²（Fb1 = 1.881029 控制，L/rT = 56.717361，分界 103.934605，Fb3 = 1.82）
+//     L = 800 cm → Fb = 0.6825 tf/cm²（Fb3 控制，Fb1 = 0.52458）
+//     L = 1200 cm、不計式 7.2-8 → Fb1 = 0.233147 tf/cm²（式 7.2-7）；計入 7.2-8 → Fb3 = 0.455 控制
+//   rT 手算：Af = 20·1.3 = 26，腹板 1/3 = 37.4·0.8/6 = 4.98667 cm²，
+//     I = 1.3·20³/12 + (37.4/6)·0.8³/12 = 866.9326 cm⁴ → rT = √(866.9326/30.98667) = 5.289386 cm。
 //   steel99_web_shear_Fv_75(Fy=3.31406, hw=70, a_h=1000) = 1.03974 tf/cm²（式 7.5-2，Cv = 0.906698）
 // 手算（RH400×200×8×13、Fy = 325 MPa = 3.31406 tf/cm²）：Lc = min(219.72, 274.6) cm = 2.1972 m；
 //   fb = 220e6/1170e3 = 188.034 MPa，Fb = 214.5 MPa；(h/tw)√Fy = 46.75·1.8205 = 85.1 ≤ 100 → Fv = 130 MPa，
@@ -445,7 +452,15 @@ function asdRef(p, fyMPa, Lb_m, M = 220, V = 150) {
   const Lc_mm = Math.min((20 * p.b) / Math.sqrt(Fy), (1400 * 10 * (p.b * p.tf)) / (p.h * Fy)); // 20bf/√Fy（cm→mm 互消），1400·Af/(d·Fy)·10
   const hw = (p.h - 2 * p.tf) / p.tw;
   const compact = p.b / (2 * p.tf) <= 17 / Math.sqrt(Fy) && hw <= 170 / Math.sqrt(Fy);
-  const Fb = 0.66 * fyMPa;
+  // 7.2.3：Lb > Lc 時壓力外緣 Fb（mm 系重寫；式 7.2-6～7.2-8 之係數以 tf/cm² 定義，長度比無因次）
+  const L_mm = Math.max(Lb_m * 1000, 10);
+  const hwmm = p.h - 2 * p.tf, Af = p.b * p.tf;
+  const rT = Math.sqrt((p.tf * p.b ** 3 / 12 + (hwmm / 6) * p.tw ** 3 / 12) / (Af + (hwmm * p.tw) / 6));
+  const lr = L_mm / rT, Cb = 1;
+  const Fb1 = lr <= Math.sqrt((35800 * Cb) / Fy) ? (2 / 3 - (Fy * lr * lr) / (107600 * Cb)) * Fy : (12000 * Cb) / (lr * lr);
+  const Fb3 = (840 * Cb * Af) / (L_mm * p.h);
+  const lc = Lb_m <= Lc_mm / 1000;
+  const Fb = lc ? 0.66 * fyMPa : Math.min(Math.max(Fb1, Fb3), 0.6 * Fy) * 98.0665;
   const fb = (M * 1e6) / (p.Wx * 1e3);
   const Kv = 5.34;
   let Cv = (3100 * Kv) / (Fy * hw * hw);
@@ -453,7 +468,7 @@ function asdRef(p, fyMPa, Lb_m, M = 220, V = 150) {
   const v1 = hw * Math.sqrt(Fy) <= 100;
   const Fv = v1 ? 0.4 * fyMPa : Math.min((fyMPa * Cv) / 2.89, 0.4 * fyMPa);
   const fv = (V * 1e3) / ((v1 ? p.h : p.h - 2 * p.tf) * p.tw);
-  return { Lc: Lc_mm / 1000, valid: Lb_m <= Lc_mm / 1000 && hw <= 260, compact, ucM: fb / Fb, ucV: fv / Fv, Fb, fb, Fv, fv };
+  return { Lc: Lc_mm / 1000, lc, rT, valid: hw <= 260, compact, ucM: fb / Fb, ucV: fv / Fv, Fb, fb, Fv, fv };
 }
 {
   const r = doorreken({ design_method: "2", L_b: "2.0" });
@@ -470,7 +485,7 @@ function asdRef(p, fyMPa, Lb_m, M = 220, V = 150) {
   for (const p of TW_PROFIELEN) {
     if (!p.naam.startsWith("RH")) continue;
     for (const fy of [235, 325, 345])
-      for (const Lb of [0.5, 1.5, 2.5])
+      for (const Lb of [0.5, 1.5, 2.5, 4.0, 6.0])
         for (const [M, V] of [[40, 30], [220, 150], [600, 400]]) {
           const e = asdRef(p, fy, Lb, M, V);
           const r = doorreken({ design_method: "2", section_id: String(p.id), f_y_in: String(fy), L_b: String(Lb), M_u: String(M), V_u: String(V) });
@@ -482,18 +497,34 @@ function asdRef(p, fyMPa, Lb_m, M = 220, V = 150) {
           want ? pass++ : fail++;
         }
   }
-  waar(`ASD 掃描 ${n} 組與獨立求解器一致（合格 ${pass}、不合格 ${fail}、拒算 ${rej}）`, bad === 0 && pass > 10 && fail > 10 && rej > 10, `${bad} 組不符`);
+  waar(`ASD 掃描 ${n} 組與獨立求解器一致（合格 ${pass}、不合格 ${fail}、拒算 ${rej}）`, bad === 0 && pass > 10 && fail > 10, `${bad} 組不符`);
+}
+{
+  // 7.2.3 釘死（regs_formula steel99_Fb_ltb_asd_723，見上方註解）
+  const r3 = doorreken({ design_method: "2", L_b: "3.0", M_u: "150" });
+  geenFouten(r3, "ASD Lb = 3 m");
+  toets(r3, { r_T: 5.289385771, lr_T: 56.717361, lim_T: 103.934605, F_b1: 1.881029 * 98.0665, F_b3: 1.82 * 98.0665, F_b: 1.88103 * 98.0665 }, 1e-5);
+  waar("ASD Lb = 3 m > Lc → 依 7.2.3（Fb ≤ 0.6Fy）且合格", r3.uit.F_b <= 0.6 * 325 + 1e-9 && r3.r.voldoet === true, JSON.stringify(r3.r));
+  const r8 = doorreken({ design_method: "2", L_span: "8.0", L_b: "8.0", M_u: "50", w_L: "5" });
+  geenFouten(r8, "ASD Lb = 8 m");
+  toets(r8, { F_b1: 0.52458 * 98.0665, F_b3: 0.6825 * 98.0665, F_b: 0.6825 * 98.0665 }, 1e-5);
+  const r12 = doorreken({ design_method: "2", L_span: "12.0", L_b: "12.0", M_u: "30", w_L: "1" });
+  toets(r12, { F_b1: 0.233147 * 98.0665, F_b3: 0.455 * 98.0665, F_b: 0.455 * 98.0665 }, 1e-5);
+  // Lc 前後：Fb 由 0.66Fy 跳至 7.2.3 值（≤ 0.6Fy），不得因 Lb 略大於 Lc 而高估
+  const ra = doorreken({ design_method: "2", L_b: "2.19" }), rb = doorreken({ design_method: "2", L_b: "2.21" });
+  waar("Lc 前後：Lb ≤ Lc 取 0.66Fy，Lb > Lc 之 Fb ≤ 0.6Fy", Math.abs(ra.uit.F_b - 214.5) < 1e-6 && rb.uit.F_b <= 0.6 * 325 + 1e-9, `${ra.uit.F_b} / ${rb.uit.F_b}`);
 }
 for (const [名, w] of [
   ["ASD 彎矩過大", { design_method: "2", L_b: "2.0", M_u: "300" }],
   ["ASD 剪力過大", { design_method: "2", L_b: "2.0", V_u: "500" }],
   ["ASD 非結實翼板（RH 400x400、Fy 440）不得誤判", { design_method: "2", section_id: "9", f_y_in: "440", L_b: "1.0", M_u: "50" }],
+  ["ASD Lb > Lc 彎矩過大（Lb = 3 m、M = 220 kN·m，Fb 由 214.5 降為 184.47 MPa）", { design_method: "2", L_b: "3.0" }],
 ]) {
   const r = doorreken(w);
   waar(`${名} → 不合格`, r.r.voldoet === false && r.r.uc > 1, JSON.stringify(r.r));
 }
 for (const [名, w] of [
-  ["ASD Lb > Lc（7.2.3 未入庫）", { design_method: "2", L_b: "3.0" }],
+  ["ASD Lb > 跨度", { design_method: "2", L_b: "7.0" }],
   ["設計法代碼無效", { design_method: "3" }],
 ]) {
   const r = doorreken(w);

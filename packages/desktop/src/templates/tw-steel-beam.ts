@@ -26,8 +26,13 @@
  * 腹板淨高 hw 取 h − 2tf（略去角隅半徑，使 h/tw 偏大，偏安全）。
  *
  * 6. 容許應力設計法（ASD，第（一）篇；選單 design_method = 2）：
- *    Fb = 0.66Fy（7.2.1，已驗證 steel99_Fb_compact），限結實斷面且 Lb ≤ Lc；
- *    Lc = min(20·bf/√Fy, 1400/((d/Af)·Fy))（cm，已驗證 steel99_Lc）。Lb > Lc 之 7.2.3 式未入已驗證庫，ASD 下一律拒算。
+ *    Lb ≤ Lc：Fb = 0.66Fy（7.2.1，已驗證 steel99_Fb_compact），限結實斷面；
+ *    Lc = min(20·bf/√Fy, 1400/((d/Af)·Fy))（cm，已驗證 steel99_Lc）。
+ *    Lb > Lc（7.2.3，已驗證 steel99_Fb_ltb_asd_723）：拉力外緣 0.60Fy（式 7.2-5）；壓力外緣
+ *    L/rT ≤ √(35800Cb/Fy)：Fb1 = [2/3 − Fy(L/rT)²/(107600Cb)]Fy（式 7.2-6），否則 Fb1 = 12000Cb/(L/rT)²（式 7.2-7）；
+ *    Fb3 = 840Cb/(Ld/Af)（式 7.2-8，熱軋 H 壓力翼板為實心矩形且等於拉力翼板，適用）；Fb = min(max(Fb1, Fb3), 0.6Fy)。
+ *    rT：壓力翼板加 1/3 受壓腹板（hw·tw/6）對腹板軸之迴轉半徑，由名義尺寸推算（略去圓角）。雙對稱斷面 fb 兩外緣相同，
+ *    壓力外緣 Fb ≤ 0.6Fy 控制。
  *    Fv（7.5，已驗證 steel99_web_shear_Fv_75）：(h/tw)√Fy ≤ 100 時 Fv = 0.40Fy、Aw = d·tw；
  *    否則 Fv = Fy·Cv/2.89 ≤ 0.40Fy、Aw = h·tw，未加勁 Kv = 5.34（a/h → ∞）。
  *    需求以服務載重組合（2.2，已驗證 steel99_load_combos_ASD）輸入；fb = M/Sx、fv = V/Aw。
@@ -37,7 +42,7 @@
 
 export const twSteelBeam = `"鋼結構熱軋 H 型鋼梁設計與檢核（steel99 LRFD／ASD）
 
-'<i>依據內政部《鋼構造建築物鋼結構設計技術規範》（99年9月16日版）第（二）篇極限設計法（LRFD）或第（一）篇容許應力設計法（ASD）進行受強軸彎曲與剪力之熱軋 H 型鋼梁局部挫屈、側向扭轉挫屈（LTB）、剪力強度與服務載重撓度檢核。ASD 僅適用結實斷面且 Lb ≤ Lc（Fb = 0.66Fy）。</i><span class="alleen-scherm"></span>
+'<i>依據內政部《鋼構造建築物鋼結構設計技術規範》（99年9月16日版）第（二）篇極限設計法（LRFD）或第（一）篇容許應力設計法（ASD）進行受強軸彎曲與剪力之熱軋 H 型鋼梁局部挫屈、側向扭轉挫屈（LTB）、剪力強度與服務載重撓度檢核。ASD 僅適用結實斷面：Lb ≤ Lc 取 Fb = 0.66Fy（7.2.1），Lb > Lc 依 7.2.3 式 7.2-6～7.2-8。</i><span class="alleen-scherm"></span>
 
 #hide
 kleur(u) = if(u > 1; "#b91c1c"; if(u > 0.9; "#b45309"; "#047857"))
@@ -145,9 +150,8 @@ Lc_a = 20 * (bmm / 10) / sqrt(Fy_t)
 Lc_b = 1400 / (((hmm / 10) / ((bmm / 10) * (tfmm / 10))) * Fy_t)
 Lc_cm = min(Lc_a; Lc_b)
 L_c = Lc_cm * cm to m
-ok_asd = if(design_method ≡ 2; bool(L_b ≤ L_c); 1)
 ok_meth = bool(design_method ≡ 1) + bool(design_method ≡ 2)
-ok_geom = bool(ok_fy)*bool(ok_h)*bool(ok_b)*bool(ok_tw)*bool(ok_tf)*bool(ok_span)*bool(ok_lb)*bool(ok_cb)*bool(ok_htw)*bool(ok_asd)*bool(ok_meth)
+ok_geom = bool(ok_fy)*bool(ok_h)*bool(ok_b)*bool(ok_tw)*bool(ok_tf)*bool(ok_span)*bool(ok_lb)*bool(ok_cb)*bool(ok_htw)*bool(ok_meth)
 #show
 
 h', 斷面高度 h<span class="kolom-2"></span>'
@@ -289,11 +293,25 @@ w', 單位長度質量<span class="kolom-2"></span>'
     '強軸剪力檢核：UC = <b>'ru(UC_V)'</b> <b>'oordeel(UC_V)'</b>（'V_u' ≤ 'phiV_n'）<span class="alleen-scherm"></span>
 
     #else
-    # 4. 容許撓曲應力檢核（steel99 第（一）篇 7.2.1，ASD）
+    # 4. 容許撓曲應力檢核（steel99 第（一）篇 7.2.1、7.2.3，ASD）
 
     #hide
     Sx_c = W_x / (1 cm^3)
-    Fb_t = 0.66 * Fy_t
+    is_lc = bool(L_b ≤ L_c)
+    Lb_cm = max(L_b / (1 cm); 1)
+    Af_c = (bmm / 10) * (tfmm / 10)
+    AwT_c = ((hmm - 2 * tfmm) / 10) * (twmm / 10) / 6
+    IT_c = (tfmm / 10) * (bmm / 10)^3 / 12 + ((hmm - 2 * tfmm) / 60) * (twmm / 10)^3 / 12
+    rT_c = sqrt(IT_c / (Af_c + AwT_c))
+    r_T = rT_c * cm
+    lr_T = Lb_cm / rT_c
+    lim_T = sqrt(35800 * C_b / Fy_t)
+    Fb1_t = if(lr_T ≤ lim_T; (2/3 - Fy_t * lr_T^2 / (107600 * C_b)) * Fy_t; 12000 * C_b / lr_T^2)
+    Fb3_t = 840 * C_b * Af_c / (Lb_cm * (hmm / 10))
+    Fbl_t = min(max(Fb1_t; Fb3_t); 0.6 * Fy_t)
+    Fb_t = if(is_lc ≡ 1; 0.66 * Fy_t; Fbl_t)
+    F_b1 = Fb1_t * tf_cm2
+    F_b3 = Fb3_t * tf_cm2
     F_b = Fb_t * tf_cm2
     f_b = M_u / W_x to MPa
     phiM_n = Fb_t * Sx_c * (0.0980665 kN*m)
@@ -302,7 +320,18 @@ w', 單位長度質量<span class="kolom-2"></span>'
 
     L_c', 側向未支撐間距上限 Lc = min(20·bf/√Fy, 1400/((d/Af)·Fy))（7.2.1(3)，Lb ≤ Lc 方得 Fb = 0.66Fy）<span class="kolom-2"></span>'
     L_b', 受壓翼板側向無支撐長度 Lb<span class="kolom-2"></span>'
-    F_b', 容許撓曲應力 Fb = 0.66Fy（7.2.1，結實斷面）<span class="kolom-2"></span>'
+    #if is_lc ≡ 1
+        '側向支撐判定：<b>Lb ≤ Lc</b>，結實斷面取 Fb = 0.66Fy（7.2.1）。<span class="alleen-scherm"></span>
+        F_b', 容許撓曲應力 Fb = 0.66Fy（7.2.1，結實斷面）<span class="kolom-2"></span>'
+    #else
+        '側向支撐判定：<b>Lb > Lc</b>，依 7.2.3：拉力外緣 0.60Fy，壓力外緣取式 7.2-6／7.2-7 與 7.2-8 較大者且 ≤ 0.6Fy。<span class="alleen-scherm"></span>
+        r_T', 壓力翼板加 1/3 受壓腹板對腹板軸之迴轉半徑 rT（名義尺寸，略去圓角）<span class="kolom-2"></span>'
+        lr_T', 長細比 L/rT<span class="kolom-2"></span>'
+        lim_T', 式 7.2-6／7.2-7 分界 √(35800·Cb/Fy)<span class="kolom-2"></span>'
+        F_b1', 式 7.2-6（L/rT ≤ 分界）或式 7.2-7（L/rT > 分界）之 Fb1<span class="kolom-2"></span>'
+        F_b3', 式 7.2-8 Fb3 = 840·Cb/(L·d/Af)<span class="kolom-2"></span>'
+        F_b', 容許撓曲應力 Fb = min(max(Fb1, Fb3), 0.6Fy)（7.2.3）<span class="kolom-2"></span>'
+    #end if
     f_b', 計算撓曲應力 fb = M / Sx<span class="kolom-2"></span>'
     phiM_n', 容許彎矩 Mallow = Fb·Sx<span class="kolom-2"></span>'
     UC_M = f_b / F_b', 撓曲應力檢核比 UC_M = fb / Fb<span class="kolom-2"></span>'
@@ -377,6 +406,6 @@ w', 單位長度質量<span class="kolom-2"></span>'
         '<b>控制 UC = 'UC_max'</b> > 1.0 → <b>鋼梁檢核不合格</b>
     #end if
 #else
-    '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、斷面幾何、跨度或側撐條件無效或超出範圍；ASD 須 Lb ≤ Lc（Lb > Lc 之 7.2.3 式未入已驗證庫）。
+    '<b>總結：無效輸入，未檢核</b>。鋼材降伏強度、斷面幾何、跨度或側撐條件無效或超出範圍；ASD 與 LRFD 共用相同輸入範圍。
 #end if
 `;
