@@ -13,7 +13,8 @@ import {
 } from "../../../rapport/normwaarden";
 import { gevelOpbouw, vlakOpbouw, vullingTekst } from "../../../rapport/opbouw";
 import type { RapportWeergave } from "./useRapportWeergave";
-import { Cel, Eenheid, Leeg, Rij, Tekst, Vlak } from "./raster";
+import { Bijschrift, Cel, Eenheid, Leeg, Rij, Tekst, Vlak } from "./raster";
+import { bijschriftSleutel } from "../../../rapport/tw/nummering";
 
 /*
  * Hoofdstuk 5, Belastingen. Kolom 1 is kolom 2 van het vel (de inhoud springt
@@ -48,6 +49,7 @@ export function Sneeuw({ w }: { w: RapportWeergave }) {
  */
 export function Wind({ w }: { w: RapportWeergave }) {
   const { wind } = w.rapport.belastingen;
+  const bijschrift = w.bijschriften.get(bijschriftSleutel.wind);
   const wg = klasse(w.gegevens.windgebied, 2);
   const tc = klasse(w.gegevens.terreincategorie, 2);
   const z = getal(wind.gebouwhoogte);
@@ -126,6 +128,7 @@ export function Wind({ w }: { w: RapportWeergave }) {
   const aantal = Math.max(links.length, rechts.length);
   return (
     <>
+      <Bijschrift tekst={bijschrift} />
       {Array.from({ length: aantal }, (_, i) => (
         <Rij key={i} klasse="rpa-tt">
           {links[i]}
@@ -332,6 +335,7 @@ export function Groep({ titel, opbouwen, direct, inspringen, w }: {
   const tabellen = opbouwen.map((o, i) => (
     <Fragment key={i}>
       {i > 0 && <Leeg />}
+      <Bijschrift tekst={w.bijschriften.get(bijschriftSleutel.opbouw(o.naam))} />
       {o.soort === "vlak" ? <VlakTabel opbouw={o} w={w} /> : <GevelTabel opbouw={o} w={w} />}
     </Fragment>
   ));

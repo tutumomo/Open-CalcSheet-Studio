@@ -179,6 +179,15 @@ const RAPPORT = object({
     huisstijl: opt(object(velden(['hoofdkleur', 'accentkleur', 'tabeltekst', 'invoerkleur', 'lettertype']))),
     constructeurs: opt(lijst(object(velden(['naam', 'telefoon', 'email'])))),
   })),
+  // De Taiwanese rapportopmaak (docs/projectmodel.md, "Taiwanese rapportopmaak").
+  tw: opt(object({
+    handtekening: opt(object({
+      ...velden(['naam', 'vakgebied', 'nummer', 'instantie', 'bureau', 'datum', 'beeld']),
+      tonen: opt(JANEE),
+    })),
+    kopvoet: opt(object(velden(['kop', 'voet']))),
+    nummering: opt(object({ tabellen: opt(JANEE) })),
+  })),
 });
 
 /** De schema's van alles onder `ocss::`. Elk bestand draagt ze zelf mee. */

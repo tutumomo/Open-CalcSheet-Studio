@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（OCSS 接入 P2-16）：結構計算書新增台灣版面（`Rapport.tw`）：封面下方的技師簽章欄（姓名、科別、技師證書字號、主管機關、事務所、簽署日期與簽章圖檔，任一有填寫才出現，可整欄關閉）、每頁的頁首頁尾文字（變數 `{titel}`、`{projectnaam}`、`{kenmerk}`、`{datum}`、`{revisie}`）、以及表格的表號（「表 4-1」，依章節自動編號）。舊報告開啟後外觀不變。報告面板在台灣報告下多一節「台灣計算書版面」；API 以 `report_set` 的 `tw.handtekening.*`、`tw.kopvoet.*`、`tw.nummering.tabellen` 設定，`report_get` 讀回。圖號尚未實作：繪圖表以整頁輸出並自帶標題欄，另加圖說需改動出圖路徑（記於 `docs/tw/OCSS接入實作計畫.md`）。工具數不變（60）。
+
 - 台灣版（OCSS 接入 P2-12）：繪圖表的尺寸與文字可以綁定計算變數（`p.x.e = "L/2"`、文字中的 `{{R_paal}}`），值由該表自己的計算文字算出，與繪圖編輯器一致。`sheet_read` 對繪圖表回傳每個視圖的元素種類、mm 界的範圍與每條綁定的值／單位／錯誤（算不出的列在 `unbound`）；新工具 `sheet_drawing`（`GET /api/v1/sheets/{id}/drawing`）匯出 SVG 或 DXF：座標為實際 mm，SVG 在檔案內以 `data-eenheid="mm"` 與 mm 尺寸標明，DXF 以 `$INSUNITS`（4 = mm、6 = m，`unit` 選擇）標明、y 軸向上；符號與弧線無法化為正確的 DXF 實體，會計入 `skipped` 而非靜默省略。工具數 59 → 60。
 
 - 台灣版（OCSS 接入 P2-13）：Markdown 表與報告文字可以內插其他計算表的值，語法沿用計算語言的跨表參照並加上大括號：`{#2.R_paal}`（`{#2.M:1}` 取一位小數），值以該表顯示的單位呈現（`450 kN`）。Markdown 的程式碼區塊與行內程式碼不動；找不到值時原樣保留，`sheet_read` 的 `markdown.references` 會列出每個參照的數值、單位或錯誤原因。報告文字沿用既有的 `{專案變數}` 機制，同一段文字可混用兩者；Markdown 表開進報告時，目錄中的標題也會先內插。

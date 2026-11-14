@@ -8,6 +8,8 @@ import BerekeningenSectie from "./paneel/BerekeningenSectie";
 import BijlagenSectie from "./paneel/BijlagenSectie";
 import BureauSectie from "./paneel/BureauSectie";
 import RevisieSectie from "./paneel/RevisieSectie";
+import TwSectie from "./paneel/TwSectie";
+import { useProjectStore } from "../../store/projectStore";
 import { OpzetBron } from "./paneel/velden";
 import "./RapportPanel.css";
 
@@ -38,6 +40,10 @@ const SECTIES: readonly [id: string, sleutel: string][] = [
 export default function RapportPanel() {
   const { t } = useTranslation("rapport");
   const paneelRef = useRef<HTMLDivElement>(null);
+  // De Taiwanese kop- en voetgegevens horen bij een Taiwanees rapport; een
+  // Europees rapport heeft ze niet en ziet de sectie dus niet.
+  const taiwan = useProjectStore((s) => s.rapport.opzetSoort === "tw");
+  const secties = taiwan ? [...SECTIES, ["tw", "secties.tw"] as const] : SECTIES;
 
   const naarSectie = (id: string) =>
     paneelRef.current
@@ -52,7 +58,7 @@ export default function RapportPanel() {
       </div>
 
       <nav className="rapport-nav" aria-label={t("paneel.navLabel")}>
-        {SECTIES.map(([id, sleutel]) => (
+        {secties.map(([id, sleutel]) => (
           <button key={id} type="button" onClick={() => naarSectie(id)}>
             {t(sleutel)}
           </button>
@@ -67,6 +73,7 @@ export default function RapportPanel() {
         <BelastingenSectie />
         <BerekeningenSectie />
         <BijlagenSectie />
+        {taiwan && <TwSectie />}
         <BureauSectie />
       </OpzetBron>
 

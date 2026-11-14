@@ -8,7 +8,8 @@ import { UitwerkingHtml } from "../../calc/UitwerkingHtml";
 import { isCanvasBlad } from "../../../store/canvasBlad";
 import { CanvasVellen } from "../../calc/PrintBlad";
 import type { RapportWeergave } from "./useRapportWeergave";
-import { Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
+import { Bijschrift, Cel, Leeg, PaginaCel, Rij, Tekst, Vlak } from "./raster";
+import { bijschriftSleutel } from "../../../rapport/tw/nummering";
 import { Bestaand, Bouwwerk, Brand, Conservering, Factoren, Materialen, Vervormingen } from "./Uitgangspunten";
 import { Groep, Sneeuw, Veranderlijk, Wind } from "./Belastingen";
 // ── 台灣版 ────────────────────────────────────────────────────────────────
@@ -182,6 +183,7 @@ function TwCombinatiesInhoud({ w }: { w: RapportWeergave }) {
   const taal = w.taal;
   return (
     <>
+      <Bijschrift tekst={w.bijschriften.get(bijschriftSleutel.factoren)} />
       <Rij klasse="rpa-koprij">
         <Cel k={1} n={2} o>{taal === "zh-TW" ? "組合編號" : "ID"}</Cel>
         <Cel k={3} n={4}>{taal === "zh-TW" ? "設計強度計算式" : "Design formula"}</Cel>
@@ -205,6 +207,7 @@ function TwVeranderlijkInhoud({ w }: { w: RapportWeergave }) {
   const taal = w.taal;
   return (
     <>
+      <Bijschrift tekst={w.bijschriften.get(bijschriftSleutel.veranderlijk)} />
       <Rij klasse="rpa-koprij">
         <Cel k={1} n={4} o>{taal === "zh-TW" ? "樓地板活載重場所" : "Floor use"}</Cel>
         <Cel k={5} n={2}>{taal === "zh-TW" ? "最低均布載重" : "Uniform load"}</Cel>

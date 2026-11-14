@@ -12,6 +12,7 @@
  */
 import { inTaal, type Meertalig } from "./meertalig.ts";
 import { normaliseerSituatie, type Situatie } from "./situatie.ts";
+import { normaliseerTw, type TwOpzet } from "./tw/blok.ts";
 
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
@@ -290,6 +291,14 @@ export interface Rapport {
   situatie?: Situatie;
   /** Vastgelegde kopie van het bureauprofiel. */
   bureau: BureauProfiel;
+  /**
+   * De Taiwanese kop- en voetgegevens: het blok van de ondertekenende ingenieur,
+   * de doorlopende kop- en voettekst en de nummering van tabellen en figuren
+   * (tw/blok.ts). Leeg van zichzelf, dus een rapport zonder ingevuld blok ziet
+   * er precies zo uit als voorheen; een nieuw optioneel veld, dus
+   * RAPPORT_VERSIE blijft gelijk.
+   */
+  tw?: TwOpzet;
 }
 
 /**
@@ -524,6 +533,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     nieuwePagina: {},
     opmaak: { constructieprincipe: true, subkoppen: true, bladenInInhoud: true },
     bureau: leegBureau(),
+    tw: normaliseerTw(undefined),
   };
 }
 
@@ -768,5 +778,6 @@ export function normaliseerRapport(
     },
     ...(situatie ? { situatie } : {}),
     bureau: normaliseerBureau(o.bureau),
+    tw: normaliseerTw(o.tw),
   };
 }

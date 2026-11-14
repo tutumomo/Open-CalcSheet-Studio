@@ -128,6 +128,16 @@ dan staat er een regel met `code: "NOT_CONVERGED"` (met `iterations`, `max`,
 `condition` of `name`/`tol`/`residual`), komt hij in `notConverged[]` en is
 het oordeel `check: "unchecked"`. `#while` zonder `max=` werkt als voorheen.
 
+Een Taiwanees rapport (`opzetSoort: "tw"`) heeft naast de gewone velden een
+blok `tw`: `report_set` zet met `tw.handtekening.{naam,vakgebied,nummer,
+instantie,bureau,datum,beeld,tonen}` het blok van de ondertekenende ingenieur op
+het voorblad, met `tw.kopvoet.{kop,voet}` de doorlopende kop- en voettekst
+(plaatshouders `{titel}`, `{projectnaam}`, `{kenmerk}`, `{datum}`, `{revisie}`)
+en met `tw.nummering.tabellen` de tabelnummers (`表 4-1`). `report_get` leest ze
+terug, ook per pad. Een leeg blok print niets, dus een oud rapport verandert
+niet. Figuren krijgen geen nummer: een tekening gaat als heel vel door de
+bladafdruk.
+
 `calc_evaluate_batch` rekent meerdere teksten in één verzoek (elk item zoals
 `calc_evaluate`, fouten per item). Voor werk langer dan de time-out van de brug
 (120 s): `job_start` geeft meteen een `jobId`, `job_status` de voortgang en

@@ -338,6 +338,35 @@
   color: var(--rpa-accent);
 }
 
+/*
+ * Het handtekeningblok van de ingenieur onderaan het voorblad (P2-16): een
+ * kopregel, de naam in het vet en de scan van de handtekening.
+ */
+.rpa-wortel .rpa-hk-kop {
+  margin-top: 4pt;
+  font-weight: 700;
+  color: var(--rpa-accent);
+}
+
+.rpa-wortel .rpa-hk-naam {
+  font-weight: 700;
+  color: #000;
+}
+
+.rpa-wortel .rpa-hk-beeld {
+  display: block;
+  height: 16mm;
+  max-width: 60mm;
+  object-fit: contain;
+}
+
+/* Het bijschrift boven een tabel: "表 4-1" (P2-16). */
+.rpa-wortel .rpa-bijschrift-tekst {
+  padding-top: 5pt;
+  font-weight: 700;
+  color: #000;
+}
+
 /* Normverwijzingen: rechts, 8 pt cursief. */
 .rpa-wortel .rpa-norm {
   font-size: 8pt;
@@ -453,7 +482,32 @@
   padding: 0 4pt;
 }
 
-/* ─── Voet in de echte afdruk ─────────────────────────────────── */
+/* ─── Kop en voet in de echte afdruk ──────────────────────────── */
+
+/*
+ * De kopregel in de bovenmarge: 8 pt, links op de rand van de bladspiegel, in
+ * dezelfde band als het logo rechtsboven. Rechts blijft ruimte vrij voor dat
+ * logo. Op het scherm onzichtbaar, net als de voet: het afdrukvoorbeeld tekent
+ * hem per vel.
+ */
+.rpa-wortel .rpa-kop {
+  display: none;
+}
+
+.rpa-wortel .rpa-kop-tekst {
+  position: absolute;
+  left: 9.85mm;
+  right: 9.9mm;
+  top: 0.7mm;
+  max-width: calc(100% - 50mm);
+  font-family: var(--rpa-font);
+  font-size: 8pt;
+  line-height: 1.2;
+  color: #6b6b73;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 /* Op het scherm onzichtbaar: het afdrukvoorbeeld tekent zijn eigen voet. */
 .rpa-wortel .rpa-voet {

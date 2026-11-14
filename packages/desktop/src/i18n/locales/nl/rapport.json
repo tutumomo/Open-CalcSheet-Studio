@@ -14,7 +14,8 @@
     "belastingen": "Belastingen",
     "berekeningen": "Berekeningen",
     "bijlagen": "Bijlagen",
-    "bureau": "Bureau"
+    "bureau": "Bureau",
+    "tw": "Taiwanees rapport"
   },
   "algemeen": {
     "omhoog": "Omhoog",
@@ -365,6 +366,15 @@
       "status": "Rapportstatus",
       "kenmerk": "Documentkenmerk"
     },
+    "handtekening": {
+      "titel": "Handtekening ingenieur",
+      "naam": "Ingenieur",
+      "vakgebied": "Vakgebied",
+      "nummer": "Registratienummer",
+      "instantie": "Afgevende instantie",
+      "datum": "Datum ondertekening",
+      "bureau": "Bureau"
+    },
     "fasen": {
       "SO": "SO",
       "VO": "VO",
@@ -461,5 +471,34 @@
       "vloerDaken": "VLOER, DAKEN",
       "wanden": "WANDEN"
     }
+  },
+  "tw": {
+    "intro": "Opmaak van een Taiwanees calculatieboek: het handtekeningblok van de ingenieur op het voorblad, een doorlopende kop- en voettekst en tabelnummers. Dit raakt alleen het afdrukken en de PDF, niet de berekening.",
+    "handtekeningKop": "Handtekening ingenieur",
+    "handtekeningHint": "Staat onderaan het voorblad. Het blok verschijnt alleen als er een naam, een registratienummer of een handtekeningbeeld is ingevuld.",
+    "naam": "Ingenieur",
+    "vakgebied": "Vakgebied",
+    "vakgebiedVoorbeeld": "Constructief",
+    "nummer": "Registratienummer",
+    "instantie": "Afgevende instantie",
+    "bureau": "Bureau",
+    "datum": "Datum ondertekening",
+    "datumHint": "Leeg gebruikt de datum van revisie 1",
+    "beeld": "Handtekeningbeeld",
+    "beeldHint": "Een gescande of gefotografeerde handtekening (PNG, JPG).",
+    "beeldWeg": "Beeld weghalen",
+    "tonen": "Het handtekeningblok op het voorblad tonen",
+    "tonenHint": "Uit: de andere velden blijven bewaard maar worden niet afgedrukt.",
+    "leegBlok": "Nog geen naam, registratienummer of beeld, dus het voorblad heeft geen handtekeningblok.",
+    "kopvoetKop": "Kop- en voettekst",
+    "kopvoetHint": "Beschikbare variabelen: {titel}, {projectnaam}, {kenmerk}, {datum}, {revisie}. Leeg betekent geen kopregel; de voet toont dan de bureaunaam.",
+    "kop": "Kopregel",
+    "voet": "Voetregel",
+    "nummeringKop": "Tabelnummers",
+    "nummeringHint": "Genummerd per hoofdstuk (de eerste tabel van hoofdstuk 4 is 表 4-1).",
+    "tabellen": "De tabellen nummeren",
+    "tabellenHint": "Zet 表 x-y boven de tabellen met materialen, belastingen en combinaties.",
+    "kopVoorbeeld": "{titel} — {projectnaam}",
+    "voetVoorbeeld": "{kenmerk} · {datum} · rev. {revisie}"
   }
 }

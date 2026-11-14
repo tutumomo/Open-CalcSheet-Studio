@@ -242,6 +242,30 @@ De tab Code toont hem in de taal van de app en zet een bewerking regel voor rege
 (`bronNaBewerking` in `components/calc/uitvoerTaal.ts`). De rekenversie, `bronVersie`,
 de invoersleutels en de beelden lezen dus de bron, in elke taal hetzelfde.
 
+## Taiwanese rapportopmaak
+
+Een Taiwanees rapport (`opzetSoort: "tw"`) heeft naast de gewone velden een blok
+`Rapport.tw` (`rapport/tw/blok.ts`), met drie delen:
+
+- `handtekening` — het blok van de ondertekenende ingenieur onderaan het voorblad:
+  naam, vakgebied, registratienummer, afgevende instantie, bureau, datum en een
+  beeld (data-URL). Het verschijnt alleen als `tonen` aan staat en er iets is
+  ingevuld; een leeg blok laat het voorblad precies zoals het was.
+- `kopvoet` — de doorlopende kop- en voettekst. Plaatshouders zijn `{titel}`,
+  `{projectnaam}`, `{kenmerk}`, `{datum}`, `{revisie}` en `{pagina}`; een onbekende
+  plaatshouder blijft staan, zodat een typefout zichtbaar is en niet verdwijnt.
+  Zonder kopregel print het rapport geen kop, en de voet toont dan de bureaunaam.
+- `nummering.tabellen` — zet `表 4-1` boven de tabellen. De nummers worden vóór het
+  tekenen uit de hoofdstukindeling berekend (`rapport/tw/nummering.ts`), niet tijdens
+  het tekenen geteld, zodat een tweede tekenronde dezelfde nummers geeft.
+
+Oude rapporten krijgen het lege blok bij het normaliseren en printen dus onveranderd.
+Het paneel (sectie 台灣計算書版面, alleen bij een Taiwanees rapport) en de API
+(`report_set` op `tw.handtekening.naam`, `tw.kopvoet.kop`, `tw.nummering.tabellen`, …)
+zetten dezelfde velden. Figuren krijgen nog geen nummer: een tekening gaat als heel vel
+door de bladafdruk met haar eigen titelhoek, en een bijschriftregel zou op de vorige
+pagina belanden (`components/calc/PrintDocument.css`, `.print-blad`).
+
 ## Ongedaan maken
 
 Eén stapel voor het hele project (`verleden` / `toekomst` in `projectStore.ts`),

@@ -128,6 +128,11 @@ de alleen-lezenstand.
 | `PUT /project/visibility` | `project_set_visibility` | wijzigen | **part**, **visible** |
 | `GET /report` | `report_get` | lezen | path |
 | `PATCH /report` | `report_set` | wijzigen | path, value, values |
+
+Een Taiwanees rapport heeft daarnaast `tw`: `tw.handtekening.{naam,vakgebied,nummer,instantie,bureau,datum,beeld,tonen}`
+(het blok van de ondertekenende ingenieur op het voorblad), `tw.kopvoet.{kop,voet}` (doorlopende kop- en voettekst met
+`{titel}`, `{projectnaam}`, `{kenmerk}`, `{datum}`, `{revisie}`) en `tw.nummering.tabellen` (表 4-1 boven de tabellen).
+Leeg betekent: niets op papier, dus een bestaand rapport verandert niet.
 | `POST /undo` | `undo` | wijzigen | — |
 | `POST /redo` | `redo` | wijzigen | — |
 | `GET /modules` | `modules_list` | lezen | — |

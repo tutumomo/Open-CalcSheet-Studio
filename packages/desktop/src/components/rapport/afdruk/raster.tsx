@@ -18,6 +18,20 @@ export function Vlak({ klasse, children }: { klasse?: string; children?: ReactNo
 }
 
 /**
+ * Het nummer boven een tabel ("表 4-1") of onder een figuur ("圖 6-1"), over de
+ * volle breedte. Zonder nummer tekent hij niets, zodat een rapport zonder
+ * nummering geen lege regel krijgt.
+ */
+export function Bijschrift({ tekst }: { tekst?: string }) {
+  if (!tekst) return null;
+  return (
+    <Rij klasse="rpa-bijschrift" houd>
+      <Cel k={1} n={10} klasse="rpa-bijschrift-tekst">{tekst}</Cel>
+    </Rij>
+  );
+}
+
+/**
  * Eén regel van het raster, met cellen op vaste kolommen. `houd` houdt de
  * regel bij de volgende: de kopregel van een tabel blijft niet alleen
  * onderaan een vel staan.

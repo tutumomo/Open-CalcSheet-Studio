@@ -262,6 +262,24 @@
   color: #6b6b73;
 }
 
+/*
+ * De kopregel van het rapport (`tw.kopvoet.kop`) linksboven in de smalle
+ * bovenmarge, in dezelfde band als het logo rechts. Hij staat op elk vel na
+ * het voorblad, net als het logo en de voet.
+ */
+.av-rapport-kop {
+  position: absolute;
+  top: 0.7mm;
+  max-width: calc(100% - 55mm);
+  font-family: var(--rpa-font);
+  font-size: 8pt;
+  line-height: 1.2;
+  color: #6b6b73;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 /* Het logo op een rapportvel: rechtsboven in de smalle bovenmarge, op de rand van de bladspiegel. */
 .av-rapport-logo {
   position: absolute;

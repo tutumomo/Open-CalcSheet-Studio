@@ -187,7 +187,7 @@ open-calcsheet-studio-tw --headless                      # 只跑 API／MCP 伺�
 
 ## 測試與可靠性
 
-- **107 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
+- **108 個檢查腳本**位於 `scripts/`，在 Linux 與 Windows 上透過 `npm run check` 於每次 Pull Request 自動執行。
 - **382 項手算對照驗證**：313 項位於 `scripts/check-formules.mjs`，69 項位於 `scripts/check-library.mjs`，盡可能以獨立平衡路徑複核。
 - **複合專案真實 PDF 檢驗**（`scripts/check-rapport-pdf.mjs`）：實體頁數與計算表完全對齊，每頁具備正確頁碼與目錄連結。
 - **桌面應用程式安全性實體驗證**（手動執行）：`scripts/proef-js-webrtc.mjs` 檢驗計算表內指令碼隔離，`scripts/proef-jupyter-venster.mjs` 與 `scripts/proef-marimo-venster.mjs` 檢驗筆記本網路外通封鎖。

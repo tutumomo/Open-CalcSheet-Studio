@@ -5,7 +5,7 @@ import { useUitdraai, UitdraaiInhoud, loopkopLinks } from "./PrintDocument";
 import RapportAfdruk from "../rapport/afdruk/RapportAfdruk";
 import { useInhoudPaginas } from "../../store/inhoudPaginas";
 import { huisstijlVariabelen } from "../../rapport/model";
-import { useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
+import { useKopvoet, useRapportBureau } from "../rapport/afdruk/useRapportWeergave";
 import {
   meetBlokken,
   paginaVanAnkers,
@@ -68,6 +68,7 @@ function rapportVoet(nummer: number, voetafbeelding: string, bureaunaam: string,
   } else {
     const lijn = document.createElement("div");
     lijn.className = "av-rapport-lijn";
+    // De voettekst uit het rapport (`tw.kopvoet.voet`) gaat vóór de bureaunaam.
     lijn.textContent = bureaunaam;
     lijn.style.left = `${maten.marge.links}mm`;
     lijn.style.right = `${maten.marge.rechts}mm`;
@@ -121,6 +122,8 @@ export default function AfdrukVoorbeeld() {
   const voetafbeelding = bureau.voetafbeelding;
   const bureaunaam = bureau.naam;
   const kopLogo = bureau.logoInKop ? bureau.logo : "";
+  // De kop- en voettekst uit het rapport (tw.kopvoet), met de plaatshouders ingevuld.
+  const { kop: koptekst, voet: voettekst } = useKopvoet();
   const huisstijl = useMemo(() => huisstijlVariabelen(bureau.huisstijl), [bureau.huisstijl]);
   // Een bevestigde externe pagina (iframeBlok.ts) en een uitgevoerd `@js`-blok
   // (jsBlok.ts) vullen de vellen zelf in; de meetopstelling verandert daarbij niet.
@@ -316,7 +319,15 @@ export default function AfdrukVoorbeeld() {
       } else if (rapport) {
         // Geen loopkop: het rapport heeft alleen een voet, en op elk vel na het voorblad
         // het logo. Het voorblad draagt het al groter.
-        vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, bureaunaam, maten));
+        vel.append(inhoud, ...rapportVoet(i + 1, voetafbeelding, voettekst || bureaunaam, maten));
+        if (koptekst && i > 0) {
+          const kopregel = document.createElement("div");
+          kopregel.className = "av-rapport-kop";
+          kopregel.textContent = koptekst;
+          kopregel.style.left = `${maten.marge.links}mm`;
+          kopregel.style.right = `${maten.marge.rechts}mm`;
+          vel.append(kopregel);
+        }
         if (kopLogo && i > 0) {
           const logo = document.createElement("img");
           logo.className = "av-rapport-logo";

@@ -14,7 +14,8 @@
     "belastingen": "載重",
     "berekeningen": "結構計算",
     "bijlagen": "附錄",
-    "bureau": "事務所"
+    "bureau": "事務所",
+    "tw": "台灣計算書版面"
   },
   "algemeen": {
     "omhoog": "上移",
@@ -365,6 +366,15 @@
       "status": "計算書狀態",
       "kenmerk": "文件案號"
     },
+    "handtekening": {
+      "titel": "技師簽章",
+      "naam": "技師",
+      "vakgebied": "科別",
+      "nummer": "技師證書字號",
+      "instantie": "主管機關",
+      "datum": "簽署日期",
+      "bureau": "事務所"
+    },
     "fasen": {
       "SO": "構想設計",
       "VO": "初步設計",
@@ -461,5 +471,34 @@
       "vloerDaken": "樓板、屋頂",
       "wanden": "牆體"
     }
+  },
+  "tw": {
+    "intro": "台灣計算書的版面：封面技師簽章欄、每頁的頁首頁尾，以及表號。這些只影響列印與 PDF，不影響計算。",
+    "handtekeningKop": "技師簽章欄",
+    "handtekeningHint": "顯示在封面下方。姓名、證號或簽章圖檔其中之一有填寫時才會出現。",
+    "naam": "技師姓名",
+    "vakgebied": "科別",
+    "vakgebiedVoorbeeld": "結構",
+    "nummer": "技師證書字號",
+    "instantie": "主管機關",
+    "bureau": "事務所",
+    "datum": "簽署日期",
+    "datumHint": "留空則用第 1 版日期",
+    "beeld": "簽章圖檔",
+    "beeldHint": "掃描或拍攝的簽名（PNG、JPG）。",
+    "beeldWeg": "移除圖檔",
+    "tonen": "在封面顯示簽章欄",
+    "tonenHint": "關閉後其餘欄位仍會保留，只是不印出。",
+    "leegBlok": "尚未填寫姓名、證號或圖檔，封面不會有簽章欄。",
+    "kopvoetKop": "頁首與頁尾",
+    "kopvoetHint": "可用變數：{titel}、{projectnaam}、{kenmerk}、{datum}、{revisie}。留空則不顯示頁首，頁尾沿用事務所名稱。",
+    "kop": "頁首文字",
+    "voet": "頁尾文字",
+    "nummeringKop": "表號",
+    "nummeringHint": "依章節自動編號（例如第 4 章第一張表為「表 4-1」）。",
+    "tabellen": "表格加上表號",
+    "tabellenHint": "材料強度、載重、載重組合等表格上方加「表 x-y」。",
+    "kopVoorbeeld": "{titel} — {projectnaam}",
+    "voetVoorbeeld": "{kenmerk} · {datum} · 第 {revisie} 版"
   }
 }

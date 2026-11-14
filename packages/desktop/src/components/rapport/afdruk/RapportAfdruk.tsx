@@ -29,14 +29,28 @@ function groepeer(stukken: Stuk[]): Stuk[][] {
  * op het scherm is hij onzichtbaar (het afdrukvoorbeeld tekent zijn eigen
  * voet per vel).
  */
-function Voet({ bureau }: { bureau: BureauProfiel }) {
+function Voet({ bureau, tekst }: { bureau: BureauProfiel; tekst: string }) {
   return (
     <div className="rpa-voet" aria-hidden="true">
       {bureau.voetafbeelding ? (
         <img className="rpa-voet-beeld" src={bureau.voetafbeelding} alt="" />
       ) : (
-        <div className="rpa-voet-lijn">{bureau.naam}</div>
+        <div className="rpa-voet-lijn">{tekst || bureau.naam}</div>
       )}
+    </div>
+  );
+}
+
+/**
+ * De kopregel boven elke pagina (`tw.kopvoet.kop`). Net als de voet een vast
+ * element, dat de browser op elke afgedrukte pagina herhaalt; het
+ * afdrukvoorbeeld tekent hem per vel zelf.
+ */
+function Kop({ tekst }: { tekst: string }) {
+  if (tekst === "") return null;
+  return (
+    <div className="rpa-kop" aria-hidden="true">
+      <span className="rpa-kop-tekst">{tekst}</span>
     </div>
   );
 }
@@ -68,7 +82,8 @@ export default function RapportAfdruk() {
   return (
     <AfdrukTaal taal={w.taal}>
     <div className="rpa-wortel" style={huisstijlVariabelen(w.bureau.huisstijl) as CSSProperties}>
-      <Voet bureau={w.bureau} />
+      <Kop tekst={w.kopvoet.kop} />
+      <Voet bureau={w.bureau} tekst={w.kopvoet.voet} />
       <Voorblad w={w} />
       <Situatie w={w} />
       <Inhoud w={w} />

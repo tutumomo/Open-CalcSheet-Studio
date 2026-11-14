@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import type { RevisieStatus } from "../../../rapport/model";
 import { eersteDatum, rapportStatus } from "../../../rapport/revisies";
+import { heeftHandtekening, STANDAARD_TW } from "../../../rapport/tw/blok";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Cel, Leeg, Rij, Vlak } from "./raster";
 
@@ -31,6 +32,55 @@ function statusTekst(status: RevisieStatus | "", t: RapportWeergave["t"]): strin
   if (!status) return "";
   const s = t(STATUS_SLEUTEL[status]);
   return s.charAt(0).toUpperCase() + s.slice(1);
+}
+
+/**
+ * Het blok van de ondertekenende ingenieur onderaan het voorblad (Taiwan).
+ * Zonder naam, nummer of ondertekend beeld blijft het weg, zodat een rapport
+ * dat het blok niet gebruikt er precies zo uitziet als voorheen.
+ */
+function Handtekening({ w }: { w: RapportWeergave }) {
+  const { rapport, t } = w;
+  const h = (rapport.tw ?? STANDAARD_TW).handtekening;
+  if (!heeftHandtekening(h)) return null;
+  const datum = h.datum.trim() || eersteDatum(rapport.revisies);
+  const regels: { label: string; waarde: string }[] = [
+    { label: t("afdruk.handtekening.vakgebied"), waarde: h.vakgebied },
+    { label: t("afdruk.handtekening.nummer"), waarde: h.nummer },
+    { label: t("afdruk.handtekening.instantie"), waarde: h.instantie },
+    { label: t("afdruk.handtekening.datum"), waarde: datum },
+  ].filter((r) => r.waarde.trim() !== "");
+  return (
+    <>
+      <Leeg n={2} />
+      <Rij>
+        <Cel k={1} n={8} klasse="rpa-hk-kop">{t("afdruk.handtekening.titel")}</Cel>
+      </Rij>
+      <Rij>
+        <Cel k={1} n={3} o klasse="rpa-label">{t("afdruk.handtekening.naam")}</Cel>
+        <Cel k={4} n={5} o klasse="rpa-hk-naam">{h.naam || h.bureau}</Cel>
+      </Rij>
+      {h.bureau && h.naam && (
+        <Rij>
+          <Cel k={1} n={3} o klasse="rpa-label">{t("afdruk.handtekening.bureau")}</Cel>
+          <Cel k={4} n={5} o>{h.bureau}</Cel>
+        </Rij>
+      )}
+      {regels.map((r) => (
+        <Rij key={r.label}>
+          <Cel k={1} n={3} o klasse="rpa-label">{r.label}</Cel>
+          <Cel k={4} n={5} o>{r.waarde}</Cel>
+        </Rij>
+      ))}
+      {h.beeld && (
+        <Rij>
+          <Cel k={1} n={8}>
+            <img className="rpa-hk-beeld" src={h.beeld} alt="" />
+          </Cel>
+        </Rij>
+      )}
+    </>
+  );
 }
 
 export default function Voorblad({ w }: { w: RapportWeergave }) {
@@ -87,6 +137,7 @@ export default function Voorblad({ w }: { w: RapportWeergave }) {
         <Gegeven label={t("afdruk.voorblad.fase")} waarde={rapport.fase ? t(`afdruk.fasen.${rapport.fase}`) : ""} />
         <Gegeven label={t("afdruk.voorblad.status")} waarde={statusTekst(rapportStatus(rapport.revisies), t)} />
         <Gegeven label={t("afdruk.voorblad.kenmerk")} waarde={rapport.kenmerk} />
+        <Handtekening w={w} />
       </Vlak>
     </section>
   );

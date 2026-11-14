@@ -26,6 +26,9 @@ import { metToetsingen } from "../../../rekenen/toetsCache";
 import { useToetsVersie } from "../../../rekenen/femToetsing";
 import { useInvulteksten } from "../../calc/useTekstInvulling";
 import { useInvulwaarden } from "../../calc/useTekstInvulling";
+import { eersteDatum } from "../../../rapport/revisies";
+import { STANDAARD_TW, vulKopvoet } from "../../../rapport/tw/blok";
+import { bijschriften } from "../../../rapport/tw/nummering";
 import { vulMarkdownIn } from "../../../rekenen/tekstInvulling";
 
 /*
@@ -80,6 +83,16 @@ export interface RapportWeergave {
   bijlagen: Bijlage[];
   /** Waarden voor de invulvelden in de teksten. */
   invul: Invulwaarden;
+  /**
+   * De nummers van tabellen en figuren ("表 4-1"), op sleutel uit
+   * rapport/tw/nummering.ts. Leeg als de nummering in het rapport uit staat.
+   */
+  bijschriften: ReadonlyMap<string, string>;
+  /**
+   * De kop- en voettekst van elke pagina, met de plaatshouders ingevuld
+   * (tw/blok.ts). Leeg zonder kop- of voetregel.
+   */
+  kopvoet: { kop: string; voet: string };
 }
 
 /**
@@ -95,6 +108,28 @@ export function useRapportBureau(): BureauProfiel {
   const vastgelegd = useProjectStore((s) => s.rapport.bureau);
   const profiel = useBureauStore((s) => s.profiel);
   return vastgelegd.naam ? vastgelegd : profiel;
+}
+
+/**
+ * De kop- en voettekst van elke pagina, met de plaatshouders ingevuld. Los van
+ * `useRapportWeergave` omdat het afdrukvoorbeeld alleen dit nodig heeft en niet
+ * het hele rapport opnieuw wil doorrekenen.
+ */
+export function useKopvoet(): { kop: string; voet: string } {
+  const rapport = useProjectStore((s) => s.rapport);
+  const gegevens = useProjectStore((s) => s.gegevens);
+  const projectNaam = useProjectStore((s) => s.projectNaam);
+  const tw = rapport.tw ?? STANDAARD_TW;
+  return useMemo(() => {
+    const velden = {
+      titel: rapport.titel,
+      projectnaam: gegevens.project_naam || projectNaam,
+      kenmerk: rapport.kenmerk,
+      datum: eersteDatum(rapport.revisies),
+      revisie: rapport.revisies[rapport.revisies.length - 1]?.code ?? "",
+    };
+    return { kop: vulKopvoet(tw.kopvoet.kop, velden), voet: vulKopvoet(tw.kopvoet.voet, velden) };
+  }, [rapport.titel, rapport.kenmerk, rapport.revisies, gegevens.project_naam, projectNaam, tw.kopvoet.kop, tw.kopvoet.voet]);
 }
 
 export function useRapportWeergave(): RapportWeergave {
@@ -170,5 +205,14 @@ export function useRapportWeergave(): RapportWeergave {
     ne: (s: string, bron: string) => eenheden.getypt(s, bron, (v, dec) => fmt(v, dec, false, taal)) ?? notatie(s, taal),
   }), [taal, eenheden]);
 
-  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul };
+  // De nummering van tabellen en figuren, en de kop- en voettekst: uit het
+  // rapport zelf, zodat een opgeleverd rapport niet meewisselt met de app.
+  const tw = rapport.tw ?? STANDAARD_TW;
+  const nummers = useMemo(
+    () => (tw.nummering.tabellen ? bijschriften(rapport, opzet.knopen) : new Map<string, string>()),
+    [rapport, opzet.knopen, tw.nummering.tabellen],
+  );
+  const kopvoet = useKopvoet();
+
+  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul, bijschriften: nummers, kopvoet };
 }

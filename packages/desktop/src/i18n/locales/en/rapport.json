@@ -14,7 +14,8 @@
     "belastingen": "Loads",
     "berekeningen": "Calculations",
     "bijlagen": "Appendices",
-    "bureau": "Office"
+    "bureau": "Office",
+    "tw": "Taiwanese report layout"
   },
   "algemeen": {
     "omhoog": "Move up",
@@ -365,6 +366,15 @@
       "status": "Report status",
       "kenmerk": "Document reference"
     },
+    "handtekening": {
+      "titel": "Engineer's signature",
+      "naam": "Engineer",
+      "vakgebied": "Discipline",
+      "nummer": "Registration number",
+      "instantie": "Issuing authority",
+      "datum": "Date of signing",
+      "bureau": "Office"
+    },
     "fasen": {
       "SO": "Sketch design",
       "VO": "Preliminary design",
@@ -461,5 +471,34 @@
       "vloerDaken": "FLOOR, ROOFS",
       "wanden": "WALLS"
     }
+  },
+  "tw": {
+    "intro": "Layout of a Taiwanese calculation book: the engineer's signature block on the cover, a running header and footer, and table numbers. These affect printing and PDF only, not the calculations.",
+    "handtekeningKop": "Engineer's signature",
+    "handtekeningHint": "Shown at the bottom of the cover. It appears only when a name, a registration number or a signature image is filled in.",
+    "naam": "Engineer",
+    "vakgebied": "Discipline",
+    "vakgebiedVoorbeeld": "Structural",
+    "nummer": "Registration number",
+    "instantie": "Issuing authority",
+    "bureau": "Office",
+    "datum": "Date of signing",
+    "datumHint": "Empty uses the date of revision 1",
+    "beeld": "Signature image",
+    "beeldHint": "A scanned or photographed signature (PNG, JPG).",
+    "beeldWeg": "Remove image",
+    "tonen": "Show the signature block on the cover",
+    "tonenHint": "When off, the other fields are kept but not printed.",
+    "leegBlok": "No name, registration number or image yet, so the cover has no signature block.",
+    "kopvoetKop": "Header and footer",
+    "kopvoetHint": "Available variables: {titel}, {projectnaam}, {kenmerk}, {datum}, {revisie}. Empty means no header; the footer then shows the office name.",
+    "kop": "Header text",
+    "voet": "Footer text",
+    "nummeringKop": "Table numbers",
+    "nummeringHint": "Numbered per chapter (the first table of chapter 4 is 表 4-1).",
+    "tabellen": "Number the tables",
+    "tabellenHint": "Puts 表 x-y above the material, load and combination tables.",
+    "kopVoorbeeld": "{titel} — {projectnaam}",
+    "voetVoorbeeld": "{kenmerk} · {datum} · rev. {revisie}"
   }
 }

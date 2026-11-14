@@ -12,7 +12,8 @@ import {
 import { KOLOMMEN, materialenRijen } from "../../../rapport/materialen";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import type { RapportWeergave } from "./useRapportWeergave";
-import { Cel, Eenheid, Index, Leeg, Rij, Tekst } from "./raster";
+import { Bijschrift, Cel, Eenheid, Index, Leeg, Rij, Tekst } from "./raster";
+import { bijschriftSleutel } from "../../../rapport/tw/nummering";
 
 /*
  * Hoofdstuk 4, Uitgangspunten.
@@ -92,9 +93,11 @@ export function Brand({ w }: { w: RapportWeergave }) {
  */
 export function Materialen({ w }: { w: RapportWeergave }) {
   const u = w.rapport.uitgangspunten;
+  const bijschrift = w.bijschriften.get(bijschriftSleutel.materialen);
   const { type, soort, opmerking, bevestigingType, bevestigingKwaliteit } = KOLOMMEN;
   return (
     <>
+      <Bijschrift tekst={bijschrift} />
       <Rij houd>
         <Cel k={type[0]} n={type[1]} b o l klasse="rpa-kop-donker">{w.t("afdruk.materialen.type")}</Cel>
         <Cel k={soort[0]} n={soort[1]} b o l r klasse="rpa-kop-donker rpa-midden">{w.t("afdruk.materialen.soort")}</Cel>
@@ -161,6 +164,7 @@ export function Factoren({ w }: { w: RapportWeergave }) {
   const { t } = w;
   return (
     <>
+      <Bijschrift tekst={w.bijschriften.get(bijschriftSleutel.factoren)} />
       <Rij houd>
         <Cel k={1} b o l klasse="rpa-kop-donker">{t("afdruk.factoren.groep")}</Cel>
         <Cel k={2} n={2} b o klasse="rpa-kop-donker">{t("afdruk.factoren.naam")}</Cel>
