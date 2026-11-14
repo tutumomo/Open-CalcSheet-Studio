@@ -54,6 +54,16 @@ const OPENAI_CODEX_CLIENT_ID: &str = "app_EMoamEEZ73f0CkXaXp7hrann";
 const CODEX_RESPONSES_URL: &str = "https://chatgpt.com/backend-api/codex/responses";
 const CODEX_MODELS_URL: &str = "https://chatgpt.com/backend-api/codex/models?client_version=0.99.0";
 const CLOUDCODE_BASIS: &str = "https://cloudcode-pa.googleapis.com/v1internal";
+/// De modellen die Google Antigravity via Cloud Code Assist aanbiedt. De
+/// CCA-API heeft geen modellen-endpoint dat zonder envelope werkt, dus deze
+/// lijst staat hier in plaats van bij de aanbieder.
+const ANTIGRAVITY_MODELLEN: [&str; 5] = [
+    "gemini-3-pro-preview",
+    "gemini-3-flash-preview",
+    "gemini-2.5-pro",
+    "gemini-2.5-flash",
+    "gemini-2.0-flash",
+];
 
 /// De protocollen die dit bestand kent. Eigen derde-partij-modellen kiezen één
 /// van deze drie (meestal `openai`).
@@ -1753,6 +1763,17 @@ fn modellen_uit_json(aanbieder: &str, j: &Value) -> Vec<String> {
 #[tauri::command]
 pub async fn ai_list_models(verzoek: ModelLijstVerzoek) -> Result<Vec<String>, String> {
     let proto = aanbieder_naam(&verzoek.aanbieder)?;
+    // Antigravity (Cloud Code Assist) heeft geen publiek modellen-endpoint dat
+    // zonder envelope werkt; de lijst staat daarom in de code.
+    if proto == "gemini"
+        && verzoek.auth_modus == AuthModus::OAuth
+        && {
+            let e = verzoek.endpoint.trim().to_ascii_lowercase();
+            e.is_empty() || e.contains("cloudcode-pa")
+        }
+    {
+        return Ok(ANTIGRAVITY_MODELLEN.iter().map(|m| (*m).to_string()).collect());
+    }
     let profiel = match &verzoek.profiel {
         Some(p) if !p.trim().is_empty() => profiel_id(p)?,
         _ => proto.clone(),
