@@ -164,5 +164,8 @@
   "leverancierGeavanceerd": "Advanced settings",
   "leverancierEindpuntHint": "The endpoint link opens the provider's own documentation; if the provider gives you a template URL (for example Sub2API), enter your own host here.",
   "leverancierClientIdHint": "This provider needs its own OAuth client ID: fill it in under advanced settings, or use the API-key provider instead.",
-  "breedteAanpassen": "Drag to resize the sidebar (arrow keys nudge it)"
+  "breedteAanpassen": "Drag to resize the sidebar (arrow keys nudge it)",
+  "maxRondes": "Maximum rounds per request",
+  "maxRondesHint": "How many tool rounds the assistant may run per request (4–200). Raise it for complex work; sending \"continue\" also resumes after the limit.",
+  "foutRondes": "The assistant reached the {{max}}-round limit for one request; send \"continue\" to go on, or raise the limit in the AI settings."
 }

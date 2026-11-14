@@ -272,6 +272,8 @@ function Instellingen() {
   const verwijderProfiel = useAiStore((s) => s.verwijderProfiel);
   const werkProfielBij = useAiStore((s) => s.werkProfielBij);
   const haalModellenOp = useAiStore((s) => s.haalModellenOp);
+  const maxRondes = useAiStore((s) => s.maxRondes);
+  const zetMaxRondes = useAiStore((s) => s.zetMaxRondes);
 
   const [wizardOpen, setWizardOpen] = useState(false);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -356,6 +358,36 @@ function Instellingen() {
             </div>
           );
         })}
+      </div>
+
+      <div className="ai-veld">
+        <div className="ai-veld-kop">
+          <span>{t("maxRondes")}</span>
+        </div>
+        <input
+          type="number"
+          min={4}
+          max={200}
+          step={1}
+          value={maxRondes}
+          onChange={(e) => void zetMaxRondes(Number(e.target.value))}
+        />
+        <div className="ai-hint">{t("maxRondesHint")}</div>
+      </div>
+
+      <div className="ai-veld">
+        <div className="ai-veld-kop">
+          <span>{t("maxRondes")}</span>
+        </div>
+        <input
+          type="number"
+          min={4}
+          max={200}
+          step={1}
+          value={maxRondes}
+          onChange={(e) => void zetMaxRondes(Number(e.target.value))}
+        />
+        <div className="ai-hint">{t("maxRondesHint")}</div>
       </div>
 
       <ExterneMcpSectie />

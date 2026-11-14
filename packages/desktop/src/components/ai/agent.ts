@@ -93,7 +93,12 @@ export interface AgentUitkomst {
   melding?: string;
 }
 
-const STANDAARD_MAX_RONDES = 12;
+/**
+ * Hoeveel tool-rondes één vraag standaard mag kosten. Een vraag als "reken het
+ * hele blad door en corrigeer de invoer" tikt met gemak twintig stappen aan,
+ * dus de grens staat ruim; de gebruiker kan hem in de instellingen verzetten.
+ */
+export const STANDAARD_MAX_RONDES = 40;
 const STANDAARD_MAX_TEKENS = 20000;
 
 /** De goedkeuringen die de gebruiker deze sessie al gaf ("altijd"). */
@@ -256,7 +261,7 @@ export async function voerVraagUit(
     uitvoer,
     stappen,
     einde: "rondes",
-    melding: `the assistant needed more than ${maxRondes} rounds; ask it to continue`,
+    melding: `the assistant reached the limit of ${maxRondes} tool rounds; send "continue" to go on, or raise the limit in the AI settings`,
   };
 }
 

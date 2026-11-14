@@ -164,5 +164,8 @@
   "leverancierGeavanceerd": "進階設定",
   "leverancierEindpuntHint": "端點可用「官方網址／取得金鑰」連結開啟官方說明；若供應商給的是範本網址（例如 Sub2API），請在這裡填入自己的主機。",
   "leverancierClientIdHint": "此供應商需要自己的 OAuth Client ID：請在進階設定填入，或改用下方的 API 金鑰方式連線。",
-  "breedteAanpassen": "拖曳調整側邊欄寬度（雙擊或方向鍵微調）"
+  "breedteAanpassen": "拖曳調整側邊欄寬度（雙擊或方向鍵微調）",
+  "maxRondes": "單次提問最多回合",
+  "maxRondesHint": "助理每次最多執行幾回合工具呼叫（4～200）。複雜工作可調高；達到上限時輸入「繼續」也會接著做。",
+  "foutRondes": "已達單次提問的 {{max}} 回合上限，助理先停在這裡；輸入「繼續」就會接著做，或到 AI 設定把上限調高。"
 }

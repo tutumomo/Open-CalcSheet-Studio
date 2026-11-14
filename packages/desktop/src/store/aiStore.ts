@@ -45,7 +45,14 @@ import { liveOmgeving } from "../mcp/omgeving.ts";
 import { useMcpStatus } from "../mcp/status.ts";
 import { MCP_SERVERNAAM } from "../mcp/koppeling.ts";
 import { bouwSysteemtekst, parseBereik, type ActiefBlad, type BladKort, type ExternServerKort, type LaatsteUitkomst } from "../components/ai/prompt.ts";
-import { voerVraagUit, type Antwoord, type Goedkeuring, type Stap, type ToolUitkomst } from "../components/ai/agent.ts";
+import {
+  STANDAARD_MAX_RONDES,
+  voerVraagUit,
+  type Antwoord,
+  type Goedkeuring,
+  type Stap,
+  type ToolUitkomst,
+} from "../components/ai/agent.ts";
 import { DESTRUCTIEF } from "../components/ai/beleid.ts";
 import {
   MCP_EXTERN_SJABLONEN,
@@ -75,6 +82,7 @@ import type { McpToolDef } from "../mcp/contracts.ts";
 
 const SLEUTEL = "aiInstellingen";
 const SLEUTEL_MCP = "aiMcpServers";
+const SLEUTEL_RONDES = "aiMaxRondes";
 
 export interface AiInstellingen {
   actiefId: string;
@@ -130,6 +138,8 @@ interface AiStand {
   regels: AiRegel[];
   stappen: Stap[];
   bezig: boolean;
+  /** Hoeveel tool-rondes één vraag mag kosten (instelbaar). */
+  maxRondes: number;
   /** Wat er misging bij de laatste vraag (netwerk, sleutel, OAuth, limiet). */
   fout: string | null;
   goedkeuring: Goedkeuring | null;
@@ -158,6 +168,8 @@ interface AiStand {
   logOAuthUit(): Promise<void>;
   zetHandmatigToken(accessToken: string, refreshToken?: string): Promise<void>;
   haalModellenOp(): Promise<void>;
+  /** Het maximum aantal tool-rondes per vraag (4–200) instellen en bewaren. */
+  zetMaxRondes(aantal: number): Promise<void>;
   voegMcpServerToe(sjabloonId: string, naam?: string): Promise<string>;
   werkMcpServerBij(id: string, wijziging: Partial<McpExternServerConfig>): Promise<void>;
   verwijderMcpServer(id: string): Promise<void>;
@@ -270,6 +282,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
   regels: [],
   stappen: [],
   bezig: false,
+  maxRondes: STANDAARD_MAX_RONDES,
   fout: null,
   goedkeuring: null,
   taal: "zh-TW",
@@ -279,11 +292,22 @@ export const useAiStore = create<AiStand>((set, get) => ({
     if (open) void get().laad();
   },
 
+  async zetMaxRondes(aantal) {
+    const maxRondes = Math.max(4, Math.min(200, Math.round(aantal) || STANDAARD_MAX_RONDES));
+    set({ maxRondes });
+    await setSetting(SLEUTEL_RONDES, maxRondes);
+  },
+
   async laad() {
     if (get().geladen) return;
     const bewaard = await getSetting<unknown>(SLEUTEL, null);
     const { actiefId, profielen } = migreerInstellingen(bewaard);
     const mcpServers = migreerMcpServers(await getSetting<unknown>(SLEUTEL_MCP, null));
+    const bewaardRondes = await getSetting<unknown>(SLEUTEL_RONDES, null);
+    const maxRondes =
+      typeof bewaardRondes === "number" && Number.isFinite(bewaardRondes)
+        ? Math.max(4, Math.min(200, Math.round(bewaardRondes)))
+        : STANDAARD_MAX_RONDES;
     const beschikbaar = await aiBeschikbaar();
     const statussen: Record<string, AiProfielAuthStatus> = {};
     const mcpStatussen: Record<string, McpExternStatus> = {};
@@ -295,7 +319,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
         mcpStatussen[s.id] = await mcpExternStatus(s.id);
       }
     }
-    set({ geladen: true, beschikbaar, actiefId, profielen, statussen, mcpServers, mcpStatussen });
+    set({ geladen: true, beschikbaar, actiefId, profielen, statussen, mcpServers, mcpStatussen, maxRondes });
     if (beschikbaar) {
       for (const s of mcpServers) {
         if (s.actief && !mcpStatussen[s.id]?.verbonden) {
@@ -846,6 +870,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
               set({ goedkeuring: verzoek });
             }),
           vraag: (verzoek, bij) => vraagAanbieder(verzoek, bij),
+          maxRondes: get().maxRondes,
           bij: {
             tekst: (stuk) => werkBij((r) => ({ ...r, tekst: r.tekst + stuk })),
             stap: (stap) => {
@@ -861,7 +886,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
         uitkomst.einde === "fout"
           ? uitkomst.melding ?? "The assistant stopped with an error."
           : uitkomst.einde === "rondes"
-            ? uitkomst.melding ?? null
+            ? i18next.t("ai:foutRondes", { max: get().maxRondes })
             : null;
       werkBij((r) => ({ ...r, loopt: false, tekst: r.tekst === "" && gestopt ? "(stopped)" : r.tekst }));
       set({ fout: melding, bezig: false });
