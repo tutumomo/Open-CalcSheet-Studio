@@ -631,9 +631,9 @@
     "velden": {
       "b0": "Bottom width B0",
       "z": "Side slope 1:z",
-      "n": "Number of orifices"
+      "b": "Orifice width B (perpendicular to the section)"
     },
-    "noot": "Below the orifice invert is dead storage; the dashed line is the emergency spillway level (design level + overflow depth).",
+    "noot": "Below the orifice invert is dead storage; the dashed line is the emergency spillway level (design level + overflow depth). The orifice is rectangular: width B perpendicular to the section, height L in the section.",
     "doorsnede": "Section: floor, slopes, design level, orifice and spillway",
     "talud": "Side slope",
     "klik": "Click a blue dimension to edit it; the value is written back to the sheet."

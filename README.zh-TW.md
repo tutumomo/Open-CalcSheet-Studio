@@ -103,7 +103,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
     - **排水溝與明渠水理**（`tw-drainage-channel`）：合理化公式設計流量、曼寧公式滿流容量、牛頓迭代正常水深、流速與出水高限制、側壁靜止土壓抗彎剪力配筋。
     - **垂直式跌水工與消能設施**（`tw-drop-structure`，依 `hwdrain107`）：落差 3 m 以下之適用性、附錄 L 跌水構造最小長度與尾檻高度、附錄 L 尾水條件、出水高、出口護床寬度長度與拋石粒徑。
     - **雨水下水道管渠水理與配置**（`tw-storm-sewer`，依 `sewer_std`）：曼寧式弓形斷面水理、流速 0.8～3.0 m/s、圓形最小管徑 800 mm、最小覆土 50／75 cm、人孔間距與入口內徑、機械清掃孔。
-    - **滯洪池**（`tw-detention-basin`）：合理化三階段洪峰流量、三角形歷線蓄洪容積、出流洪峰上限、孔口出流、緊急溢洪堰容量與堤頂出水高檢核。
+    - **滯洪池**（`tw-detention-basin`）：合理化三階段洪峰流量、三角形歷線蓄洪容積、出流洪峰上限、矩形排放孔口堰流／潛流與緊急溢洪口容量、堤頂出水高，以及逐時段調洪演算（修正脈動法）之最高水位、最大蓄水量與最大出流檢核。
     - **鋼筋混凝土箱涵**（`tw-box-culvert`，`hwbridge` / `rc112`）：HS20-44 輪重透過填土分佈與涵洞衝擊係數、表 3.3 第 VIII 組載重組合、平面閉合剛架（`raamwerk`）內力、頂底版與側牆抗彎剪力配筋、內角加腋、滿流排水容量、地盤承載力與抗浮。
     - **基樁承載力**（`tw-pile-foundation`，依 `found112`）：N 值法單樁極限與容許垂直支承力（表 5.3-1 安全係數、表 5.3-2 支承力）、基樁數量與單樁承載力檢核。
     - **木構造構材**（`tw-wood-member`，依 `wood100`）：受拉、受壓、受彎木構材檢核（表 4.3-1 容許應力、表 4.4-1 彈性模數、式 5.6 挫屈折減、表 5.4-5 橫向挫屈、表 5.4-1 剛性與表 5.4-4 側撐材需求）。
@@ -124,7 +124,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 | **RC 排水溝與明渠** | `tw-drainage-channel` | 水保規範（`swc_tech`）第 16～19、78、82～87 條／`rc112` | 已校準（gereed） | `scripts/check-tw-drainage-channel.mjs` |
 | **垂直式跌水工與消能** | `tw-drop-structure` | 公路排水設計規範（`hwdrain107`）第 4.3.1、4.4.3、4.8.2、5.13 節與附錄 L | 已校準（gereed） | `scripts/check-tw-drop-structure.mjs` |
 | **雨水下水道管渠水理與配置** | `tw-storm-sewer` | 下水道工程設施標準（`sewer_std`）第 3、4、5、8 條 | 已校準（gereed） | `scripts/check-tw-storm-sewer.mjs` |
-| **滯洪池設計** | `tw-detention-basin` | 水保規範（`swc_tech`）第 16～19、94～97 條 | 已校準（gereed） | `scripts/check-tw-detention-basin.mjs` |
+| **滯洪池設計** | `tw-detention-basin` | 水保規範（`swc_tech`）第 16～19、94～97 條／雨水下水道設計指南 I-8.3.2 | 已校準（gereed） | `scripts/check-tw-detention-basin.mjs` |
 | **RC 箱涵設計** | `tw-box-culvert` | 公路橋梁設計規範（`hwbridge`）第 3、4 章／`rc112` | 已校準（gereed） | `scripts/check-tw-box-culvert.mjs` |
 | **沉砂池設計** | `tw-sediment-basin` | 水保規範（`swc_tech`）第 35、92、93 條／`sewer_std` | 已校準（gereed） | `scripts/check-tw-sediment-basin.mjs` |
 | **建築物耐震載重** | `tw-seismic-load` | 耐震設計規範（`seis113`）第 2.2、2.6、2.9、2.11 節 | 已校準（gereed） | `scripts/check-tw-seismic-load.mjs` |
@@ -213,7 +213,7 @@ Open CalcSheet Studio 深受 Ned Ganchovski 所開發的 [Calcpad](https://calcp
 
 4. **RC 雙向版**：直接設計法與係數法（待彎矩分配表入庫），`tw-rc-slab` 目前僅支援單向版。
 5. **鋼構 ASD 擴充**：梁 Lb > Lc 區段（7.2.3）與梁柱互制（8.2）已完成；ASD 柱腳待已驗證資料，目前不檢核。
-6. **水文水理與箱涵**：滯洪池 Modified Puls 逐時段調洪演算、多孔箱涵與地震土壓、排水溝水面線串接（變量流）。
+6. **水文水理與箱涵**：滯洪池 Modified Puls 逐時段調洪演算已完成；待做為多孔箱涵與地震土壓、排水溝水面線串接（變量流）。
 
 **第三優先：新模組（皆須先確認規範已入庫或可由官方來源補齊）**
 

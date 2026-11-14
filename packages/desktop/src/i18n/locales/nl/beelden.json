@@ -631,9 +631,9 @@
     "velden": {
       "b0": "Bodembreedte B0",
       "z": "Talud 1:z",
-      "n": "Aantal openingen"
+      "b": "Opening breedte B (loodrecht op de doorsnede)"
     },
-    "noot": "Onder de onderkant van de opening ligt dode berging; de streeplijn is het niveau van de noodoverlaat (ontwerppeil + overlaatdiepte).",
+    "noot": "Onder de onderkant van de opening ligt dode berging; de streeplijn is het niveau van de noodoverlaat (ontwerppeil + overlaatdiepte). De opening is rechthoekig: breedte B loodrecht op de doorsnede, hoogte L in de doorsnede.",
     "doorsnede": "Doorsnede: bodem, taluds, ontwerppeil, opening en overlaat",
     "talud": "Talud",
     "klik": "Klik op een blauwe maat om hem te wijzigen; de waarde gaat terug naar het blad."
