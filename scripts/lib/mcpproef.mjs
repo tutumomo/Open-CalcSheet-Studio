@@ -355,8 +355,22 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
         throw new McpFout("NOT_AVAILABLE", "This build of the app has no report engine.");
       },
     },
+    // sheet_run: zoals omgeving.ts het blad opent en het venster laat draaien; wat het
+    // venster doet, geeft de controle zelf mee (`zetNotebookUitvoer`).
+    notebooks: {
+      voerUit: async (id, tijdMs) => {
+        notebookRondes.push({ id, tijdMs });
+        omgeving.acties.selecteer(id);
+        return notebookUitvoer(id, tijdMs);
+      },
+    },
   };
-  return { s, acties, omgeving, schijf, afdrukken, app, sjablonen, geinstalleerd };
+  const notebookRondes = [];
+  let notebookUitvoer = async () => ({ klaar: true });
+  const zetNotebookUitvoer = (f) => {
+    notebookUitvoer = f;
+  };
+  return { s, acties, omgeving, schijf, afdrukken, app, sjablonen, geinstalleerd, notebookRondes, zetNotebookUitvoer };
 }
 
 /** Een context zoals brug.ts hem per request bouwt. */

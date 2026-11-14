@@ -7,7 +7,8 @@
  * projectbestand is de enige bewaarplek. De app stuurt ze hierheen en vraagt de
  * laatste stand terug; zie components/calc/JupyterVenster.tsx.
  *
- * Van de app:     laad { bestanden, open, automatisch }, vraagStand { id }, thema { donker }, automatisch { aan }
+ * Van de app:     laad { bestanden, open, automatisch }, vraagStand { id }, thema { donker }, automatisch { aan },
+ *                 voerUit { id } (alles draaien, dan stand { id, bestanden })
  * Naar de app:    gereed, geladen, stand { id, bestanden }, gewijzigd, opslaan, fout { melding }
  *
  * Code in deze pagina kan dezelfde berichten sturen. De app behandelt ze daarom als
@@ -265,6 +266,26 @@ get_ipython().execution_count -= 1`;
     window.top.postMessage({ bron: BRON, soort: "stand", id, bestanden }, appHerkomst);
   }
 
+  const pauze = (ms) => new Promise((klaar) => setTimeout(klaar, ms));
+
+  /**
+   * Van de API (sheet_run): elk open notebook draait helemaal, ook als de code niet
+   * veranderd is, en daarna gaat de stand met de nieuwe uitvoer terug. Een ronde die
+   * al loopt, maakt eerst af.
+   */
+  async function voerUit({ id }) {
+    // Het notebook opent vlak na `geladen`; even wachten tot het er is.
+    for (let i = 0; i < 100 && notebooks.size === 0; i++) await pauze(100);
+    for (const [paneel, st] of notebooks) {
+      clearTimeout(st.timer);
+      await paneel.context.ready;
+      while (st.bezig) await pauze(100);
+      st.uitgevoerd = null;
+      await ronde(paneel, st);
+    }
+    await stand({ id });
+  }
+
   async function zetThema({ donker }) {
     const thema = donker ? THEMA.donker : THEMA.licht;
     if (app.commands.hasCommand("apputils:change-theme")) {
@@ -280,7 +301,7 @@ get_ipython().execution_count -= 1`;
       zetAutomatisch(b);
       return;
     }
-    const klus = b.soort === "laad" ? laad(b) : b.soort === "vraagStand" ? stand(b) : b.soort === "thema" ? zetThema(b) : null;
+    const klus = b.soort === "laad" ? laad(b) : b.soort === "vraagStand" ? stand(b) : b.soort === "thema" ? zetThema(b) : b.soort === "voerUit" ? voerUit(b) : null;
     klus?.catch((err) => {
       console.error("Jupyter-brug:", err);
       stuur({ soort: "fout", id: b.id, melding: String(err?.message ?? err) });

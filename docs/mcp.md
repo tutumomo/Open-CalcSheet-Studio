@@ -62,7 +62,7 @@ leesbare tekst: deel ze niet.
 
 ## Tools
 
-56 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
+58 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
 De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 [api.md](api.md#routes). In het kort:
 
@@ -73,7 +73,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Rapport | `report_get`, `report_set` |
 | Geschiedenis | `undo`, `redo` |
 | Modules | `modules_list`, `module_schema`, `library_list`, `library_install`, `library_remove` |
-| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
+| Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_read`, `sheet_run`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate`, `calc_evaluate_batch`, `job_start`, `job_status`, `job_cancel` |
 | Formules | `formulas_list`, `formula_get` |
 | Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
@@ -133,6 +133,19 @@ het oordeel `check: "unchecked"`. `#while` zonder `max=` werkt als voorheen.
 (120 s): `job_start` geeft meteen een `jobId`, `job_status` de voortgang en
 antwoorden, `job_cancel` stopt na het lopende item. Jobs staan alleen in het
 geheugen van de app.
+
+`sheet_read` geeft de inhoud van elk soort blad als gegevens: van een
+spreadsheet de gevulde cellen (adres, soort, waarde, formule; een formule met
+de uitkomst van de rekenkern), van een graaf per node de uitgangen, fouten en
+meldingen plus de bekijk-tabel, van een Jupyter-notebook per cel de bron, het
+`executionCount` (`null` = nooit gedraaid) en de bewaarde uitvoer (tekst,
+uitkomsten, fouten zonder kleurcodes; afbeeldingen alleen als MIME-type), van
+Marimo per cel de code en de uitvoer als tekst, en van een rekenblad de regels
+zoals `sheet_evaluate` met `lines: true`. `sheet_run` laat een Jupyter- of
+Marimo-blad in de app draaien (het blad gaat open; alleen in de desktop-app) en
+geeft daarna dezelfde inhoud terug; `completed: false` betekent dat de ronde
+niet op tijd klaar was en de uitvoer niet te vertrouwen is. Een graaf,
+spreadsheet of rekenblad rekent al bij het lezen.
 
 ## Hoe het werkt
 

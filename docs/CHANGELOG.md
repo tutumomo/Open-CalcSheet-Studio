@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（OCSS 接入 P2-11）：新增 `sheet_read`（`GET /api/v1/sheets/{id}/content`）讀出各種表單的內容：試算表每個有值的儲存格（值、公式與計算結果）、節點圖每個節點的輸出與錯誤、Jupyter 每格的程式碼、執行序號（未執行為 `null`）與保存的輸出、Marimo 每格的程式碼與文字輸出、計算表的結構化行；新增 `sheet_run`（`POST /api/v1/sheets/{id}/run`）由 API 觸發 Jupyter／Marimo 在 App 內重跑並存回專案，逾時回 `completed: false`。工具數 56 → 58。
+
 - 台灣版（OCSS 接入 P1-6～P1-10）：`calc_evaluate`／`sheet_evaluate` 每行回傳 `expr`、`si_value`、`clause`、`check`（`pass`／`fail`／`unchecked`，未計算的 `@toets`／`@fem` 一律 `unchecked`）與 `warnings[]`（非整數次方量綱），`strict: true` 時以 `UNIT_WARNING` 拒算，`conventionalUnits: true` 另給慣用單位；新增 `module_schema` 回傳模組的輸入欄位、規範條號與檢核行；計算語言新增有上限的迴圈 `#while 條件 max=N` 與 `#iterate x tol=… max=…`，未收斂回報 `NOT_CONVERGED`（含迭代數與殘差）；新增 `calc_evaluate_batch` 與背景工作 `job_start`／`job_status`／`job_cancel`。工具數 49 → 56，既有工具的欄位只增不改。
 
 - 台灣版（OCSS 接入 P0-5）：新增拋棄式工作階段工具 `session_new`／`session_close`（REST：`POST /api/v1/session/new`、`POST /api/v1/session/close`）。開啟後目前的專案、報告與復原紀錄會先擱置、換成空白專案，期間的工具呼叫（新增表單、計算、產生 PDF）都不會動到使用者真正的專案；關閉後一律還原，包含「尚未儲存」狀態與復原紀錄，並清除工作階段期間取得的 FEM 回應。`project_new` 另接受 `scratch: true` 作為同義用法。

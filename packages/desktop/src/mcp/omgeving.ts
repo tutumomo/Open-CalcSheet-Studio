@@ -18,6 +18,7 @@ import { projectScope } from "../store/projectGegevens";
 import { rekenDoor } from "./rekenen";
 import { wisSessie } from "../rekenen/toetsCache";
 import { appKoppeling, type SplitModus } from "./appKoppeling";
+import { voerNotebookUit } from "./notebookUitvoer";
 import { McpFout, type McpBibliotheekModule, type McpInstellingen, type McpOmgeving, type McpWeergave } from "./contracts";
 
 /**
@@ -325,6 +326,17 @@ export const liveOmgeving: McpOmgeving = {
         }
         throw e;
       }
+    },
+  },
+
+  notebooks: {
+    voerUit: async (id, tijdMs) => {
+      if (!isTauri()) return { klaar: false, melding: "Notebooks run only in the desktop app." };
+      // Het venster van een notebook bestaat pas als het blad in de werkruimte open is.
+      useProjectStore.getState().selecteer(id);
+      usePrintStore.getState().sluitVoorbeeld();
+      appKoppeling()?.setActiveView("default");
+      return voerNotebookUit(id, tijdMs);
     },
   },
 };

@@ -88,6 +88,7 @@
 | beda0b6 之後 | P1-8 `module_schema` | 完成 | `GET /modules/{templateId}/schema`：輸入欄位直接重用 `velden.ts`，加上規範、條號與每個欄位的比較行（`guards`）。計算語言沒有宣告式上下限，工具不自行編造範圍 |
 | beda0b6 之後 | P1-9 收斂迭代 | 完成 | core `parser.ts`／`evaluator.ts`：`#while cond max=N`、`#iterate x tol=… max=…`（預設 1e-9、100，殘差以 SI 計）；未收斂產生帶 `iteratie` 的錯誤文字行，MCP 回 `code: NOT_CONVERGED`（`iterations`、`max`、`condition` 或 `name`／`tol`／`residual`）與 `notConverged[]`，並把摘要 `check` 降為 `unchecked`。無 `max=` 的 `#while` 行為不變 |
 | beda0b6 之後 | P1-10 長工作 | 完成 | 新檔 `tools/taken.ts`：`calc_evaluate_batch`（`POST /evaluate/batch`，每項等同 `calc_evaluate`，錯誤逐項回報，上限 200）；`job_start`／`job_status`／`job_cancel`（`POST /jobs`、`GET`／`DELETE /jobs/{jobId}`），每項之間 `setTimeout` 讓出事件迴圈，狀態只存記憶體、保留最近 20 個已結束的 job。工具總數 49 → 56 |
+| 094bc1e 之後 | P2-11 各表單讀取與觸發 | 完成 | 新檔 `src/mcp/bladInhoud.ts`（試算表格值＋公式結果、圖表節點輸出、Jupyter 每格輸出與 `executionCount`、Marimo 純文字輸出）與 `tools/inhoud.ts`：`sheet_read`（`GET /sheets/{id}/content`）、`sheet_run`（`POST /sheets/{id}/run`）。notebook 只能在 App 的 iframe 執行：`src/mcp/notebookUitvoer.ts` 讓 `JupyterVenster`／`MarimoVenster` 登記執行器，Jupyter 橋接新增 `voerUit` 訊息（全部重跑後回 `stand`），Marimo 重新載入後輪詢到輸出連續兩次相同；逾時回 `completed: false`，不當成結果。工具總數 56 → 58。**驗證範圍**：讀取部分以真實試算表核心、圖表求解器與 nbformat 資料在 `check-mcp.mjs` 第 5f 節驗證（19 項）；`sheet_run` 的 notebook 路徑只在假環境驗證了工具層（逾時、`completed`、重讀專案），App 內 iframe 實際重跑（JupyterLite／Marimo）尚未實機驗證，需在桌面版建置後手動測一次 |
 
 ## 8. 上游可合併性
 
@@ -104,6 +105,8 @@
 | `src/mcp/contracts.ts`、`src/mcp/omgeving.ts` | `bestanden` 介面多 3 個方法與其實作（快照放 `omgeving.ts`，不動 store） | 上游若改 `McpOmgeving`，把 3 個方法補進新的介面與實作即可；store 本體未改，衝突面最小 |
 | `packages/core/src/parser.ts`、`evaluator.ts`、`types.ts` | `#iterate` 與 `max=`／`tol=` 為新增分支；`RepeatNode`、`EvaluatedText` 只加選用欄位 | 上游改 `repeat` 求值時衝突在同一個 `case`，保留上游邏輯後把 `grens`／`evalueerIteratie` 接回 |
 | `src/mcp/tools/taken.ts` | 全新檔案；`tools.ts` 多一行登記 | 不衝突 |
+| `src/mcp/bladInhoud.ts`、`notebookUitvoer.ts`、`tools/inhoud.ts` | 全新檔案 | 不衝突 |
+| `src/components/calc/JupyterVenster.tsx`、`MarimoVenster.tsx`、`jupyter-omgeving/ocss-brug.js` | 各多一個 `useEffect`／訊息分支（`voerUit`），既有流程不動 | 上游改視窗訊息處理時，把 `rondes`／`peilingen` 分支補回 `stand`／`fout` 兩個 case |
 | `src/mcp/tools/bladen.ts`、`rekenen.ts`、`hulp.ts`、`rest.ts` | `calc_evaluate` 本體搬成 `rekenTekstUit`；回傳只加欄位 | 上游改 `calc_evaluate` 時，把改動套進 `rekenTekstUit` |
 | `release-tw.yml` | 台灣版專屬，上游沒有 | 不合併上游 |
 | `docs/api.md`、README 三份 | 新增段落與腳本計數 | 計數以 `node scripts/check-readme.mjs` 為準重算 |

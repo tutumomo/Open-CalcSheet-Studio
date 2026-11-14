@@ -215,6 +215,13 @@ export interface McpOmgeving {
      */
     pdfViaEngine(ids: string[], pad: string): Promise<number>;
   };
+  /**
+   * Een Jupyter- of Marimo-blad laten draaien (sheet_run): het blad gaat open, alle
+   * cellen draaien en de uitvoer komt in het project. Alleen in de desktop-app.
+   */
+  notebooks?: {
+    voerUit(id: string, tijdMs: number): Promise<{ klaar: boolean; melding?: string }>;
+  };
 }
 
 /** De vlaggen die de gebruiker in Instellingen zet, per request vers gelezen, en wat de server van zichzelf weet. */

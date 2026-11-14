@@ -5,6 +5,7 @@ import { registreerBewaarder } from "../../store/spreadsheetBlad";
 import { bladSleutel, JUPYTER_RECHTEN, jupyterOmhulsel } from "../../store/jupyterBlad";
 import { geldigeUitvoer, MARIMO_MAX_TEKENS } from "../../store/marimoBlad";
 import { omgevingPoort } from "./JupyterVenster";
+import { registreerUitvoerder } from "../../mcp/notebookUitvoer";
 
 /*
  * Het venster van één Marimo-blad: Marimo in een iframe, op dezelfde server en met dezelfde
@@ -39,6 +40,8 @@ export function MarimoVenster({ id, stijl, onOpslaan }: { id: string; stijl: CSS
   const isGeladen = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wachtend = useRef(new Map<number, () => void>());
+  /** Vragen van sheet_run: de stand zoals hij binnenkomt, om te zien of hij nog verandert. */
+  const peilingen = useRef(new Map<number, (uitvoer: string[] | null) => void>());
   const vraagTeller = useRef(0);
   const opslaanOp = useRef(0);
 
@@ -126,6 +129,13 @@ export function MarimoVenster({ id, stijl, onOpslaan }: { id: string; stijl: CSS
           }, BEWAAR_NA_MS);
           break;
         case "stand": {
+          const peiling = peilingen.current.get(b.id as number);
+          if (peiling) {
+            peilingen.current.delete(b.id as number);
+            verwerkStand(b.code, b.uitvoer);
+            peiling(geldigeUitvoer(b.uitvoer));
+            break;
+          }
           const klaar = wachtend.current.get(b.id as number);
           if (!klaar) break;
           wachtend.current.delete(b.id as number);
@@ -144,6 +154,8 @@ export function MarimoVenster({ id, stijl, onOpslaan }: { id: string; stijl: CSS
         case "fout":
           console.error("Marimo:", b.melding);
           if (typeof b.id === "number") {
+            peilingen.current.get(b.id)?.(null);
+            peilingen.current.delete(b.id);
             wachtend.current.get(b.id)?.();
             wachtend.current.delete(b.id);
           } else if (!isGeladen.current) {
@@ -159,10 +171,51 @@ export function MarimoVenster({ id, stijl, onOpslaan }: { id: string; stijl: CSS
   // Bij opslaan en bij het wisselen van blad: de laatste stand eerst naar het project.
   useEffect(() => registreerBewaarder(bewaar), [bewaar]);
 
+  /*
+   * sheet_run (mcp/notebookUitvoer.ts). Marimo draait alle cellen bij het laden, dus: eerst
+   * bewaren, dan opnieuw laden, en de uitvoer peilen tot hij twee keer achter elkaar gelijk
+   * en niet leeg is. Marimo meldt niet zelf dat hij klaar is; dit is dus een peiling.
+   */
+  useEffect(() => registreerUitvoerder(id, async (tijdMs) => {
+    const tot = Date.now() + tijdMs;
+    const wacht = (ms: number) => new Promise((ok) => setTimeout(ok, ms));
+    await bewaar();
+    isGeladen.current = false;
+    setGeladen(false);
+    setFout(null);
+    setLaadTeller((n) => n + 1);
+    while (!isGeladen.current) {
+      if (Date.now() > tot) return { klaar: false, melding: "Marimo did not load in time." };
+      await wacht(200);
+    }
+    const peil = () => new Promise<string[] | null>((klaar) => {
+      const vraag = ++vraagTeller.current;
+      const tijd = setTimeout(() => {
+        if (peilingen.current.delete(vraag)) klaar(null);
+      }, STAND_TIJDSLIMIET_MS);
+      peilingen.current.set(vraag, (u) => {
+        clearTimeout(tijd);
+        klaar(u);
+      });
+      stuur({ soort: "vraagStand", id: vraag });
+    });
+    let vorige: string | null = null;
+    while (Date.now() < tot) {
+      await wacht(1500);
+      const u = await peil();
+      const nu = u && u.some((x) => x.trim()) ? JSON.stringify(u) : null;
+      if (nu !== null && nu === vorige) return { klaar: true };
+      vorige = nu;
+    }
+    return { klaar: false, melding: "Marimo's output did not settle in time; it may be incomplete." };
+  }), [id, bewaar, stuur]);
+
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
     wachtend.current.forEach((klaar) => klaar());
     wachtend.current.clear();
+    peilingen.current.forEach((klaar) => klaar(null));
+    peilingen.current.clear();
   }, []);
 
   // Het notebook is van buitenaf veranderd: ongedaan maken, een ander bestand ingelezen.

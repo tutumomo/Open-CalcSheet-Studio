@@ -38,7 +38,10 @@ import {
   nieuwToken,
 } from "../packages/desktop/src/mcp/koppeling.ts";
 import { LEGE_WERKMAP } from "../packages/desktop/src/store/spreadsheetBlad.ts";
-import { pakWerkmapIn, startNotebook } from "../packages/desktop/src/store/jupyterBlad.ts";
+import { pakWerkmapIn, pakWerkmapUit, startNotebook } from "../packages/desktop/src/store/jupyterBlad.ts";
+import { zetWerkmapKern } from "../packages/desktop/src/mcp/bladInhoud.ts";
+import { readFileSync as leesBestand } from "node:fs";
+import { fileURLToPath as naarPad } from "node:url";
 import { maakApp, maakContext, PROJECT_ID, RAPPORT_ID } from "./lib/mcpproef.mjs";
 import { laadTemplate } from "./lib/refcheck.mjs";
 
@@ -110,7 +113,7 @@ console.log("Dispatcher:");
   const verwacht = [
     "project_get", "project_set_data", "modules_list", "sheet_add", "sheet_get", "sheet_set_source",
     "sheet_set_input", "sheet_rename", "sheet_remove", "sheet_select", "sheet_evaluate", "calc_evaluate",
-    "module_schema", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
+    "module_schema", "sheet_read", "sheet_run", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
   ];
   meld(verwacht.every((n) => namen.includes(n)), "tools/list: de twaalf oorspronkelijke tools", verwacht.filter((n) => !namen.includes(n)).join());
   meld(namen.length === MCP_TOOLS.length && new Set(namen).size === namen.length, `tools/list: alle ${MCP_TOOLS.length} tools, elk één keer`);
@@ -521,6 +524,125 @@ console.log("Lussen, batch en jobs:");
   const na = (await roep("job_status", { jobId: lang.data.jobId, results: false })).data;
   meld(na?.state === "cancelled" && na.done < 50 && na.results === undefined, "geannuleerd: stopt en zonder results", JSON.stringify({ s: na?.state, d: na?.done }));
   meld((await roep("job_status", { jobId: "job-bestaat-niet" })).isError, "onbekende job: fout");
+}
+
+// ── 5f. Inhoud per bladsoort en uitvoeren (P2-11) ───────────────────────────
+console.log("Inhoud per bladsoort (sheet_read, sheet_run):");
+{
+  // De spreadsheetkern in Node: de WASM uit het pakket, zoals check-spreadsheet.mjs.
+  const pakket = naarPad(new URL("../node_modules/@betteroffice/xlsx/dist/", import.meta.url));
+  const xlsx = await import(new URL("../node_modules/@betteroffice/xlsx/dist/index.js", import.meta.url).href);
+  await xlsx.initWasm(leesBestand(pakket + "generated/xlsx_wasm_bg.wasm"));
+  zetWerkmapKern(async () => xlsx);
+
+  // Spreadsheet: G = L × A × 7850 / 1e6 → 6 × 5383 × 7850 / 1e6 = 253,5393 kg; som met 4,5 × 14910 × … = 526,69575 → 780,23505.
+  const wb = xlsx.openWorkbook(new Uint8Array(Buffer.from(LEGE_WERKMAP, "base64")));
+  const rijen = [
+    ["Staaf", "L", "A", "G"],
+    ["HEA 200", "6", "5383", "=B2*C2*7850/1000000"],
+    ["HEB 300", "4.5", "14910", "=B3*C3*7850/1000000"],
+    ["Totaal", "", "", "=SUM(D2:D3)"],
+  ];
+  rijen.forEach((r, i) => r.forEach((w, k) => { if (w !== "") wb.editCell(0, i, k, w); }));
+  const data = Buffer.from(wb.save()).toString("base64");
+  wb.dispose();
+  const ss = await roep("sheet_add", { kind: "spreadsheet", name: "鋼材表", base64: data, fileName: "staal.xlsx" });
+  const r1 = await roep("sheet_read", { id: ss.data.id });
+  const cellen = r1.data?.spreadsheet?.sheets?.[0]?.cells ?? [];
+  const cel = (a1) => cellen.find((c) => c.a1 === a1);
+  meld(!r1.isError && r1.data.kind === "spreadsheet" && r1.data.spreadsheet.sheets.length === 1, "sheet_read: spreadsheet 讀出工作表", JSON.stringify(r1.data).slice(0, 300));
+  meld(Math.abs((cel("D2")?.value ?? 0) - 253.5393) < 1e-9 && cel("D2")?.formula === "B2*C2*7850/1000000", "sheet_read: 公式格有值與公式（D2 = 253.5393）", JSON.stringify(cel("D2")));
+  meld(Math.abs((cel("D4")?.value ?? 0) - 780.23505) < 1e-9 && cel("A1")?.kind === "text" && cel("A1")?.value === "Staaf", "sheet_read: SUM 結果與文字格", JSON.stringify([cel("D4"), cel("A1")]));
+  meld(r1.data.spreadsheet.cellCount === 14 && r1.data.spreadsheet.truncated === false, "sheet_read: 只回填過的格（14 格）", String(r1.data.spreadsheet.cellCount));
+  const r1k = await roep("sheet_read", { id: ss.data.id, maxCells: 3 });
+  meld(r1k.data?.spreadsheet?.cellCount === 3 && r1k.data.spreadsheet.truncated === true, "sheet_read: maxCells 截斷並標 truncated");
+  const sRun = await roep("sheet_run", { id: ss.data.id });
+  meld(sRun.data?.ran === true && sRun.data.completed === true && app.notebookRondes.length === 0, "sheet_run: spreadsheet 等同讀取，不呼叫 notebook");
+
+  // Graaf: 2 + 3 = 5, en een bekijk-node toont het.
+  const gr = await roep("sheet_add", { kind: "graph", name: "節點" });
+  await roep("sheet_set_graph", {
+    id: gr.data.id,
+    graph: {
+      versie: 1,
+      nodes: [
+        { id: "a", soort: "getal", x: 0, y: 0, invoer: { waarde: "2" } },
+        { id: "b", soort: "getal", x: 0, y: 50, invoer: { waarde: "3" } },
+        { id: "s", soort: "optellen", x: 100, y: 0, naam: "som" },
+        { id: "v", soort: "bekijken", x: 200, y: 0 },
+      ],
+      verbindingen: [
+        { vanNode: "a", vanPoort: "waarde", naarNode: "s", naarPoort: "a" },
+        { vanNode: "b", vanPoort: "waarde", naarNode: "s", naarPoort: "b" },
+        { vanNode: "s", vanPoort: "uit", naarNode: "v", naarPoort: "waarde" },
+      ],
+    },
+  });
+  const r2 = await roep("sheet_read", { id: gr.data.id });
+  const som = r2.data?.graph?.nodes?.find((n) => n.id === "s");
+  meld(!r2.isError && som?.outputs?.uit?.value === 5 && som.name === "som", "sheet_read: graph 節點輸出（2 + 3 = 5）", JSON.stringify(som));
+  meld(r2.data?.graph?.views?.[0]?.value === 5 && r2.data.graph.errorNodes === 0, "sheet_read: graph 檢視節點表", JSON.stringify(r2.data?.graph?.views));
+
+  // Jupyter: een gedraaide cel met uitvoer, een fout, en een cel die nooit draaide.
+  const nb = {
+    nbformat: 4, nbformat_minor: 5, metadata: {},
+    cells: [
+      { cell_type: "markdown", id: "m", metadata: {}, source: ["# 計算"] },
+      { cell_type: "code", id: "c1", metadata: {}, execution_count: 1, source: ["x = 6 * 7\n", "x"], outputs: [{ output_type: "execute_result", execution_count: 1, metadata: {}, data: { "text/plain": "42", "image/png": "iVBOR" } }] },
+      { cell_type: "code", id: "c2", metadata: {}, execution_count: 2, source: "print('hi')\n1/0", outputs: [{ output_type: "stream", name: "stdout", text: ["hi\n"] }, { output_type: "error", ename: "ZeroDivisionError", evalue: "division by zero", traceback: ["\u001b[31mZeroDivisionError\u001b[0m: division by zero"] }] },
+      { cell_type: "code", id: "c3", metadata: {}, execution_count: null, source: "y = 1", outputs: [] },
+    ],
+  };
+  const jpData = (n) => Buffer.from(pakWerkmapIn([{ pad: "calc.ipynb", bytes: new TextEncoder().encode(JSON.stringify(n)) }])).toString("base64");
+  const jp = await roep("sheet_add", { kind: "jupyter", name: "筆記本", base64: jpData(nb), fileName: "calc.zip" });
+  const r3 = await roep("sheet_read", { id: jp.data.id });
+  const boek = r3.data?.jupyter?.notebooks?.[0];
+  meld(!r3.isError && boek?.path === "calc.ipynb" && boek.codeCells === 3 && boek.executedCells === 2 && boek.errorCells === 1, "sheet_read: jupyter 計數（3 code、2 已執行、1 錯誤）", JSON.stringify(boek && { c: boek.codeCells, e: boek.executedCells, f: boek.errorCells }));
+  const c1 = boek?.cells?.[1];
+  meld(c1?.outputs?.[0]?.text === "42" && c1.outputs[0].mime.includes("image/png") && c1.source === "x = 6 * 7\nx", "sheet_read: jupyter 結果文字與 MIME", JSON.stringify(c1));
+  const fout2 = boek?.cells?.[2]?.outputs?.[1];
+  meld(fout2?.type === "error" && fout2.ename === "ZeroDivisionError" && !fout2.text.includes("\u001b") && boek.cells[3].executionCount === null, "sheet_read: jupyter 錯誤（去色碼）與未執行格 null", JSON.stringify(fout2));
+
+  // sheet_run: het venster draait en zet nieuwe uitvoer in het project.
+  app.zetNotebookUitvoer(async (id) => {
+    const blad = app.omgeving.stand().exemplaren.find((e) => e.id === id);
+    const nieuw = structuredClone(nb);
+    nieuw.cells[3].execution_count = 3;
+    nieuw.cells[3].outputs = [{ output_type: "stream", name: "stdout", text: "klaar" }];
+    app.omgeving.acties.zetJupyter(id, { ...blad.jupyter, data: jpData(nieuw) });
+    return { klaar: true };
+  });
+  const run = await roep("sheet_run", { id: jp.data.id, timeoutSeconds: 30 });
+  meld(!run.isError && run.data.ran === true && run.data.completed === true && run.data.jupyter.notebooks[0].executedCells === 3, "sheet_run: jupyter 執行後讀到新輸出", JSON.stringify(run.data?.jupyter?.notebooks?.[0]?.executedCells));
+  meld(app.notebookRondes.at(-1)?.id === jp.data.id && app.notebookRondes.at(-1).tijdMs === 30000, "sheet_run: 逾時秒數轉 ms 傳給 App");
+  app.zetNotebookUitvoer(async () => ({ klaar: false, melding: "The notebook did not finish in time." }));
+  const traag = await roep("sheet_run", { id: jp.data.id });
+  meld(traag.data?.completed === false && /in time/.test(traag.data.message) && app.notebookRondes.at(-1).tijdMs === 90000, "sheet_run: 未完成標 completed=false（不可當結果）");
+  meld((await roep("sheet_run", {})).data.code === "VALIDATION", "sheet_run: 必須給 id（變更類工具不用目前表）");
+
+  // Marimo: bewaarde uitvoer als tekst, zonder html.
+  const code = "import marimo\n\napp = marimo.App()\n\n@app.cell\ndef _():\n    x = 6 * 7\n    x\n    return (x,)\n\n@app.cell(hide_code=True)\ndef _(x):\n    print(x)\n    return\n";
+  const mr = await roep("sheet_add", { kind: "marimo", name: "反應式", code, fileName: "m.py" });
+  const blad = app.omgeving.stand().exemplaren.find((e) => e.id === mr.data.id);
+  app.omgeving.acties.zetMarimo(mr.data.id, { ...blad.marimo, uitvoer: ["<pre><span>42</span></pre>", "<div>a &amp; b</div><img src=x>"] });
+  const r4 = await roep("sheet_read", { id: mr.data.id });
+  const mc = r4.data?.marimo?.cells ?? [];
+  meld(mc.length === 2 && mc[0].code === "x = 6 * 7\nx" && mc[0].output === "42" && mc[1].hidden === true && mc[1].output === "a & b" && mc[1].hasImage === true, "sheet_read: marimo 每格程式碼與純文字輸出", JSON.stringify(mc));
+
+  // Rekenblad: dezelfde regels als sheet_evaluate lines=true.
+  const rk = await roep("sheet_read", { id: liggerId });
+  const ev = await roep("sheet_evaluate", { id: liggerId, lines: true });
+  meld(!rk.isError && rk.data.kind === "calculation" && Array.isArray(rk.data.lines) && rk.data.lines.length === ev.data.lines.length, "sheet_read: 計算表 = sheet_evaluate 的 lines");
+
+  // Zonder desktop: een notebook kan niet draaien.
+  const zonder = await MCP_TOOLS.find((t) => t.name === "sheet_run").handler({ id: jp.data.id }, { ...maakContext({ ...app.omgeving, notebooks: undefined }, vlaggen)() });
+  meld(zonder.ok === false && zonder.code === "NOT_AVAILABLE", "sheet_run: 沒有 App 視窗時 NOT_AVAILABLE");
+  const dr = await roep("sheet_add", { kind: "drawing", name: "圖" });
+  meld((await roep("sheet_read", { id: dr.data.id })).data.code === "VALIDATION", "sheet_read: 繪圖表導向 sheet_get");
+
+  for (const id of [ss.data.id, gr.data.id, jp.data.id, mr.data.id, dr.data.id]) await roep("sheet_remove", { id });
+  zetWerkmapKern(null);
+  void pakWerkmapUit;
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────

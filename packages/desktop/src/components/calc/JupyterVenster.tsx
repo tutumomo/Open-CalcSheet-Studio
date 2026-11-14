@@ -7,6 +7,7 @@ import {
   uitBase64, veiligPad, WERKMAP_MAX_BYTES, type WerkmapBestand,
 } from "../../store/jupyterBlad";
 import { bytesNaarBase64 } from "./pdfBlad";
+import { registreerUitvoerder, type NotebookRonde } from "../../mcp/notebookUitvoer";
 
 /*
  * Het venster van één Jupyter-blad: JupyterLite in een iframe, met een eigen herkomst
@@ -74,6 +75,8 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
   const isStil = useRef(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const wachtend = useRef(new Map<number, () => void>());
+  /** Rondes van sheet_run die op hun stand wachten. */
+  const rondes = useRef(new Map<number, (r: NotebookRonde) => void>());
   const vraagTeller = useRef(0);
   const opslaanOp = useRef(0);
 
@@ -188,6 +191,15 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
           }, BEWAAR_NA_MS);
           break;
         case "stand": {
+          const ronde = rondes.current.get(b.id as number);
+          if (ronde) {
+            rondes.current.delete(b.id as number);
+            verwerkStand(b.bestanden).then(
+              () => ronde({ klaar: true }),
+              (err) => ronde({ klaar: false, melding: String((err as Error)?.message ?? err) }),
+            );
+            break;
+          }
           const klaar = wachtend.current.get(b.id as number);
           if (!klaar) break;
           wachtend.current.delete(b.id as number);
@@ -208,6 +220,8 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
         case "fout":
           console.error("Jupyter-omgeving:", b.melding);
           if (typeof b.id === "number") {
+            rondes.current.get(b.id)?.({ klaar: false, melding: String(b.melding) });
+            rondes.current.delete(b.id);
             wachtend.current.get(b.id)?.();
             wachtend.current.delete(b.id);
           } else if (!isGeladen.current) {
@@ -223,10 +237,32 @@ export function JupyterVenster({ id, stijl, onOpslaan }: { id: string; stijl: CS
   // Bij opslaan en bij het wisselen van blad: de laatste stand eerst naar het project.
   useEffect(() => registreerBewaarder(bewaar), [bewaar]);
 
+  // sheet_run (mcp/notebookUitvoer.ts): alle cellen draaien en de uitvoer in het project.
+  useEffect(() => registreerUitvoerder(id, async (tijdMs) => {
+    const tot = Date.now() + tijdMs;
+    while (!isGeladen.current) {
+      if (Date.now() > tot) return { klaar: false, melding: "The Jupyter environment did not load in time." };
+      await new Promise((ok) => setTimeout(ok, 200));
+    }
+    return new Promise<NotebookRonde>((klaar) => {
+      const vraag = ++vraagTeller.current;
+      const tijd = setTimeout(() => {
+        if (rondes.current.delete(vraag)) klaar({ klaar: false, melding: "The notebook did not finish in time; its output may be incomplete." });
+      }, Math.max(1000, tot - Date.now()));
+      rondes.current.set(vraag, (r) => {
+        clearTimeout(tijd);
+        klaar(r);
+      });
+      stuur({ soort: "voerUit", id: vraag });
+    });
+  }), [id, stuur]);
+
   useEffect(() => () => {
     if (timer.current) clearTimeout(timer.current);
     wachtend.current.forEach((klaar) => klaar());
     wachtend.current.clear();
+    rondes.current.forEach((klaar) => klaar({ klaar: false, melding: "The notebook window closed." }));
+    rondes.current.clear();
   }, []);
 
   // De werkmap is van buitenaf veranderd: ongedaan maken, een ander bestand ingelezen.

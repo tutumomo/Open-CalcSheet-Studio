@@ -17,7 +17,8 @@ import { PROJECTTOOLS } from "./tools/project.ts";
 import { BLADTOOLS } from "./tools/bladen.ts";
 import { OVERIGE_TOOLS } from "./tools/overig.ts";
 import { TAAKTOOLS } from "./tools/taken.ts";
+import { INHOUDTOOLS } from "./tools/inhoud.ts";
 
 export { vergeetUitkomsten } from "./tools/hulp.ts";
 
-export const MCP_TOOLS: McpToolDef[] = [...PROJECTTOOLS, ...BLADTOOLS, ...TAAKTOOLS, ...OVERIGE_TOOLS];
+export const MCP_TOOLS: McpToolDef[] = [...PROJECTTOOLS, ...BLADTOOLS, ...INHOUDTOOLS, ...TAAKTOOLS, ...OVERIGE_TOOLS];
