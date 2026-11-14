@@ -186,7 +186,7 @@ const RAPPORT = object({
       tonen: opt(JANEE),
     })),
     kopvoet: opt(object(velden(['kop', 'voet']))),
-    nummering: opt(object({ tabellen: opt(JANEE) })),
+    nummering: opt(object({ tabellen: opt(JANEE), figuren: opt(JANEE) })),
   })),
 });
 

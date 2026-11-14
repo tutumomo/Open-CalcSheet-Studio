@@ -258,13 +258,16 @@ Een Taiwanees rapport (`opzetSoort: "tw"`) heeft naast de gewone velden een blok
 - `nummering.tabellen` — zet `表 4-1` boven de tabellen. De nummers worden vóór het
   tekenen uit de hoofdstukindeling berekend (`rapport/tw/nummering.ts`), niet tijdens
   het tekenen geteld, zodat een tweede tekenronde dezelfde nummers geeft.
+- `nummering.figuren` — zet `圖 6-1` in de titelhoek van een tekening die in het
+  hoofdstuk zelf staat. Tabellen en figuren tellen elk in hun eigen reeks. Een
+  tekening in bijlage A houdt haar bijlagenummer (`A.3`), omdat de tekst en de
+  inhoudsopgave daarnaar verwijzen. Een bijschriftregel zou bij een heel vel op de
+  vorige pagina belanden (`components/calc/PrintDocument.css`, `.print-blad`).
 
 Oude rapporten krijgen het lege blok bij het normaliseren en printen dus onveranderd.
 Het paneel (sectie 台灣計算書版面, alleen bij een Taiwanees rapport) en de API
 (`report_set` op `tw.handtekening.naam`, `tw.kopvoet.kop`, `tw.nummering.tabellen`, …)
-zetten dezelfde velden. Figuren krijgen nog geen nummer: een tekening gaat als heel vel
-door de bladafdruk met haar eigen titelhoek, en een bijschriftregel zou op de vorige
-pagina belanden (`components/calc/PrintDocument.css`, `.print-blad`).
+zetten dezelfde velden.
 
 ## Ongedaan maken
 
