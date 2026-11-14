@@ -7,6 +7,8 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（AI 助理擴充）：AI 助理側邊欄新增 **OAuth 2.0 登入**、**自定義第三方／本機大模型設定檔**與**抓取可用模型下拉選單**。除預設 Anthropic／OpenAI／Google Gemini 外，可點「+ 新增模型」建立任意數量的設定檔（附 OpenRouter、DeepSeek、Groq、xAI、Ollama、LM Studio、magpie 及自訂 OpenAI／Anthropic／Gemini 相容範本），依各設定檔獨立選擇「API 金鑰」、「OAuth 登入」（支援標準 OAuth 2.0 PKCE、OpenRouter PKCE、Google／GitHub／自訂端點、`refresh_token` 自動續期及遠端貼回呼 URL）或「無須驗證」；點「抓取模型列表」向端點取得可用模型並從下拉選單選取（同時保留手動輸入）。OAuth Token 與 Client Secret 同樣存於作業系統金鑰環，不寫入 `preferences.json`。工具數不變（60）。
+
 ## v2026.46.2 — 2026-11-14
 
 - 台灣版（OCSS 接入 P3-17）：`calc_evaluate`／`sheet_evaluate` 的 `@toets` 與 `@fem` 規則現在帶回完整的 FEM Studio 答案。`@toets`：`version`、`date`、`resultStatus`（`Ok`／`NotOk`／`NotApplicable`）、`passes`、`governing`、`items[]`（每個檢核的 `id`、`clause`、`title`、`uc`、`status`）與 `members[]`（逐根構材或鋼筋）。`@fem`：`version`、`date`、`model`（節點、元素、網格、彈簧、線支承、厚度）、`cases[]`（總載重與總反力）與 `extremes[]`（每個案例或組合的 `mx`／`my`／`mxy` 單位 kN·m/m、`deflection` 單位 mm、`reaction` 單位 kN，各含 `max`、`min`、`unit`）。沒有答案時這些欄位不存在，`check` 仍為 `unchecked`；既有欄位（`uc`、`status`、`check`、`type`、`name`）一個都沒改。工具數不變（60）。

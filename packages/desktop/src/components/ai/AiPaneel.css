@@ -25,13 +25,30 @@
   border-bottom: 1px solid var(--oa-border-subtle);
 }
 
+.ai-kop-links {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  min-width: 0;
+}
+
 .ai-titel {
   font-weight: 600;
+  flex: 0 0 auto;
+}
+
+.ai-kop-profiel {
+  font-size: var(--oa-size-small, 0.88em);
+  color: var(--oa-text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .ai-kop-knoppen {
   display: flex;
   gap: 4px;
+  flex: 0 0 auto;
 }
 
 .ai-knop-kaal {
@@ -59,6 +76,8 @@
   flex-direction: column;
   gap: 6px;
   padding: 10px 12px;
+  max-height: 55vh;
+  overflow: auto;
   border-bottom: 1px solid var(--oa-border-subtle);
   background: var(--oa-surface-raised, var(--oa-surface-sunken, rgba(0, 0, 0, 0.03)));
 }
@@ -68,6 +87,78 @@
   flex-direction: column;
   gap: 2px;
   color: var(--oa-text-secondary);
+}
+
+.ai-veld-kop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+}
+
+.ai-veld-acties {
+  display: flex;
+  gap: 4px;
+}
+
+.ai-knop-klein {
+  font: inherit;
+  font-size: var(--oa-size-small, 0.88em);
+  padding: 1px 6px;
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-s, 3px);
+  background: var(--oa-surface, #fff);
+  color: var(--oa-text-secondary);
+  cursor: pointer;
+}
+
+.ai-knop-klein:hover:not(:disabled) {
+  color: var(--oa-text);
+  border-color: var(--oa-border-strong);
+}
+
+.ai-knop-klein:disabled {
+  color: var(--oa-text-disabled);
+  cursor: default;
+}
+
+.ai-nieuw-profiel,
+.ai-oauth-blok,
+.ai-oauth-lopend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px;
+  border: 1px solid var(--oa-border-subtle);
+  border-radius: var(--oa-radius-s, 3px);
+  background: var(--oa-surface, #fff);
+}
+
+.ai-oauth-status {
+  font-size: var(--oa-size-small, 0.92em);
+}
+
+.ai-status-ok {
+  color: var(--oa-success);
+  font-weight: 600;
+}
+
+.ai-oauth-fout {
+  color: var(--oa-error);
+  font-size: var(--oa-size-small, 0.92em);
+}
+
+.ai-details summary {
+  cursor: pointer;
+  color: var(--oa-text-secondary);
+  font-size: var(--oa-size-small, 0.92em);
+}
+
+.ai-details-inhoud {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 6px;
 }
 
 .ai-veld input,

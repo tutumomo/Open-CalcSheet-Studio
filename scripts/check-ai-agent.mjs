@@ -20,6 +20,15 @@
 import { besluitVoor, DESTRUCTIEF, regelVerschil, vatSamen, voorbeeldSamenvatting, voorbeeldTekst } from "../packages/desktop/src/components/ai/beleid.ts";
 import { bouwSysteemtekst, parseBereik } from "../packages/desktop/src/components/ai/prompt.ts";
 import { kort, voerVraagUit } from "../packages/desktop/src/components/ai/agent.ts";
+import {
+  AI_SJABLONEN,
+  OAUTH_SJABLONEN,
+  STANDAARD_PROFIELEN,
+  isLokaalEndpoint,
+  isProfielKlaar,
+  maakProfielId,
+  migreerInstellingen,
+} from "../packages/desktop/src/components/ai/profielen.ts";
 
 let fouten = 0;
 let aantal = 0;
@@ -278,6 +287,89 @@ await voerVraagUit("X", [], deps([
   [{ soort: "tekst", tekst: "Ok." }, klaar()],
 ]));
 toets("een oproep zonder object gaat als lege argumenten door", gedaan.length === 1 && Object.keys(gedaan[0].argumenten).length === 0, gedaan);
+
+// ── 5. Profielen, derde-partij-modellen en OAuth ────────────────────────────
+console.log("\n5. Profielen, derde-partij-modellen en OAuth");
+toets("er zijn drie standaardprofielen", STANDAARD_PROFIELEN.length === 3 && STANDAARD_PROFIELEN.every((p) => p.ingebouwd === true));
+toets("sjablonen bevatten OAuth- en lokale derdepartijen",
+  AI_SJABLONEN.some((s) => s.id === "openrouter" && s.authModus === "oauth") &&
+  AI_SJABLONEN.some((s) => s.id === "deepseek" && s.aanbieder === "openai") &&
+  AI_SJABLONEN.some((s) => s.id === "ollama" && s.authModus === "none") &&
+  OAUTH_SJABLONEN.some((o) => o.id === "google" && o.config.soort === "pkce"));
+
+toets("maakProfielId maakt veilige unieke id's",
+  maakProfielId("DeepSeek R1", []) === "deepseek-r1" &&
+  maakProfielId("DeepSeek R1", ["deepseek-r1"]) === "deepseek-r1-2" &&
+  maakProfielId("公司內網模型", []) === "custom" &&
+  maakProfielId("a".repeat(90), []).length <= 64);
+
+const vanLeeg = migreerInstellingen(null);
+toets("lege instellingen geven 3 standaardprofielen", vanLeeg.actiefId === "anthropic" && vanLeeg.profielen.length === 3);
+
+const vanOud = migreerInstellingen({ aanbieder: "openai", endpoint: "http://127.0.0.1:3425", model: "magpie" });
+toets("oud formaat migreert met behoud van endpoint en model",
+  vanOud.actiefId === "openai" &&
+  vanOud.profielen.length === 3 &&
+  vanOud.profielen.find((p) => p.id === "openai")?.endpoint === "http://127.0.0.1:3425" &&
+  vanOud.profielen.find((p) => p.id === "openai")?.model === "magpie",
+  vanOud);
+
+const vanNieuw = migreerInstellingen({
+  actiefId: "deepseek-r1",
+  profielen: [
+    ...STANDAARD_PROFIELEN,
+    { id: "deepseek-r1", naam: "DeepSeek R1", aanbieder: "openai", endpoint: "https://api.deepseek.com", model: "deepseek-reasoner", authModus: "apikey" },
+  ],
+});
+toets("nieuw formaat bewaart eigen profielen en actiefId",
+  vanNieuw.actiefId === "deepseek-r1" && vanNieuw.profielen.length === 4 && vanNieuw.profielen[3].model === "deepseek-reasoner",
+  vanNieuw);
+
+toets("isLokaalEndpoint herkent localhost en 127.0.0.1",
+  isLokaalEndpoint("http://127.0.0.1:3425") &&
+  isLokaalEndpoint("http://localhost:11434/v1") &&
+  !isLokaalEndpoint("https://api.openai.com"));
+
+const authDummy = (extra = {}) => ({
+  heeft_sleutel: false,
+  heeft_oauth: false,
+  heeft_client_secret: false,
+  oauth_verlopen: false,
+  oauth_heeft_refresh: false,
+  ...extra,
+});
+const pNone = { id: "ollama", naam: "Ollama", aanbieder: "openai", endpoint: "http://127.0.0.1:11434/v1", model: "qwen2.5", authModus: "none" };
+const pKey = { id: "deepseek", naam: "DeepSeek", aanbieder: "openai", endpoint: "https://api.deepseek.com", model: "deepseek-chat", authModus: "apikey" };
+const pKeyLokaal = { ...pKey, id: "magpie", endpoint: "http://127.0.0.1:3425" };
+const pOAuth = { id: "openrouter", naam: "OpenRouter", aanbieder: "openai", endpoint: "https://openrouter.ai/api/v1", model: "claude", authModus: "oauth" };
+
+toets("authModus none is altijd klaar", isProfielKlaar(pNone, authDummy()).klaar === true);
+toets("apikey zonder sleutel weigert extern maar staat lokaal toe",
+  isProfielKlaar(pKey, authDummy()).reden === "geenSleutel" &&
+  isProfielKlaar(pKey, authDummy({ heeft_sleutel: true })).klaar === true &&
+  isProfielKlaar(pKeyLokaal, authDummy()).klaar === true);
+toets("oauth controleert token en verloop met/zonder refresh",
+  isProfielKlaar(pOAuth, authDummy()).reden === "geenOAuth" &&
+  isProfielKlaar(pOAuth, authDummy({ heeft_oauth: true })).klaar === true &&
+  isProfielKlaar(pOAuth, authDummy({ heeft_oauth: true, oauth_verlopen: true, oauth_heeft_refresh: false })).reden === "oauthVerlopen" &&
+  isProfielKlaar(pOAuth, authDummy({ heeft_oauth: true, oauth_verlopen: true, oauth_heeft_refresh: true })).klaar === true);
+
+const gezienVerzoek = [];
+await voerVraagUit("Ping", [], {
+  ...deps([[{ soort: "tekst", tekst: "Pong" }, klaar()]], {
+    aanbieder: "openai",
+    profiel: "openrouter",
+    authModus: "oauth",
+    vraag: async (verzoek, bij) => {
+      gezienVerzoek.push(verzoek);
+      bij({ soort: "tekst", tekst: "Pong" });
+      bij(klaar());
+    },
+  }),
+});
+toets("agent geeft profiel en auth_modus door aan Rust",
+  gezienVerzoek[0]?.profiel === "openrouter" && gezienVerzoek[0]?.auth_modus === "oauth",
+  gezienVerzoek[0]);
 
 console.log(fouten === 0 ? `\nAI-zijbalk: ${aantal} controles, alle groen.` : `\n${fouten} van ${aantal} controles gezakt.`);
 process.exit(fouten === 0 ? 0 : 1);

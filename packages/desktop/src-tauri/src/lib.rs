@@ -249,8 +249,9 @@ pub fn run() {
         .manage(jupyter_omgeving::JupyterOmgeving::default())
         // De server van Open FEM Studio voor de toetsing; start bij de eerste aanroep.
         .manage(fem_studio::FemStudio::default())
-        // De stopknop van de AI-zijbalk.
+        // De stopknop van de AI-zijbalk en de tijdelijke OAuth-sessie.
         .manage(ai::AiState::default())
+        .manage(ai::OAuthState::default())
         .invoke_handler(tauri::generate_handler![
             engine_generate_pdf,
             engine_save_pdf,
@@ -273,6 +274,14 @@ pub fn run() {
             fem_studio::fem_studio_aanroep,
             ai::ai_zet_sleutel,
             ai::ai_heeft_sleutel,
+            ai::ai_profiel_status,
+            ai::ai_oauth_zet_client_secret,
+            ai::ai_oauth_logout,
+            ai::ai_oauth_zet_token,
+            ai::ai_oauth_login,
+            ai::ai_oauth_complete_manual,
+            ai::ai_oauth_cancel,
+            ai::ai_list_models,
             ai::ai_vraag,
             ai::ai_stop,
         ])

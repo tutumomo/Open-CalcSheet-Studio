@@ -11,7 +11,7 @@
  * het verzoek bij de aanbieder komt, zit in `deps.vraag`. Zo is de lus zonder
  * Tauri en zonder netwerk te toetsen (`scripts/check-ai-agent.mjs`).
  */
-import type { AiBericht, AiGebeurtenis, AiGereedschap, AiVerzoek, AiAanbieder } from "../../tauri/ai.ts";
+import type { AiBericht, AiGebeurtenis, AiGereedschap, AiVerzoek, AiAanbieder, AiAuthModus } from "../../tauri/ai.ts";
 import type { Besluit, ToolKenmerk, Voorbeeld } from "./beleid.ts";
 import { besluitVoor, regelVerschil, vatSamen, voorbeeldSamenvatting } from "./beleid.ts";
 
@@ -53,6 +53,8 @@ export interface AgentBij {
 
 export interface AgentDeps {
   aanbieder: AiAanbieder;
+  profiel?: string;
+  authModus?: AiAuthModus;
   endpoint: string;
   model: string;
   maxTokens?: number;
@@ -131,6 +133,8 @@ export async function voerVraagUit(
     await deps.vraag(
       {
         aanbieder: deps.aanbieder,
+        ...(deps.profiel ? { profiel: deps.profiel } : {}),
+        ...(deps.authModus ? { auth_modus: deps.authModus } : {}),
         endpoint: deps.endpoint,
         model: deps.model,
         systeem: deps.systeem,

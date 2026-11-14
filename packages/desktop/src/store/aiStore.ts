@@ -1,28 +1,39 @@
 /**
  * De stand van de AI-zijbalk (docs/OCSS_TW_開發需求規格.md, P2-15): open of
- * dicht, het gesprek, de stappen, de vraag om goedkeuring en de instellingen
- * van de aanbieder.
+ * dicht, het gesprek, de stappen, de vraag om goedkeuring en de lijst met
+ * AI-profielen (standaard aanbieders + zelf toegevoegde derde-partij-modellen,
+ * met API-sleutel, OAuth 2.0 PKCE-aanmelding of zonder sleutel).
  *
  * De assistent roept dezelfde tools aan als MCP en REST, in-process:
  * `voerToolUit` uit `mcp/uitvoeren.ts` met de registry `MCP_TOOLS`. Die poort
  * regelt ook pauze en alleen-lezen, dus de schakelaar in Instellingen geldt
  * hier net zo goed.
  *
- * De sleutel van de aanbieder staat in de sleutelhanger van het systeem
- * (Rust, `src-tauri/src/ai.rs`), nooit in preferences.json.
+ * Sleutels, OAuth-tokens en eventuele client_secrets staan alleen in de
+ * sleutelhanger van het besturingssysteem (`src-tauri/src/ai.rs`), nooit in
+ * preferences.json.
  */
 import { create } from "zustand";
 import i18next from "../i18n/config.ts";
 import { getSetting, setSetting } from "../store.ts";
 import {
   aiBeschikbaar,
-  heeftSleutel,
+  listModels,
+  oauthCancel,
+  oauthCompleteManual,
+  oauthLogin,
+  oauthLogout,
+  oauthZetClientSecret,
+  oauthZetToken,
+  profielStatus,
   stop as stopAanbieder,
   vraag as vraagAanbieder,
   zetSleutel,
   type AiAanbieder,
+  type AiAuthModus,
   type AiBericht,
   type AiGereedschap,
+  type AiProfielAuthStatus,
 } from "../tauri/ai.ts";
 import { MCP_TOOLS } from "../mcp/tools.ts";
 import { voerToolUit } from "../mcp/uitvoeren.ts";
@@ -32,20 +43,27 @@ import { MCP_SERVERNAAM } from "../mcp/koppeling.ts";
 import { bouwSysteemtekst, parseBereik, type ActiefBlad, type BladKort, type LaatsteUitkomst } from "../components/ai/prompt.ts";
 import { voerVraagUit, type Antwoord, type Goedkeuring, type Stap, type ToolUitkomst } from "../components/ai/agent.ts";
 import { DESTRUCTIEF } from "../components/ai/beleid.ts";
+import {
+  AI_SJABLONEN,
+  STANDAARD_PROFIELEN,
+  isProfielKlaar,
+  maakProfielId,
+  migreerInstellingen,
+  type AiOAuthConfig,
+  type AiProfiel,
+} from "../components/ai/profielen.ts";
 import type { McpToolDef } from "../mcp/contracts.ts";
 
 const SLEUTEL = "aiInstellingen";
 
 export interface AiInstellingen {
-  aanbieder: AiAanbieder;
-  endpoint: string;
-  model: string;
+  actiefId: string;
+  profielen: AiProfiel[];
 }
 
-export const STANDAARD_AI: Record<AiAanbieder, AiInstellingen> = {
-  anthropic: { aanbieder: "anthropic", endpoint: "https://api.anthropic.com", model: "claude-sonnet-5-5" },
-  openai: { aanbieder: "openai", endpoint: "https://api.openai.com", model: "gpt-5" },
-  gemini: { aanbieder: "gemini", endpoint: "https://generativelanguage.googleapis.com", model: "gemini-2.5-pro" },
+export const STANDAARD_AI: AiInstellingen = {
+  actiefId: "anthropic",
+  profielen: STANDAARD_PROFIELEN,
 };
 
 /** Een regel in het gesprek zoals de zijbalk hem toont. */
@@ -59,17 +77,31 @@ export interface AiRegel {
   loopt?: boolean;
 }
 
+export interface AiOAuthLopend {
+  profiel: string;
+  url?: string;
+  redirectUri?: string;
+  waarschuwing?: string;
+}
+
 interface AiStand {
   open: boolean;
   geladen: boolean;
   beschikbaar: boolean;
-  instellingen: AiInstellingen;
-  /** Per aanbieder of er een sleutel in de sleutelhanger staat. */
-  sleutels: Partial<Record<AiAanbieder, boolean>>;
+  actiefId: string;
+  profielen: AiProfiel[];
+  /** Auth-status per profiel-id (uit de sleutelbos, nooit geheimen). */
+  statussen: Record<string, AiProfielAuthStatus>;
+  /** Opgehaalde modellenlijsten per profiel-id. */
+  modellen: Record<string, string[]>;
+  modellenBezig: boolean;
+  modellenFout: string | null;
+  oauthLopend: AiOAuthLopend | null;
+  oauthFout: string | null;
   regels: AiRegel[];
   stappen: Stap[];
   bezig: boolean;
-  /** Wat er misging bij de laatste vraag (netwerk, sleutel, limiet). */
+  /** Wat er misging bij de laatste vraag (netwerk, sleutel, OAuth, limiet). */
   fout: string | null;
   goedkeuring: Goedkeuring | null;
   /** De taal van de app, voor het antwoord van de assistent. */
@@ -77,8 +109,19 @@ interface AiStand {
 
   zetOpen(open: boolean): void;
   laad(): Promise<void>;
-  zetInstellingen(wijziging: Partial<AiInstellingen>): Promise<void>;
+  kiesProfiel(id: string): Promise<void>;
+  werkProfielBij(id: string, wijziging: Partial<AiProfiel>): Promise<void>;
+  werkOAuthBij(id: string, wijziging: Partial<AiOAuthConfig>): Promise<void>;
+  voegProfielToe(sjabloonId: string, naam?: string): Promise<string>;
+  verwijderProfiel(id: string): Promise<void>;
   bewaarSleutel(sleutel: string): Promise<void>;
+  bewaarClientSecret(secret: string): Promise<void>;
+  startOAuthLogin(): Promise<void>;
+  rondOAuthHandmatigAf(invoer: string): Promise<void>;
+  annuleerOAuth(): Promise<void>;
+  logOAuthUit(): Promise<void>;
+  zetHandmatigToken(accessToken: string, refreshToken?: string): Promise<void>;
+  haalModellenOp(): Promise<void>;
   wisGesprek(): void;
   verstuur(tekst: string): Promise<void>;
   stop(): void;
@@ -104,6 +147,14 @@ export function aiGereedschap(): AiGereedschap[] {
 }
 
 const toolVan = (naam: string): McpToolDef | undefined => MCP_TOOLS.find((t) => t.name === naam);
+
+function profielVan(actiefId: string, profielen: AiProfiel[]): AiProfiel {
+  return profielen.find((p) => p.id === actiefId) ?? profielen[0] ?? STANDAARD_PROFIELEN[0];
+}
+
+async function bewaarInstellingen(actiefId: string, profielen: AiProfiel[]): Promise<void> {
+  await setSetting(SLEUTEL, { actiefId, profielen });
+}
 
 function context() {
   const s = useMcpStatus.getState();
@@ -154,8 +205,14 @@ export const useAiStore = create<AiStand>((set, get) => ({
   open: false,
   geladen: false,
   beschikbaar: false,
-  instellingen: STANDAARD_AI.anthropic,
-  sleutels: {},
+  actiefId: STANDAARD_AI.actiefId,
+  profielen: STANDAARD_AI.profielen,
+  statussen: {},
+  modellen: {},
+  modellenBezig: false,
+  modellenFout: null,
+  oauthLopend: null,
+  oauthFout: null,
   regels: [],
   stappen: [],
   bezig: false,
@@ -170,31 +227,200 @@ export const useAiStore = create<AiStand>((set, get) => ({
 
   async laad() {
     if (get().geladen) return;
-    const bewaard = await getSetting<Partial<AiInstellingen> | null>(SLEUTEL, null);
-    const aanbieder: AiAanbieder = bewaard?.aanbieder ?? "anthropic";
-    const instellingen: AiInstellingen = {
-      ...STANDAARD_AI[aanbieder],
-      ...(bewaard ?? {}),
-      aanbieder,
-    };
+    const bewaard = await getSetting<unknown>(SLEUTEL, null);
+    const { actiefId, profielen } = migreerInstellingen(bewaard);
     const beschikbaar = await aiBeschikbaar();
-    const sleutels: Partial<Record<AiAanbieder, boolean>> = {};
+    const statussen: Record<string, AiProfielAuthStatus> = {};
     if (beschikbaar) {
-      for (const a of ["anthropic", "openai", "gemini"] as AiAanbieder[]) sleutels[a] = await heeftSleutel(a);
+      for (const p of profielen) {
+        statussen[p.id] = await profielStatus(p.id);
+      }
     }
-    set({ geladen: true, beschikbaar, instellingen, sleutels });
+    set({ geladen: true, beschikbaar, actiefId, profielen, statussen });
   },
 
-  async zetInstellingen(wijziging) {
-    const instellingen = { ...get().instellingen, ...wijziging };
-    set({ instellingen });
-    await setSetting(SLEUTEL, instellingen);
+  async kiesProfiel(id) {
+    const profielen = get().profielen;
+    if (!profielen.some((p) => p.id === id)) return;
+    set({ actiefId: id, fout: null, oauthFout: null, modellenFout: null });
+    await bewaarInstellingen(id, profielen);
+    if (get().beschikbaar) {
+      const st = await profielStatus(id);
+      set({ statussen: { ...get().statussen, [id]: st } });
+    }
+  },
+
+  async werkProfielBij(id, wijziging) {
+    const profielen = get().profielen.map((p) => (p.id === id ? { ...p, ...wijziging, id: p.id } : p));
+    set({ profielen });
+    await bewaarInstellingen(get().actiefId, profielen);
+  },
+
+  async werkOAuthBij(id, wijziging) {
+    const profielen = get().profielen.map((p) => {
+      if (p.id !== id) return p;
+      const basis: AiOAuthConfig = p.oauth ?? {
+        soort: "pkce",
+        authUrl: "",
+        tokenUrl: "",
+        clientId: "",
+        scopes: "openid profile",
+      };
+      return { ...p, oauth: { ...basis, ...wijziging } };
+    });
+    set({ profielen });
+    await bewaarInstellingen(get().actiefId, profielen);
+  },
+
+  async voegProfielToe(sjabloonId, naam) {
+    const sjabloon = AI_SJABLONEN.find((s) => s.id === sjabloonId) ?? AI_SJABLONEN[0];
+    const bestaande = get().profielen;
+    const label = naam && naam.trim() !== "" ? naam.trim() : sjabloon.naam;
+    const id = maakProfielId(
+      sjabloon.id.startsWith("custom-") && !naam ? "custom" : label,
+      bestaande.map((p) => p.id),
+    );
+    const nieuw: AiProfiel = {
+      id,
+      naam: label,
+      aanbieder: sjabloon.aanbieder as AiAanbieder,
+      endpoint: sjabloon.endpoint,
+      model: sjabloon.model,
+      authModus: sjabloon.authModus as AiAuthModus,
+      ...(sjabloon.oauth
+        ? {
+            oauth: {
+              ...sjabloon.oauth,
+              ...(sjabloon.oauth.extraParams ? { extraParams: { ...sjabloon.oauth.extraParams } } : {}),
+            },
+          }
+        : {}),
+    };
+    const profielen = [...bestaande, nieuw];
+    set({ profielen, actiefId: id, fout: null, oauthFout: null });
+    await bewaarInstellingen(id, profielen);
+    if (get().beschikbaar) {
+      const st = await profielStatus(id);
+      set({ statussen: { ...get().statussen, [id]: st } });
+    }
+    return id;
+  },
+
+  async verwijderProfiel(id) {
+    const huidige = get().profielen;
+    const doel = huidige.find((p) => p.id === id);
+    if (!doel || doel.ingebouwd || huidige.length <= 1) return;
+    if (get().beschikbaar) {
+      await zetSleutel(id, "").catch(() => {});
+      await oauthLogout(id).catch(() => {});
+      await oauthZetClientSecret(id, "").catch(() => {});
+    }
+    const profielen = huidige.filter((p) => p.id !== id);
+    const actiefId = get().actiefId === id ? profielen[0].id : get().actiefId;
+    const statussen = { ...get().statussen };
+    delete statussen[id];
+    set({ profielen, actiefId, statussen });
+    await bewaarInstellingen(actiefId, profielen);
   },
 
   async bewaarSleutel(sleutel) {
-    const { aanbieder } = get().instellingen;
-    await zetSleutel(aanbieder, sleutel);
-    set({ sleutels: { ...get().sleutels, [aanbieder]: await heeftSleutel(aanbieder) } });
+    const p = profielVan(get().actiefId, get().profielen);
+    await zetSleutel(p.id, sleutel);
+    const st = await profielStatus(p.id);
+    set({ statussen: { ...get().statussen, [p.id]: st }, fout: null });
+  },
+
+  async bewaarClientSecret(secret) {
+    const p = profielVan(get().actiefId, get().profielen);
+    await oauthZetClientSecret(p.id, secret);
+    const st = await profielStatus(p.id);
+    set({ statussen: { ...get().statussen, [p.id]: st } });
+  },
+
+  async startOAuthLogin() {
+    const p = profielVan(get().actiefId, get().profielen);
+    const oauth = p.oauth;
+    if (!oauth || oauth.authUrl.trim() === "" || oauth.tokenUrl.trim() === "") {
+      set({ oauthFout: i18next.t("ai:oauthConfigMist") });
+      return;
+    }
+    if (oauth.soort === "pkce" && oauth.clientId.trim() === "") {
+      set({ oauthFout: i18next.t("ai:oauthClientIdMist") });
+      return;
+    }
+    set({ oauthLopend: { profiel: p.id }, oauthFout: null, fout: null });
+    try {
+      const st = await oauthLogin(
+        {
+          profiel: p.id,
+          soort: oauth.soort,
+          auth_url: oauth.authUrl.trim(),
+          token_url: oauth.tokenUrl.trim(),
+          client_id: oauth.clientId.trim(),
+          scopes: oauth.scopes.trim(),
+          ...(oauth.callbackPort ? { callback_port: oauth.callbackPort } : {}),
+          ...(oauth.extraParams ? { extra_params: oauth.extraParams } : {}),
+        },
+        (g) => {
+          const lopend = get().oauthLopend;
+          if (!lopend || lopend.profiel !== p.id) return;
+          if (g.soort === "adres") {
+            set({ oauthLopend: { ...lopend, url: g.url, redirectUri: g.redirect_uri } });
+          } else if (g.soort === "waarschuwing") {
+            set({ oauthLopend: { ...lopend, waarschuwing: g.melding } });
+          }
+        },
+      );
+      set({ statussen: { ...get().statussen, [p.id]: st }, oauthLopend: null, oauthFout: null });
+    } catch (e) {
+      const melding = e instanceof Error ? e.message : String(e);
+      set({ oauthLopend: null, oauthFout: melding });
+    }
+  },
+
+  async rondOAuthHandmatigAf(invoer) {
+    const lopend = get().oauthLopend;
+    if (!lopend || invoer.trim() === "") return;
+    try {
+      const st = await oauthCompleteManual(invoer);
+      set({ statussen: { ...get().statussen, [lopend.profiel]: st }, oauthLopend: null, oauthFout: null });
+    } catch (e) {
+      set({ oauthFout: e instanceof Error ? e.message : String(e) });
+    }
+  },
+
+  async annuleerOAuth() {
+    await oauthCancel().catch(() => {});
+    set({ oauthLopend: null });
+  },
+
+  async logOAuthUit() {
+    const p = profielVan(get().actiefId, get().profielen);
+    await oauthLogout(p.id);
+    const st = await profielStatus(p.id);
+    set({ statussen: { ...get().statussen, [p.id]: st } });
+  },
+
+  async zetHandmatigToken(accessToken, refreshToken) {
+    const p = profielVan(get().actiefId, get().profielen);
+    const st = await oauthZetToken(p.id, accessToken, refreshToken);
+    set({ statussen: { ...get().statussen, [p.id]: st }, oauthFout: null, fout: null });
+  },
+
+  async haalModellenOp() {
+    const p = profielVan(get().actiefId, get().profielen);
+    set({ modellenBezig: true, modellenFout: null, fout: null });
+    try {
+      const lijst = await listModels({
+        aanbieder: p.aanbieder,
+        profiel: p.id,
+        endpoint: p.endpoint,
+        auth_modus: p.authModus,
+      });
+      set({ modellen: { ...get().modellen, [p.id]: lijst }, modellenBezig: false });
+    } catch (e) {
+      set({ modellenFout: e instanceof Error ? e.message : String(e), modellenBezig: false });
+    }
   },
 
   wisGesprek() {
@@ -219,11 +445,22 @@ export const useAiStore = create<AiStand>((set, get) => ({
   async verstuur(tekst) {
     const vraag = tekst.trim();
     if (vraag === "" || get().bezig) return;
-    const instellingen = get().instellingen;
-    // De taal van de app op het moment van vragen: de assistent antwoordt daarin.
+    const p = profielVan(get().actiefId, get().profielen);
     const taal = i18next.language || get().taal;
-    if (!get().sleutels[instellingen.aanbieder]) {
-      set({ fout: "No API key for this provider yet. Enter it above; it is kept in the keychain of your system." });
+    const st = get().statussen[p.id];
+    const check = isProfielKlaar(p, st);
+    if (!check.klaar) {
+      const melding =
+        check.reden === "geenOAuth"
+          ? i18next.t("ai:foutGeenOAuth")
+          : check.reden === "oauthVerlopen"
+            ? i18next.t("ai:foutOAuthVerlopen")
+            : i18next.t("ai:foutGeenSleutel");
+      set({ fout: melding });
+      return;
+    }
+    if (p.endpoint.trim() === "" || p.model.trim() === "") {
+      set({ fout: i18next.t("ai:foutProfielOnvolledig") });
       return;
     }
     gestopt = false;
@@ -253,9 +490,11 @@ export const useAiStore = create<AiStand>((set, get) => ({
         gebruiker.vraag === "" ? vraag : gebruiker.vraag,
         geschiedenis,
         {
-          aanbieder: instellingen.aanbieder,
-          endpoint: instellingen.endpoint,
-          model: instellingen.model,
+          aanbieder: p.aanbieder,
+          profiel: p.id,
+          authModus: p.authModus,
+          endpoint: p.endpoint,
+          model: p.model,
           systeem: systeemMetBereik,
           gereedschap: aiGereedschap(),
           kenmerk: (naam) => {

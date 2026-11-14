@@ -3182,11 +3182,14 @@ dependencies = [
 name = "open-calcsheet-studio"
 version = "2026.46.2"
 dependencies = [
+ "base64 0.22.1",
+ "getrandom 0.3.4",
  "keyring",
  "ocss-fem-brug",
  "openaec-core",
  "serde",
  "serde_json",
+ "sha2",
  "tauri",
  "tauri-build",
  "tauri-plugin-dialog",

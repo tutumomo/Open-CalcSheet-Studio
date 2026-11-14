@@ -48,6 +48,10 @@ url = "2"
 keyring = { version = "3", features = ["windows-native", "apple-native", "linux-native-sync-persistent", "crypto-rust"] }
 # Het geheim en de header met het geheim worden na gebruik gewist.
 zeroize = "1"
+# OAuth 2.0 PKCE (src/ai.rs): code_verifier/state en S256-challenge. Alle drie staan al in Cargo.lock.
+sha2 = "0.10"
+base64 = "0.22"
+getrandom = "0.3"
 # Open FEM Studio headless (src/fem_studio.rs): het proces en het protocol, in een eigen
 # crate zonder Tauri, zodat de tests ook op Windows draaien (fem-brug/src/lib.rs).
 ocss-fem-brug = { path = "fem-brug" }
