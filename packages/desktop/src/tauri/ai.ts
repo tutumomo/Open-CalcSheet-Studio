@@ -60,6 +60,10 @@ export interface AiVerzoek {
   /** Let op: de Rust-kant leest `max_tokens` (snake_case, zoals serde het veld noemt). */
   max_tokens: number;
   temperatuur?: number;
+  /** Extra HTTP-kopregels voor eigen endpoints (Rust laat hop-by-hop en auth vallen). */
+  extra_koppen?: Record<string, string>;
+  /** GCP-project voor Gemini Code Assist (Workspace-accounts). */
+  project_id?: string;
 }
 
 export type AiGebeurtenis =
@@ -76,7 +80,14 @@ export interface AiProfielAuthStatus {
   oauth_heeft_refresh: boolean;
   oauth_expires_at?: number | null;
   oauth_account?: string | null;
+  /** ChatGPT-account-id uit het JWT (voor de Codex Responses API). */
+  oauth_account_id?: string | null;
+  /** GCP-project voor Gemini Code Assist. */
+  oauth_project_id?: string | null;
 }
+
+/** Hoe de code bij het token-endpoint wordt ingewisseld: `form` (standaard) of `json` (Anthropic). */
+export type AiTokenFormaat = "form" | "json";
 
 export interface AiOAuthStartVerzoek {
   profiel: string;
@@ -86,11 +97,21 @@ export interface AiOAuthStartVerzoek {
   client_id: string;
   scopes: string;
   callback_port?: number;
+  /** Callback-pad: `/callback` (Anthropic), `/auth/callback` (OpenAI), `/oauth2callback` (Google). */
+  callback_path?: string;
+  /** Hostnaam in de redirect-URI: `localhost` of `127.0.0.1`. */
+  redirect_host?: string;
+  token_format?: AiTokenFormaat;
+  /** Vaste gehoste redirect-URI (Anthropic copy-code); slaat de lokale listener over. */
+  custom_redirect_uri?: string;
+  /** Anthropic: `state` moet gelijk zijn aan de PKCE-verifier. */
+  state_is_verifier?: boolean;
   extra_params?: Record<string, string>;
 }
 
 export type AiOAuthGebeurtenis =
   | { soort: "adres"; url: string; redirect_uri: string }
+  | { soort: "device"; user_code: string; verification_url: string; interval: number }
   | { soort: "waarschuwing"; melding: string };
 
 export interface AiModelLijstVerzoek {
@@ -98,6 +119,7 @@ export interface AiModelLijstVerzoek {
   profiel?: string;
   endpoint: string;
   auth_modus: AiAuthModus;
+  extra_koppen?: Record<string, string>;
 }
 
 /** Is er een Rust-kant? In de browser (Vite-preview) niet. */
@@ -145,8 +167,27 @@ export async function oauthLogin(
   return invoke<AiProfielAuthStatus>("ai_oauth_login", { verzoek, kanaal });
 }
 
-/** Rond een lopende OAuth-aanmelding af door de callback-URL of code te plakken. */
-export async function oauthCompleteManual(invoer: string): Promise<AiProfielAuthStatus> {
+/**
+ * Device Code-aanmelding (ChatGPT / OpenAI Codex): de gebruiker opent een adres,
+ * voert de code in, en deze aanroep wacht op de bevestiging. Werkt ook als
+ * poort 1455 bezet is of de browser op een andere machine draait.
+ */
+export async function oauthDeviceStart(
+  profiel: string,
+  clientId?: string,
+  bij?: (gebeurtenis: AiOAuthGebeurtenis) => void,
+): Promise<AiProfielAuthStatus> {
+  if (!aiBeschikbaar()) throw new Error("OAuth sign-in needs the desktop app");
+  const kanaal = new Channel<AiOAuthGebeurtenis>();
+  if (bij) kanaal.onmessage = bij;
+  return invoke<AiProfielAuthStatus>("ai_oauth_device_start", {
+    profiel,
+    ...(clientId && clientId.trim() !== "" ? { clientId: clientId.trim() } : {}),
+    kanaal,
+  });
+}
+
+/** Rond een lopende OAuth-aanmelding af door de callback-URL of code te plakken. */export async function oauthCompleteManual(invoer: string): Promise<AiProfielAuthStatus> {
   return invoke<AiProfielAuthStatus>("ai_oauth_complete_manual", { invoer });
 }
 

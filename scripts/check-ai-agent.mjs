@@ -22,12 +22,19 @@ import { bouwSysteemtekst, parseBereik } from "../packages/desktop/src/component
 import { kort, voerVraagUit } from "../packages/desktop/src/components/ai/agent.ts";
 import {
   AI_SJABLONEN,
+  GEMINI_OAUTH,
   OAUTH_SJABLONEN,
+  OPENAI_OAUTH,
   STANDAARD_PROFIELEN,
+  heeftOAuth,
   isLokaalEndpoint,
   isProfielKlaar,
+  leesKoppen,
   maakProfielId,
   migreerInstellingen,
+  schrijfKoppen,
+  verwachteRedirectUri,
+  vulOAuthAan,
 } from "../packages/desktop/src/components/ai/profielen.ts";
 
 let fouten = 0;
@@ -360,6 +367,8 @@ await voerVraagUit("Ping", [], {
     aanbieder: "openai",
     profiel: "openrouter",
     authModus: "oauth",
+    extraKoppen: { "HTTP-Referer": "https://open-calcsheet.tw" },
+    projectId: "proj-123",
     vraag: async (verzoek, bij) => {
       gezienVerzoek.push(verzoek);
       bij({ soort: "tekst", tekst: "Pong" });
@@ -367,9 +376,61 @@ await voerVraagUit("Ping", [], {
     },
   }),
 });
-toets("agent geeft profiel en auth_modus door aan Rust",
-  gezienVerzoek[0]?.profiel === "openrouter" && gezienVerzoek[0]?.auth_modus === "oauth",
+toets("agent geeft profiel, auth_modus, extra_koppen en project_id door aan Rust",
+  gezienVerzoek[0]?.profiel === "openrouter" &&
+  gezienVerzoek[0]?.auth_modus === "oauth" &&
+  gezienVerzoek[0]?.extra_koppen?.["HTTP-Referer"] === "https://open-calcsheet.tw" &&
+  gezienVerzoek[0]?.project_id === "proj-123",
   gezienVerzoek[0]);
+
+toets("openai en gemini hebben ingevulde OAuth-urls en callbackPath (openai incl. clientId en deviceCode)",
+  Boolean(OPENAI_OAUTH.clientId && OPENAI_OAUTH.authUrl && OPENAI_OAUTH.tokenUrl && OPENAI_OAUTH.callbackPath) &&
+  OPENAI_OAUTH.deviceCode === true &&
+  Boolean(GEMINI_OAUTH.authUrl && GEMINI_OAUTH.tokenUrl && GEMINI_OAUTH.scopes) &&
+  GEMINI_OAUTH.callbackPath === "/oauth2callback",
+  STANDAARD_PROFIELEN);
+
+toets("heeftOAuth en verwachteRedirectUri kloppen voor openai en gemini",
+  heeftOAuth(STANDAARD_PROFIELEN.find((p) => p.id === "openai")) &&
+  heeftOAuth(STANDAARD_PROFIELEN.find((p) => p.id === "gemini")) &&
+  verwachteRedirectUri(OPENAI_OAUTH) === "http://localhost:1455/auth/callback" &&
+  verwachteRedirectUri(GEMINI_OAUTH).startsWith("http://127.0.0.1:") &&
+  verwachteRedirectUri(GEMINI_OAUTH).endsWith("/oauth2callback"));
+
+const oudZonderOAuth = migreerInstellingen({
+  actiefId: "anthropic",
+  profielen: [
+    { id: "anthropic", naam: "Anthropic (Claude)", aanbieder: "anthropic", endpoint: "https://api.anthropic.com", model: "claude-sonnet-5-5", authModus: "apikey", ingebouwd: true },
+    { id: "openai", naam: "OpenAI", aanbieder: "openai", endpoint: "https://api.openai.com", model: "gpt-5", authModus: "apikey", ingebouwd: true },
+    { id: "gemini", naam: "Google Gemini", aanbieder: "gemini", endpoint: "https://generativelanguage.googleapis.com", model: "gemini-2.5-pro", authModus: "apikey", oauth: { soort: "pkce", authUrl: "https://accounts.google.com/o/oauth2/v2/auth", tokenUrl: "https://oauth2.googleapis.com/token", clientId: "mijn-google-client", scopes: "" }, ingebouwd: true },
+  ],
+});
+toets("migratie vult ontbrekende OAuth-velden van openai/gemini aan zonder clientId te wissen",
+  Boolean(oudZonderOAuth.profielen.find((x) => x.id === "openai")?.oauth?.clientId) &&
+  oudZonderOAuth.profielen.find((x) => x.id === "openai")?.oauth?.callbackPath === "/auth/callback" &&
+  oudZonderOAuth.profielen.find((x) => x.id === "gemini")?.oauth?.clientId === "mijn-google-client" &&
+  oudZonderOAuth.profielen.find((x) => x.id === "gemini")?.oauth?.callbackPath === "/oauth2callback",
+  oudZonderOAuth.profielen);
+
+const metAangepasteOAuth = vulOAuthAan({
+  id: "openai",
+  naam: "OpenAI",
+  aanbieder: "openai",
+  endpoint: "https://api.openai.com",
+  model: "gpt-5",
+  authModus: "oauth",
+  oauth: { soort: "pkce", authUrl: "https://eigen.example/auth", tokenUrl: "https://eigen.example/token", clientId: "eigen-id", scopes: "openid" },
+  ingebouwd: true,
+});
+toets("vulOAuthAan overschrijft door gebruiker ingevulde OAuth niet",
+  metAangepasteOAuth.oauth?.clientId === "eigen-id" && metAangepasteOAuth.oauth?.authUrl === "https://eigen.example/auth");
+
+const koppen = leesKoppen("X-Tenant: ocss\nAuthorization: negeer\nX-Api-Version: 2026-01");
+toets("leesKoppen en schrijfKoppen verwerken extra headers zonder lege regels",
+  koppen["X-Tenant"] === "ocss" &&
+  koppen["X-Api-Version"] === "2026-01" &&
+  koppen["Authorization"] === "negeer" &&
+  schrijfKoppen({ "X-A": "1", "X-B": "2" }).includes("X-A: 1"));
 
 console.log(fouten === 0 ? `\nAI-zijbalk: ${aantal} controles, alle groen.` : `\n${fouten} van ${aantal} controles gezakt.`);
 process.exit(fouten === 0 ? 0 : 1);

@@ -7,7 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
-- 台灣版（AI 助理擴充）：AI 助理側邊欄新增 **OAuth 2.0 登入**、**自定義第三方／本機大模型設定檔**與**抓取可用模型下拉選單**。除預設 Anthropic／OpenAI／Google Gemini 外，可點「+ 新增模型」建立任意數量的設定檔（附 OpenRouter、DeepSeek、Groq、xAI、Ollama、LM Studio、magpie 及自訂 OpenAI／Anthropic／Gemini 相容範本），依各設定檔獨立選擇「API 金鑰」、「OAuth 登入」（支援標準 OAuth 2.0 PKCE、OpenRouter PKCE、Google／GitHub／自訂端點、`refresh_token` 自動續期及遠端貼回呼 URL）或「無須驗證」；點「抓取模型列表」向端點取得可用模型並從下拉選單選取（同時保留手動輸入）。OAuth Token 與 Client Secret 同樣存於作業系統金鑰環，不寫入 `preferences.json`。工具數不變（60）。
+- 台灣版（AI 助理擴充）：AI 助理側邊欄支援 **OpenAI (ChatGPT)／OpenRouter 開箱即用的 OAuth 2.0 登入與 Google Gemini／Anthropic／全協定彈性 OAuth PKCE**（同時保留各提供者 API 金鑰）、**自定義第三方／本機大模型**（含自訂 HTTP 標頭）與**抓取可用模型下拉選單**。ChatGPT OAuth 支援 localhost PKCE（port 1455 `/auth/callback`）與裝置代碼（Device Code）登入，請求自動改走 Codex Responses API（`chatgpt.com/backend-api/codex/responses`、`chatgpt-account-id` JWT 解析與 Codex SSE／模型清單）；Google Gemini OAuth 預填 `/oauth2callback`、Code Assist 權限與 `cloudcode-pa.googleapis.com/v1internal`（`loadCodeAssist`/`onboardUser` 自動取得專案 ID，並支援面板手動指定 Project ID 及填入自有 Google Cloud Desktop OAuth Client ID／Secret）；Anthropic 提供 API 金鑰及自訂／企業 OAuth 閘道 Bearer 認證（含通用 PKCE `localhost`/`127.0.0.1`、自訂路徑、form/JSON token 交換與 `code#state` 貼上完成）。第三方設定檔支援 OpenRouter、DeepSeek、Groq、xAI、Mistral、智譜 Z.AI、Moonshot、Ollama、LM Studio、magpie 及任意 OpenAI／Anthropic／Gemini 相容端點，並可填寫額外 HTTP 標頭（`Authorization`/`x-api-key` 等敏感標頭受 Rust 端過濾保護）。所有金鑰、OAuth Token 與 Client Secret 只存於作業系統金鑰環，不寫入 `preferences.json`。工具數不變（60）。
 
 ## v2026.46.2 — 2026-11-14
 

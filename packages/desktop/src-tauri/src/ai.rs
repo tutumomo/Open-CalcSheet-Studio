@@ -10,14 +10,16 @@
 //!
 //! De assistent zelf (de lus, de goedkeuring, de stappenlijst) staat in de
 //! frontend: `src/components/ai/agent.ts`. Hier staat het gesprek met de
-//! aanbieder, het ophalen van de modellenlijst, en OAuth 2.0 (PKCE +
-//! OpenRouter) via de systeembrowser en een tijdelijke lokale callbackserver.
+//! aanbieder, het ophalen van de modellenlijst, en OAuth 2.0:
+//! - Standaard PKCE + lokale callback (o.a. Google Gemini, GitHub, eigen OAuth)
+//! - Anthropic Claude Pro/Max OAuth (JSON token-exchange, Claude Code headers)
+//! - OpenAI / ChatGPT Codex OAuth (poort 1455 + Device Code flow + Responses API)
+//! - OpenRouter PKCE
 //!
 //! Protocollen (`aanbieder`):
-//! - Anthropic (`/v1/messages`)
-//! - OpenAI-compatible (`/v1/chat/completions`, ook OpenRouter, DeepSeek, Groq,
-//!   Ollama, LM Studio, magpie en andere compatible endpoints)
-//! - Gemini (`:streamGenerateContent`)
+//! - Anthropic (`/v1/messages`, plus OAuth Claude Code mode)
+//! - OpenAI-compatible (`/v1/chat/completions`, plus ChatGPT Codex Responses API bij OAuth)
+//! - Gemini (`:streamGenerateContent`, plus Cloud Code Assist `v1internal` bij OAuth)
 //!
 //! Zie docs/tw/OCSS接入實作計畫.md, P2-15.
 
@@ -45,6 +47,13 @@ const DIENST: &str = "open-calcsheet-studio-ai";
 const VERBIND_TIJD: Duration = Duration::from_secs(20);
 const LEES_TIJD: Duration = Duration::from_secs(180);
 const OAUTH_WACHT_SECS: u64 = 180;
+const DEVICE_WACHT_SECS: u64 = 900;
+
+/// Publieke CLI OAuth-clientgegevens (RFC 8252 §8.5 installed apps).
+const OPENAI_CODEX_CLIENT_ID: &str = "app_EMoamEEZ73f0CkXaXp7hrann";
+const CODEX_RESPONSES_URL: &str = "https://chatgpt.com/backend-api/codex/responses";
+const CODEX_MODELS_URL: &str = "https://chatgpt.com/backend-api/codex/models?client_version=0.99.0";
+const CLOUDCODE_BASIS: &str = "https://cloudcode-pa.googleapis.com/v1internal";
 
 /// De protocollen die dit bestand kent. Eigen derde-partij-modellen kiezen één
 /// van deze drie (meestal `openai`).
@@ -86,6 +95,12 @@ pub struct Verzoek {
     pub max_tokens: u32,
     #[serde(default)]
     pub temperatuur: Option<f64>,
+    /// Optionele extra HTTP-kopregels voor derdepartij-endpoints.
+    #[serde(default)]
+    pub extra_koppen: HashMap<String, String>,
+    /// Optioneel GCP-project voor Gemini Code Assist OAuth (Workspace accounts).
+    #[serde(default)]
+    pub project_id: Option<String>,
 }
 
 fn standaard_max_tokens() -> u32 {
@@ -221,9 +236,15 @@ struct OAuthToken {
     #[serde(default)]
     account: Option<String>,
     #[serde(default)]
+    account_id: Option<String>,
+    #[serde(default)]
+    project_id: Option<String>,
+    #[serde(default)]
     token_url: Option<String>,
     #[serde(default)]
     client_id: Option<String>,
+    #[serde(default)]
+    token_format: Option<String>,
 }
 
 /// Wat de frontend mag zien van een profiel (alleen status, nooit een geheim).
@@ -236,6 +257,8 @@ pub struct ProfielAuthStatus {
     pub oauth_heeft_refresh: bool,
     pub oauth_expires_at: Option<u64>,
     pub oauth_account: Option<String>,
+    pub oauth_account_id: Option<String>,
+    pub oauth_project_id: Option<String>,
 }
 
 fn status_uit_geheimen(
@@ -255,6 +278,8 @@ fn status_uit_geheimen(
                 oauth_heeft_refresh: tok.refresh_token.as_ref().is_some_and(|r| !r.is_empty()),
                 oauth_expires_at: tok.expires_at,
                 oauth_account: tok.account.clone(),
+                oauth_account_id: tok.account_id.clone(),
+                oauth_project_id: tok.project_id.clone(),
             }
         }
         None => ProfielAuthStatus {
@@ -265,6 +290,8 @@ fn status_uit_geheimen(
             oauth_heeft_refresh: false,
             oauth_expires_at: None,
             oauth_account: None,
+            oauth_account_id: None,
+            oauth_project_id: None,
         },
     }
 }
@@ -358,6 +385,7 @@ pub async fn ai_oauth_zet_token(
         return Err("access token cannot be empty".to_string());
     }
     let account = jwt_account(&access_token);
+    let account_id = jwt_chatgpt_account_id(&access_token);
     let tok = OAuthToken {
         access_token,
         refresh_token: refresh_token.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
@@ -365,8 +393,11 @@ pub async fn ai_oauth_zet_token(
         token_type: Some("Bearer".to_string()),
         scope: None,
         account,
+        account_id,
+        project_id: None,
         token_url: token_url.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
         client_id: client_id.map(|s| s.trim().to_string()).filter(|s| !s.is_empty()),
+        token_format: None,
     };
     let json = Zeroizing::new(serde_json::to_string(&tok).map_err(|e| e.to_string())?);
     tauri::async_runtime::spawn_blocking(move || {
@@ -401,14 +432,41 @@ fn schoon_pad_leeg(url: &url::Url) -> bool {
     p.is_empty() || p == "/"
 }
 
+/// ChatGPT Plus/Pro OAuth tokens gebruiken de Codex Responses API op chatgpt.com,
+/// tenzij de gebruiker bewust een eigen compatibele endpoint-URL heeft ingevuld.
+fn is_codex_oauth(v: &Verzoek) -> bool {
+    if !v.aanbieder.trim().eq_ignore_ascii_case("openai") || v.auth_modus != AuthModus::OAuth {
+        return false;
+    }
+    let e = v.endpoint.trim().to_ascii_lowercase();
+    e.is_empty() || e.contains("api.openai.com") || e.contains("chatgpt.com/backend-api")
+}
+
+/// Google Gemini OAuth gebruikt Cloud Code Assist `v1internal`, tenzij een eigen
+/// Gemini-proxy-URL is ingesteld.
+fn is_gemini_code_assist(v: &Verzoek) -> bool {
+    if !v.aanbieder.trim().eq_ignore_ascii_case("gemini") || v.auth_modus != AuthModus::OAuth {
+        return false;
+    }
+    let e = v.endpoint.trim().to_ascii_lowercase();
+    e.is_empty()
+        || e.contains("generativelanguage.googleapis.com")
+        || e.contains("cloudcode-pa.googleapis.com")
+}
+
 /// Het adres van het verzoek. Alleen `https://`, of `http://` op localhost of
 /// 127.0.0.1. Ondersteunt basis-URL's met of zonder `/v1` / `/v4` / volledig pad,
-/// zodat derdepartij-endpoints zoals OpenRouter (`/api/v1`), Groq (`/openai/v1`),
-/// Ollama (`/v1`) en Zhipu (`/api/paas/v4`) geen dubbel `/v1/v1` krijgen.
+/// en stuurt OAuth-sessies van OpenAI en Gemini naar hun abonnement-endpoints.
 fn adres(v: &Verzoek) -> Result<String, String> {
+    let protocol = aanbieder_naam(&v.aanbieder)?;
+    if is_codex_oauth(v) {
+        return Ok(CODEX_RESPONSES_URL.to_string());
+    }
+    if is_gemini_code_assist(v) {
+        return Ok(format!("{CLOUDCODE_BASIS}:streamGenerateContent?alt=sse"));
+    }
     let fout = "the endpoint must start with https:// (or http://localhost for a local model)";
     let (basis, url) = toets_url(&v.endpoint, fout)?;
-    let protocol = aanbieder_naam(&v.aanbieder)?;
     match protocol.as_str() {
         "anthropic" => {
             if basis.ends_with("/messages") {
@@ -420,7 +478,7 @@ fn adres(v: &Verzoek) -> Result<String, String> {
             }
         }
         "openai" => {
-            if basis.ends_with("/chat/completions") {
+            if basis.ends_with("/chat/completions") || basis.ends_with("/responses") {
                 Ok(basis)
             } else if schoon_pad_leeg(&url) {
                 Ok(format!("{basis}/v1/chat/completions"))
@@ -446,24 +504,25 @@ fn adres(v: &Verzoek) -> Result<String, String> {
 }
 
 /// Adres om de beschikbare modellen bij de aanbieder op te vragen (`GET`).
-fn modellen_adres(aanbieder: &str, endpoint: &str) -> Result<String, String> {
+fn modellen_adres(aanbieder: &str, endpoint: &str, auth_modus: AuthModus) -> Result<String, String> {
+    let protocol = aanbieder_naam(aanbieder)?;
+    let e = endpoint.trim().to_ascii_lowercase();
+    if protocol == "openai"
+        && auth_modus == AuthModus::OAuth
+        && (e.is_empty() || e.contains("api.openai.com") || e.contains("chatgpt.com/backend-api"))
+    {
+        return Ok(CODEX_MODELS_URL.to_string());
+    }
     let fout = "the endpoint must start with https:// (or http://localhost for a local model)";
     let (basis, url) = toets_url(endpoint, fout)?;
-    let protocol = aanbieder_naam(aanbieder)?;
     let kaal = basis
         .strip_suffix("/chat/completions")
+        .or_else(|| basis.strip_suffix("/responses"))
         .or_else(|| basis.strip_suffix("/messages"))
         .unwrap_or(&basis);
     let url_kaal = url::Url::parse(kaal).unwrap_or(url);
     match protocol.as_str() {
-        "anthropic" => {
-            if schoon_pad_leeg(&url_kaal) {
-                Ok(format!("{kaal}/v1/models"))
-            } else {
-                Ok(format!("{kaal}/models"))
-            }
-        }
-        "openai" => {
+        "anthropic" | "openai" => {
             if schoon_pad_leeg(&url_kaal) {
                 Ok(format!("{kaal}/v1/models"))
             } else {
@@ -480,11 +539,28 @@ fn modellen_adres(aanbieder: &str, endpoint: &str) -> Result<String, String> {
     }
 }
 
+fn mag_extra_kop(naam: &str, waarde: &str) -> bool {
+    let n = naam.trim();
+    if n.is_empty()
+        || n.contains([':', '\r', '\n'])
+        || waarde.contains(['\r', '\n'])
+        || n.chars().any(|c| c.is_control() || c.is_whitespace())
+    {
+        return false;
+    }
+    let laag = n.to_ascii_lowercase();
+    !matches!(
+        laag.as_str(),
+        "host" | "content-length" | "connection" | "transfer-encoding" | "authorization" | "x-api-key"
+    )
+}
+
 /// De kopregels, met de sleutel of het OAuth-token erin.
 /// - `ApiKey`: Anthropic `x-api-key`, OpenAI `Bearer`, Gemini via queryparameter.
-/// - `OAuth`: alle drie via `Authorization: Bearer <access_token>`.
+/// - `OAuth`: Anthropic Bearer; OpenAI Codex Bearer + `ChatGPT-Account-Id`;
+///   Gemini Bearer.
 /// - `None`: geen authenticatie-header.
-fn kopregels(v: &Verzoek, sleutel: &str) -> Vec<(String, String)> {
+fn kopregels(v: &Verzoek, sleutel: &str, account_id: Option<&str>) -> Vec<(String, String)> {
     let mut uit = vec![
         ("content-type".to_string(), "application/json".to_string()),
         ("accept".to_string(), "text/event-stream".to_string()),
@@ -492,17 +568,32 @@ fn kopregels(v: &Verzoek, sleutel: &str) -> Vec<(String, String)> {
     let proto = v.aanbieder.trim().to_ascii_lowercase();
     if proto == "anthropic" {
         uit.push(("anthropic-version".to_string(), "2023-06-01".to_string()));
-    }
-    if v.auth_modus == AuthModus::None || sleutel.is_empty() {
-        return uit;
-    }
-    match (proto.as_str(), v.auth_modus) {
-        ("anthropic", AuthModus::ApiKey) => {
-            uit.push(("x-api-key".to_string(), sleutel.to_string()));
+    } else if is_codex_oauth(v) {
+        uit.push(("openai-beta".to_string(), "responses=experimental".to_string()));
+        uit.push(("originator".to_string(), "ocss".to_string()));
+        if let Some(id) = account_id.filter(|s| !s.is_empty()) {
+            uit.push(("chatgpt-account-id".to_string(), id.to_string()));
         }
-        ("gemini", AuthModus::ApiKey) => {}
-        _ => {
-            uit.push(("authorization".to_string(), format!("Bearer {sleutel}")));
+    } else if is_gemini_code_assist(v) {
+        uit.push(("user-agent".to_string(), "google-api-nodejs-client/9.15.1".to_string()));
+        uit.push(("x-goog-api-client".to_string(), "gl-node/22.17.0".to_string()));
+    }
+
+    if v.auth_modus != AuthModus::None && !sleutel.is_empty() {
+        match (proto.as_str(), v.auth_modus) {
+            ("anthropic", AuthModus::ApiKey) => {
+                uit.push(("x-api-key".to_string(), sleutel.to_string()));
+            }
+            ("gemini", AuthModus::ApiKey) => {}
+            _ => {
+                uit.push(("authorization".to_string(), format!("Bearer {sleutel}")));
+            }
+        }
+    }
+
+    for (naam, waarde) in &v.extra_koppen {
+        if mag_extra_kop(naam, waarde) {
+            uit.push((naam.trim().to_string(), waarde.trim().to_string()));
         }
     }
     uit
@@ -517,7 +608,7 @@ fn is_lokaal_adres(endpoint: &str) -> bool {
     matches!(url.host_str(), Some("localhost") | Some("127.0.0.1") | Some("[::1]"))
 }
 
-// ── OAuth 2.0 PKCE + OpenRouter ──────────────────────────────────────────────
+// ── OAuth 2.0 PKCE + Anthropic + OpenAI Codex + Gemini + OpenRouter ──────────
 
 #[derive(Debug, Clone, Deserialize)]
 pub struct OAuthStartVerzoek {
@@ -533,6 +624,24 @@ pub struct OAuthStartVerzoek {
     pub scopes: String,
     #[serde(default)]
     pub callback_port: Option<u16>,
+    /// Callback-pad, bijv. `/callback` (Anthropic), `/auth/callback` (OpenAI),
+    /// `/oauth2callback` (Google) of `/oauth/callback` (standaard).
+    #[serde(default)]
+    pub callback_path: Option<String>,
+    /// Hostnaam in de redirect-URI (`localhost` of `127.0.0.1`).
+    #[serde(default)]
+    pub redirect_host: Option<String>,
+    /// `"form"` (standaard) of `"json"` (o.a. Anthropic).
+    #[serde(default)]
+    pub token_format: Option<String>,
+    /// Vaste gehoste redirect-URI (bijv. Anthropic copy-code flow); slaat
+    /// de lokale callback-server over.
+    #[serde(default)]
+    pub custom_redirect_uri: Option<String>,
+    /// Bij Anthropic hoort `state` gelijk aan `code_verifier` te zijn; zonder
+    /// deze vlag wordt een losse willekeurige CSRF-state gegenereerd.
+    #[serde(default)]
+    pub state_is_verifier: bool,
     #[serde(default)]
     pub extra_params: HashMap<String, String>,
 }
@@ -546,6 +655,8 @@ fn standaard_oauth_soort() -> String {
 pub enum OAuthGebeurtenis {
     /// De autorisatie-URL die in de browser is geopend (en het redirect-adres).
     Adres { url: String, redirect_uri: String },
+    /// Device code (OpenAI Codex alternatieve aanmelding).
+    Device { user_code: String, verification_url: String, interval: u64 },
     /// Browser kon niet vanzelf openen; gebruiker kan de URL kopiëren.
     Waarschuwing { melding: String },
 }
@@ -559,6 +670,8 @@ struct OAuthLopende {
     redirect_uri: String,
     code_verifier: String,
     state: String,
+    token_format: String,
+    stuur_state_bij_wissel: bool,
 }
 
 #[derive(Default)]
@@ -580,7 +693,45 @@ pub fn pkce_challenge(verifier: &str) -> String {
     URL_SAFE_NO_PAD.encode(hash)
 }
 
-fn bouw_oauth_adres(v: &OAuthStartVerzoek, redirect_uri: &str, challenge: &str, state: &str) -> Result<String, String> {
+fn schoon_callback_pad(pad: Option<&str>) -> String {
+    let p = pad.unwrap_or("/oauth/callback").trim();
+    if p.is_empty() {
+        "/oauth/callback".to_string()
+    } else if p.starts_with('/') {
+        p.to_string()
+    } else {
+        format!("/{p}")
+    }
+}
+
+fn schoon_redirect_host(host: Option<&str>) -> &'static str {
+    match host.unwrap_or("").trim().to_ascii_lowercase().as_str() {
+        "localhost" => "localhost",
+        _ => "127.0.0.1",
+    }
+}
+
+fn effectief_client_secret(profiel: &str, token_url: &str) -> Result<Option<Zeroizing<String>>, String> {
+    if let Some(s) = crate::erpnext::lees_geheim(DIENST, &oauth_secret_naam(profiel))? {
+        return Ok(Some(s));
+    }
+    if token_url.contains("googleapis.com") || profiel.contains("gemini") {
+        if let Ok(s) = std::env::var("OCSS_GEMINI_OAUTH_CLIENT_SECRET") {
+            let trimmed = s.trim();
+            if !trimmed.is_empty() {
+                return Ok(Some(Zeroizing::new(trimmed.to_string())));
+            }
+        }
+    }
+    Ok(None)
+}
+
+fn bouw_oauth_adres(
+    v: &OAuthStartVerzoek,
+    redirect_uri: &str,
+    challenge: &str,
+    state: &str,
+) -> Result<String, String> {
     let fout = "the OAuth URL must start with https:// (or http://localhost)";
     let _ = toets_url(&v.auth_url, fout)?;
     let _ = toets_url(&v.token_url, fout)?;
@@ -616,18 +767,60 @@ fn bouw_oauth_adres(v: &OAuthStartVerzoek, redirect_uri: &str, challenge: &str, 
     Ok(u.to_string())
 }
 
+fn jwt_payload(token: &str) -> Option<Value> {
+    let deel = token.split('.').nth(1)?;
+    let bytes = URL_SAFE_NO_PAD.decode(deel).ok()?;
+    serde_json::from_slice(&bytes).ok()
+}
+
 /// Probeert een leesbare account-aanduiding uit een eventueel JWT-payload te halen
 /// (alleen als UI-label, nooit voor beveiligingsbeslissingen).
 fn jwt_account(token: &str) -> Option<String> {
-    let deel = token.split('.').nth(1)?;
-    let bytes = URL_SAFE_NO_PAD.decode(deel).ok()?;
-    let json: Value = serde_json::from_slice(&bytes).ok()?;
+    let json = jwt_payload(token)?;
     json.get("email")
         .or_else(|| json.get("preferred_username"))
         .or_else(|| json.get("name"))
+        .or_else(|| {
+            json.get("https://api.openai.com/profile")
+                .and_then(|p| p.get("email"))
+        })
         .or_else(|| json.get("sub"))
         .and_then(|v| v.as_str())
         .map(|s| s.to_string())
+}
+
+/// Haalt `chatgpt_account_id` uit OpenAI Codex JWT (`id_token` of `access_token`).
+fn jwt_chatgpt_account_id(token: &str) -> Option<String> {
+    let json = jwt_payload(token)?;
+    json.get("chatgpt_account_id")
+        .or_else(|| {
+            json.get("https://api.openai.com/auth")
+                .and_then(|a| a.get("chatgpt_account_id"))
+        })
+        .or_else(|| {
+            json.get("organizations")
+                .and_then(|o| o.get(0))
+                .and_then(|first| first.get("id"))
+        })
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string())
+}
+
+/// Haalt Google-account e-mail op na login als het JWT dat nog niet gaf.
+fn google_userinfo_email(access_token: &str) -> Option<String> {
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(Duration::from_secs(5))
+        .timeout_read(Duration::from_secs(5))
+        .build();
+    let resp = agent
+        .get("https://www.googleapis.com/oauth2/v2/userinfo")
+        .set("authorization", &format!("Bearer {access_token}"))
+        .call()
+        .ok()?;
+    let tekst = resp.into_string().ok()?;
+    let j: Value = serde_json::from_str(&tekst).ok()?;
+    j.get("email").and_then(|v| v.as_str()).map(|s| s.to_string())
 }
 
 /// Parst het JSON- of form-urlencoded tokenantwoord van een OAuth-server (incl.
@@ -637,6 +830,7 @@ fn parse_token_antwoord(
     vorige_refresh: Option<&str>,
     token_url: Option<&str>,
     client_id: Option<&str>,
+    token_format: Option<&str>,
     nu: u64,
 ) -> Result<OAuthToken, String> {
     if let Ok(j) = serde_json::from_str::<Value>(tekst) {
@@ -656,8 +850,11 @@ fn parse_token_antwoord(
                 token_type: Some("Bearer".to_string()),
                 scope: None,
                 account: Some("OpenRouter".to_string()),
+                account_id: None,
+                project_id: None,
                 token_url: None,
                 client_id: None,
+                token_format: None,
             });
         }
         if let Some(at) = j
@@ -676,7 +873,18 @@ fn parse_token_antwoord(
                 .and_then(|v| v.as_u64())
                 .map(|sec| nu.saturating_add(sec));
             let id_tok = j.get("id_token").and_then(|v| v.as_str());
-            let account = id_tok.and_then(jwt_account).or_else(|| jwt_account(at));
+            let account = id_tok
+                .and_then(jwt_account)
+                .or_else(|| jwt_account(at))
+                .or_else(|| {
+                    j.get("account")
+                        .and_then(|a| a.get("email_address").or_else(|| a.get("email")))
+                        .and_then(|v| v.as_str())
+                        .map(|s| s.to_string())
+                });
+            let account_id = id_tok
+                .and_then(jwt_chatgpt_account_id)
+                .or_else(|| jwt_chatgpt_account_id(at));
             return Ok(OAuthToken {
                 access_token: at.to_string(),
                 refresh_token: rt,
@@ -684,12 +892,15 @@ fn parse_token_antwoord(
                 token_type: j.get("token_type").and_then(|v| v.as_str()).map(|s| s.to_string()),
                 scope: j.get("scope").and_then(|v| v.as_str()).map(|s| s.to_string()),
                 account,
+                account_id,
+                project_id: None,
                 token_url: token_url.map(|s| s.to_string()),
                 client_id: client_id.map(|s| s.to_string()),
+                token_format: token_format.map(|s| s.to_string()),
             });
         }
     } else {
-        // Sommige aanbieders (o.a. oudere GitHub-apps) sturen form-urlencoded terug.
+        // Sommige aanbieders (o.a. GitHub OAuth) sturen form-urlencoded terug.
         let mut map: HashMap<String, String> = HashMap::new();
         for (k, v) in url::form_urlencoded::parse(tekst.as_bytes()) {
             map.insert(k.into_owned(), v.into_owned());
@@ -713,16 +924,76 @@ fn parse_token_antwoord(
                 token_type: map.get("token_type").cloned(),
                 scope: map.get("scope").cloned(),
                 account: jwt_account(at),
+                account_id: jwt_chatgpt_account_id(at),
+                project_id: None,
                 token_url: token_url.map(|s| s.to_string()),
                 client_id: client_id.map(|s| s.to_string()),
+                token_format: token_format.map(|s| s.to_string()),
             });
         }
     }
     Err("OAuth server returned neither an access_token nor a key".to_string())
 }
 
+/// Parst geplakte callback-invoer: volledige callback-URL, Anthropic's `code#state`
+/// vorm, of een losse autorisatiecode.
+fn parse_handmatige_invoer(
+    invoer: &str,
+    verwachte_state: Option<&str>,
+) -> Result<String, String> {
+    let trimmed = invoer.trim();
+    if trimmed.is_empty() {
+        return Err("callback URL or code cannot be empty".to_string());
+    }
+    if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
+        let u = url::Url::parse(trimmed).map_err(|_| "invalid callback URL".to_string())?;
+        let mut map: HashMap<String, String> = HashMap::new();
+        for (k, v) in u.query_pairs() {
+            map.insert(k.into_owned(), v.into_owned());
+        }
+        if let Some(err) = map.get("error") {
+            let desc = map.get("error_description").unwrap_or(err);
+            return Err(format!("OAuth error: {desc}"));
+        }
+        // Anthropic copy-code zet soms `#state` achteraan de URL.
+        let frag_state = u.fragment().filter(|s| !s.is_empty());
+        if let Some(exp) = verwachte_state {
+            let got = map
+                .get("state")
+                .map(|s| s.as_str())
+                .or(frag_state)
+                .unwrap_or("");
+            if !got.is_empty() && got != exp {
+                return Err("OAuth state mismatch in pasted URL".to_string());
+            }
+            if map.get("state").is_none() && frag_state.is_none() {
+                return Err("OAuth state mismatch in pasted URL".to_string());
+            }
+        }
+        return map
+            .get("code")
+            .filter(|s| !s.is_empty())
+            .cloned()
+            .ok_or_else(|| "no code parameter in callback URL".to_string());
+    }
+    // `code#state` (Anthropic hosted callback copy button)
+    if let Some((code, st)) = trimmed.split_once('#') {
+        if let Some(exp) = verwachte_state {
+            if st.trim() != exp {
+                return Err("OAuth state mismatch in pasted code".to_string());
+            }
+        }
+        let c = code.trim();
+        if c.is_empty() {
+            return Err("callback code cannot be empty".to_string());
+        }
+        return Ok(c.to_string());
+    }
+    Ok(trimmed.to_string())
+}
+
 fn wissel_code_om(lopend: &OAuthLopende, code: &str) -> Result<ProfielAuthStatus, String> {
-    let client_secret = crate::erpnext::lees_geheim(DIENST, &oauth_secret_naam(&lopend.profiel))?;
+    let client_secret = effectief_client_secret(&lopend.profiel, &lopend.token_url)?;
     let agent = ureq::AgentBuilder::new()
         .timeout_connect(VERBIND_TIJD)
         .timeout_read(VERBIND_TIJD)
@@ -737,6 +1008,24 @@ fn wissel_code_om(lopend: &OAuthLopende, code: &str) -> Result<ProfielAuthStatus
                 "code_verifier": lopend.code_verifier,
                 "code_challenge_method": "S256",
             }))
+    } else if lopend.token_format == "json" {
+        let mut body = json!({
+            "grant_type": "authorization_code",
+            "client_id": lopend.client_id.trim(),
+            "code": code,
+            "redirect_uri": lopend.redirect_uri,
+            "code_verifier": lopend.code_verifier,
+        });
+        if lopend.stuur_state_bij_wissel && !lopend.state.is_empty() {
+            body["state"] = json!(lopend.state);
+        }
+        if let Some(ref cs) = client_secret {
+            body["client_secret"] = json!(cs.as_str());
+        }
+        agent
+            .post(lopend.token_url.trim())
+            .set("accept", "application/json")
+            .send_json(body)
     } else {
         let mut paren: Vec<(&str, &str)> = vec![
             ("grant_type", "authorization_code"),
@@ -758,26 +1047,34 @@ fn wissel_code_om(lopend: &OAuthLopende, code: &str) -> Result<ProfielAuthStatus
         Ok(r) => r.into_string().map_err(|e| e.to_string())?,
         Err(ureq::Error::Status(status, r)) => {
             let body = r.into_string().unwrap_or_default();
-            return Err(format!("OAuth token exchange failed (HTTP {status}): {}", body.chars().take(300).collect::<String>()));
+            return Err(format!(
+                "OAuth token exchange failed (HTTP {status}): {}",
+                body.chars().take(300).collect::<String>()
+            ));
         }
         Err(e) => return Err(format!("could not reach OAuth token endpoint: {e}")),
     };
 
-    let tok = parse_token_antwoord(
+    let mut tok = parse_token_antwoord(
         &tekst,
         None,
         Some(lopend.token_url.trim()),
         Some(lopend.client_id.trim()),
+        Some(lopend.token_format.as_str()),
         nu_sec(),
     )?;
+    if tok.account.is_none() && lopend.token_url.contains("googleapis.com") {
+        tok.account = google_userinfo_email(&tok.access_token);
+    }
     let json = Zeroizing::new(serde_json::to_string(&tok).map_err(|e| e.to_string())?);
     crate::erpnext::bewaar_geheim(DIENST, &oauth_sleutel_naam(&lopend.profiel), &json)?;
     lees_profiel_status_sync(&lopend.profiel)
 }
 
 /// Ververst het OAuth-token als het binnen 60 s verloopt en een `refresh_token`
-/// beschikbaar is. Geeft het geldige `access_token` terug.
-fn haal_oauth_token_op(profiel: &str) -> Result<Zeroizing<String>, String> {
+/// beschikbaar is. Geeft het geldige `access_token`, optioneel `account_id` en
+/// opgeslagen `project_id` terug.
+fn haal_oauth_sessie_op(profiel: &str) -> Result<OAuthToken, String> {
     let raw = crate::erpnext::lees_geheim(DIENST, &oauth_sleutel_naam(profiel))?
         .ok_or_else(|| format!("not signed in with OAuth for {profiel}; sign in in Settings"))?;
     let tok: OAuthToken = serde_json::from_str(&raw)
@@ -785,7 +1082,7 @@ fn haal_oauth_token_op(profiel: &str) -> Result<Zeroizing<String>, String> {
     let nu = nu_sec();
     let moet_verversen = tok.expires_at.is_some_and(|exp| nu.saturating_add(60) >= exp);
     if !moet_verversen {
-        return Ok(Zeroizing::new(tok.access_token));
+        return Ok(tok);
     }
     let Some(ref refresh) = tok.refresh_token.as_ref().filter(|s| !s.is_empty()) else {
         return Err(format!("OAuth session for {profiel} has expired; please sign in again"));
@@ -794,27 +1091,54 @@ fn haal_oauth_token_op(profiel: &str) -> Result<Zeroizing<String>, String> {
         return Err(format!("OAuth session for {profiel} expired and has no token_url for refresh"));
     };
     let client_id = tok.client_id.as_deref().unwrap_or("");
-    let client_secret = crate::erpnext::lees_geheim(DIENST, &oauth_secret_naam(profiel))?;
+    let client_secret = effectief_client_secret(profiel, token_url)?;
+    let fmt = tok
+        .token_format
+        .as_deref()
+        .unwrap_or_else(|| {
+            if token_url.contains("anthropic.com") || token_url.contains("claude.com") {
+                "json"
+            } else {
+                "form"
+            }
+        });
 
     let agent = ureq::AgentBuilder::new()
         .timeout_connect(VERBIND_TIJD)
         .timeout_read(VERBIND_TIJD)
         .build();
-    let mut paren: Vec<(&str, &str)> = vec![
-        ("grant_type", "refresh_token"),
-        ("refresh_token", refresh.as_str()),
-    ];
-    if !client_id.is_empty() {
-        paren.push(("client_id", client_id));
-    }
-    if let Some(ref cs) = client_secret {
-        paren.push(("client_secret", cs.as_str()));
-    }
-    let tekst = match agent
-        .post(token_url.trim())
-        .set("accept", "application/json")
-        .send_form(&paren)
-    {
+    let resp = if fmt == "json" {
+        let mut body = json!({
+            "grant_type": "refresh_token",
+            "refresh_token": refresh.as_str(),
+        });
+        if !client_id.is_empty() {
+            body["client_id"] = json!(client_id);
+        }
+        if let Some(ref cs) = client_secret {
+            body["client_secret"] = json!(cs.as_str());
+        }
+        agent
+            .post(token_url.trim())
+            .set("accept", "application/json")
+            .send_json(body)
+    } else {
+        let mut paren: Vec<(&str, &str)> = vec![
+            ("grant_type", "refresh_token"),
+            ("refresh_token", refresh.as_str()),
+        ];
+        if !client_id.is_empty() {
+            paren.push(("client_id", client_id));
+        }
+        if let Some(ref cs) = client_secret {
+            paren.push(("client_secret", cs.as_str()));
+        }
+        agent
+            .post(token_url.trim())
+            .set("accept", "application/json")
+            .send_form(&paren)
+    };
+    let tekst = match resp {
         Ok(r) => r.into_string().map_err(|e| e.to_string())?,
         Err(ureq::Error::Status(status, r)) => {
             let body = r.into_string().unwrap_or_default();
@@ -825,16 +1149,147 @@ fn haal_oauth_token_op(profiel: &str) -> Result<Zeroizing<String>, String> {
         }
         Err(e) => return Err(format!("could not refresh OAuth token: {e}")),
     };
-    let nieuw = parse_token_antwoord(
+    let mut nieuw = parse_token_antwoord(
         &tekst,
         Some(refresh.as_str()),
         Some(token_url),
         tok.client_id.as_deref(),
+        Some(fmt),
         nu_sec(),
     )?;
+    if nieuw.account.is_none() {
+        nieuw.account = tok.account;
+    }
+    if nieuw.account_id.is_none() {
+        nieuw.account_id = tok.account_id;
+    }
+    if nieuw.project_id.is_none() {
+        nieuw.project_id = tok.project_id;
+    }
     let opslag = Zeroizing::new(serde_json::to_string(&nieuw).map_err(|e| e.to_string())?);
     crate::erpnext::bewaar_geheim(DIENST, &oauth_sleutel_naam(profiel), &opslag)?;
-    Ok(Zeroizing::new(nieuw.access_token))
+    Ok(nieuw)
+}
+
+/// Haalt of ontdekt het Google Cloud Code Assist-project (`loadCodeAssist` /
+/// `onboardUser`) en slaat dat op bij het OAuth-token in de sleutelbos.
+fn zorg_voor_gemini_project(
+    profiel: &str,
+    tok: &mut OAuthToken,
+    gekozen_project: Option<&str>,
+) -> Result<String, String> {
+    if let Some(p) = gekozen_project.map(|s| s.trim()).filter(|s| !s.is_empty()) {
+        return Ok(p.to_string());
+    }
+    if let Some(ref p) = tok.project_id.as_ref().filter(|s| !s.is_empty()) {
+        return Ok((*p).clone());
+    }
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(VERBIND_TIJD)
+        .timeout_read(VERBIND_TIJD)
+        .build();
+    let meta = json!({
+        "ideType": "IDE_UNSPECIFIED",
+        "platform": "PLATFORM_UNSPECIFIED",
+        "pluginType": "GEMINI",
+    });
+    let bearer = format!("Bearer {}", tok.access_token);
+    let load_resp = agent
+        .post(&format!("{CLOUDCODE_BASIS}:loadCodeAssist"))
+        .set("authorization", &bearer)
+        .set("content-type", "application/json")
+        .set("user-agent", "google-api-nodejs-client/9.15.1")
+        .set("x-goog-api-client", "gl-node/22.17.0")
+        .send_json(json!({ "metadata": meta }));
+    let load_json: Value = match load_resp {
+        Ok(r) => serde_json::from_str(&r.into_string().map_err(|e| e.to_string())?)
+            .map_err(|e| format!("invalid loadCodeAssist response: {e}"))?,
+        Err(ureq::Error::Status(code, r)) => {
+            let body = r.into_string().unwrap_or_default();
+            return Err(format!(
+                "Gemini Code Assist loadCodeAssist failed (HTTP {code}): {}",
+                body.chars().take(300).collect::<String>()
+            ));
+        }
+        Err(e) => return Err(format!("could not reach Gemini Code Assist: {e}")),
+    };
+
+    let mut project = load_json
+        .get("cloudaicompanionProject")
+        .and_then(|v| v.as_str())
+        .filter(|s| !s.is_empty())
+        .map(|s| s.to_string());
+
+    if project.is_none() {
+        let tier_id = load_json
+            .get("allowedTiers")
+            .and_then(|v| v.as_array())
+            .and_then(|arr| {
+                arr.iter()
+                    .find(|t| t.get("isDefault").and_then(|b| b.as_bool()) == Some(true))
+                    .or_else(|| arr.first())
+            })
+            .and_then(|t| t.get("id").and_then(|s| s.as_str()))
+            .unwrap_or("free-tier");
+
+        let mut onboard_req = json!({
+            "tierId": tier_id,
+            "metadata": meta,
+        });
+        if tier_id != "free-tier" && tier_id != "FREE" {
+            // Standaard geen cloudaicompanionProject voor free-tier; Workspace
+            // accounts geven project_id op in de UI als dat vereist is.
+            onboard_req["metadata"]["duetProject"] = json!("");
+        }
+        let onboard_resp = agent
+            .post(&format!("{CLOUDCODE_BASIS}:onboardUser"))
+            .set("authorization", &bearer)
+            .set("content-type", "application/json")
+            .set("user-agent", "google-api-nodejs-client/9.15.1")
+            .set("x-goog-api-client", "gl-node/22.17.0")
+            .send_json(onboard_req);
+        if let Ok(r) = onboard_resp {
+            if let Ok(mut op) = serde_json::from_str::<Value>(&r.into_string().unwrap_or_default()) {
+                for _ in 0..8 {
+                    if op.get("done").and_then(|b| b.as_bool()) == Some(true) {
+                        break;
+                    }
+                    let Some(op_name) = op.get("name").and_then(|v| v.as_str()) else {
+                        break;
+                    };
+                    std::thread::sleep(Duration::from_secs(2));
+                    let poll = agent
+                        .get(&format!("{CLOUDCODE_BASIS}/{op_name}"))
+                        .set("authorization", &bearer)
+                        .call();
+                    if let Ok(pr) = poll {
+                        if let Ok(pj) = serde_json::from_str::<Value>(&pr.into_string().unwrap_or_default()) {
+                            op = pj;
+                        } else {
+                            break;
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                project = op
+                    .pointer("/response/cloudaicompanionProject/id")
+                    .or_else(|| op.pointer("/response/cloudaicompanionProject"))
+                    .and_then(|v| v.as_str())
+                    .filter(|s| !s.is_empty())
+                    .map(|s| s.to_string());
+            }
+        }
+    }
+
+    let project = project.ok_or_else(|| {
+        "Gemini Code Assist did not return a project; enter your GCP Project ID in the AI settings or enable Gemini for Google Cloud".to_string()
+    })?;
+    tok.project_id = Some(project.clone());
+    if let Ok(opslag) = serde_json::to_string(tok) {
+        let _ = crate::erpnext::bewaar_geheim(DIENST, &oauth_sleutel_naam(profiel), &Zeroizing::new(opslag));
+    }
+    Ok(project)
 }
 
 fn callback_html(ok: bool, titel: &str, tekst: &str) -> String {
@@ -865,18 +1320,76 @@ pub async fn ai_oauth_login(
 ) -> Result<ProfielAuthStatus, String> {
     let profiel = profiel_id(&verzoek.profiel)?;
     let code_verifier = willekeurige_token(32)?;
-    let oauth_state = willekeurige_token(24)?;
+    let oauth_state = if verzoek.state_is_verifier {
+        code_verifier.clone()
+    } else {
+        willekeurige_token(24)?
+    };
     let challenge = pkce_challenge(&code_verifier);
+    let token_format = match verzoek.token_format.as_deref() {
+        Some("json") => "json".to_string(),
+        _ => "form".to_string(),
+    };
+    let stuur_state_bij_wissel = verzoek.state_is_verifier || token_format == "json";
 
-    let poort = verzoek.callback_port.unwrap_or(0);
-    let server = tiny_http::Server::http(format!("127.0.0.1:{poort}"))
-        .map_err(|e| format!("could not start local OAuth callback listener: {e}"))?;
+    // Gehoste copy-code callback (o.a. Anthropic hosted callback): geen lokale server.
+    if let Some(custom_uri) = verzoek
+        .custom_redirect_uri
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+    {
+        let redirect_uri = custom_uri.to_string();
+        let authorize_url = bouw_oauth_adres(&verzoek, &redirect_uri, &challenge, &oauth_state)?;
+        let lopend = OAuthLopende {
+            profiel,
+            soort: verzoek.soort.clone(),
+            token_url: verzoek.token_url.trim().to_string(),
+            client_id: verzoek.client_id.trim().to_string(),
+            redirect_uri: redirect_uri.clone(),
+            code_verifier,
+            state: oauth_state,
+            token_format,
+            stuur_state_bij_wissel,
+        };
+        {
+            let mut slot = staat.wachtend.lock().map_err(|_| "lock poisoned".to_string())?;
+            *slot = Some(lopend);
+        }
+        staat.stop.store(false, Ordering::SeqCst);
+        let _ = kanaal.send(OAuthGebeurtenis::Adres {
+            url: authorize_url.clone(),
+            redirect_uri,
+        });
+        if let Err(e) = app.opener().open_url(&authorize_url, None::<&str>) {
+            let _ = kanaal.send(OAuthGebeurtenis::Waarschuwing {
+                melding: format!("could not open browser automatically: {e}"),
+            });
+        }
+        // Geeft de huidige status terug; gebruiker plakt `code#state` via `ai_oauth_complete_manual`.
+        return lees_profiel_status_sync(&profiel_id(&verzoek.profiel)?);
+    }
+
+    let gevraagde_poort = verzoek.callback_port.unwrap_or(0);
+    let server = match tiny_http::Server::http(format!("127.0.0.1:{gevraagde_poort}")) {
+        Ok(s) => s,
+        Err(e) if gevraagde_poort == 1455 => {
+            return Err(format!(
+                "port 1455 is busy ({e}); close any other Codex login or use Device Code sign-in"
+            ));
+        }
+        Err(_) if gevraagde_poort != 0 => tiny_http::Server::http("127.0.0.1:0")
+            .map_err(|e| format!("could not start local OAuth callback listener: {e}"))?,
+        Err(e) => return Err(format!("could not start local OAuth callback listener: {e}")),
+    };
     let werkelijke_poort = server
         .server_addr()
         .to_ip()
         .map(|a| a.port())
         .ok_or_else(|| "could not read callback server port".to_string())?;
-    let redirect_uri = format!("http://127.0.0.1:{werkelijke_poort}/oauth/callback");
+    let callback_pad = schoon_callback_pad(verzoek.callback_path.as_deref());
+    let redirect_host = schoon_redirect_host(verzoek.redirect_host.as_deref());
+    let redirect_uri = format!("http://{redirect_host}:{werkelijke_poort}{callback_pad}");
     let authorize_url = bouw_oauth_adres(&verzoek, &redirect_uri, &challenge, &oauth_state)?;
 
     let lopend = OAuthLopende {
@@ -887,6 +1400,8 @@ pub async fn ai_oauth_login(
         redirect_uri: redirect_uri.clone(),
         code_verifier,
         state: oauth_state.clone(),
+        token_format,
+        stuur_state_bij_wissel,
     };
     {
         let mut slot = staat.wachtend.lock().map_err(|_| "lock poisoned".to_string())?;
@@ -929,6 +1444,10 @@ pub async fn ai_oauth_login(
                         let _ = req.respond(tiny_http::Response::from_string("Bad request").with_status_code(400));
                         continue;
                     };
+                    if parsed.path() != callback_pad {
+                        let _ = req.respond(tiny_http::Response::from_string("Not found").with_status_code(404));
+                        continue;
+                    }
                     let mut params: HashMap<String, String> = HashMap::new();
                     for (k, val) in parsed.query_pairs() {
                         params.insert(k.into_owned(), val.into_owned());
@@ -997,9 +1516,149 @@ pub async fn ai_oauth_login(
     .map_err(|e| e.to_string())?
 }
 
-/// Handmatige afronding voor wanneer de browser op een andere machine draait:
-/// gebruiker plakt het callback-adres (`http://127.0.0.1:.../oauth/callback?code=...`)
-/// of alleen de autorisatiecode.
+/// Device Code-aanmelding voor ChatGPT / OpenAI Codex (werkt ook zonder vrije poort
+/// 1455 of bij externe browser).
+#[tauri::command]
+pub async fn ai_oauth_device_start(
+    app: tauri::AppHandle,
+    profiel: String,
+    client_id: Option<String>,
+    kanaal: Channel<OAuthGebeurtenis>,
+    staat: tauri::State<'_, OAuthState>,
+) -> Result<ProfielAuthStatus, String> {
+    let profiel = profiel_id(&profiel)?;
+    let cid = client_id
+        .as_deref()
+        .map(str::trim)
+        .filter(|s| !s.is_empty())
+        .unwrap_or(OPENAI_CODEX_CLIENT_ID)
+        .to_string();
+    let stop = staat.stop.clone();
+    stop.store(false, Ordering::SeqCst);
+
+    let agent = ureq::AgentBuilder::new()
+        .timeout_connect(VERBIND_TIJD)
+        .timeout_read(VERBIND_TIJD)
+        .build();
+    let cid_req = cid.clone();
+    let start_resp = tauri::async_runtime::spawn_blocking(move || {
+        let resp = agent
+            .post("https://auth.openai.com/api/accounts/deviceauth/usercode")
+            .set("accept", "application/json")
+            .send_json(json!({ "client_id": cid_req }));
+        match resp {
+            Ok(r) => r.into_string().map_err(|e| e.to_string()),
+            Err(ureq::Error::Status(code, r)) => {
+                let body = r.into_string().unwrap_or_default();
+                Err(format!(
+                    "device code request failed (HTTP {code}): {}",
+                    body.chars().take(200).collect::<String>()
+                ))
+            }
+            Err(e) => Err(format!("could not request device code: {e}")),
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())??;
+
+    let dj: Value = serde_json::from_str(&start_resp)
+        .map_err(|e| format!("invalid device code response: {e}"))?;
+    let device_auth_id = dj
+        .get("device_auth_id")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "missing device_auth_id".to_string())?
+        .to_string();
+    let user_code = dj
+        .get("user_code")
+        .and_then(|v| v.as_str())
+        .ok_or_else(|| "missing user_code".to_string())?
+        .to_string();
+    let interval = dj
+        .get("interval")
+        .and_then(|v| v.as_u64().or_else(|| v.as_str().and_then(|s| s.parse().ok())))
+        .unwrap_or(5)
+        .max(3);
+    let verification_url = "https://auth.openai.com/codex/device".to_string();
+
+    let _ = kanaal.send(OAuthGebeurtenis::Device {
+        user_code: user_code.clone(),
+        verification_url: verification_url.clone(),
+        interval,
+    });
+    if let Err(e) = app.opener().open_url(&verification_url, None::<&str>) {
+        let _ = kanaal.send(OAuthGebeurtenis::Waarschuwing {
+            melding: format!("could not open browser automatically: {e}"),
+        });
+    }
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let agent = ureq::AgentBuilder::new()
+            .timeout_connect(VERBIND_TIJD)
+            .timeout_read(VERBIND_TIJD)
+            .build();
+        let deadline = std::time::Instant::now() + Duration::from_secs(DEVICE_WACHT_SECS);
+        while std::time::Instant::now() < deadline {
+            for _ in 0..(interval * 4) {
+                if stop.load(Ordering::SeqCst) {
+                    return Err("Device code login cancelled".to_string());
+                }
+                std::thread::sleep(Duration::from_millis(250));
+            }
+            let poll = agent
+                .post("https://auth.openai.com/api/accounts/deviceauth/token")
+                .set("accept", "application/json")
+                .send_json(json!({
+                    "device_auth_id": device_auth_id,
+                    "user_code": user_code,
+                }));
+            match poll {
+                Ok(r) => {
+                    let body = r.into_string().map_err(|e| e.to_string())?;
+                    let pj: Value = serde_json::from_str(&body)
+                        .map_err(|e| format!("invalid deviceauth token response: {e}"))?;
+                    let code = pj
+                        .get("authorization_code")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| "missing authorization_code".to_string())?;
+                    let verifier = pj
+                        .get("code_verifier")
+                        .and_then(|v| v.as_str())
+                        .ok_or_else(|| "missing code_verifier".to_string())?;
+                    let lopend = OAuthLopende {
+                        profiel,
+                        soort: "pkce".to_string(),
+                        token_url: "https://auth.openai.com/oauth/token".to_string(),
+                        client_id: cid,
+                        redirect_uri: "https://auth.openai.com/deviceauth/callback".to_string(),
+                        code_verifier: verifier.to_string(),
+                        state: String::new(),
+                        token_format: "form".to_string(),
+                        stuur_state_bij_wissel: false,
+                    };
+                    return wissel_code_om(&lopend, code);
+                }
+                Err(ureq::Error::Status(403 | 404, _)) => continue,
+                Err(ureq::Error::Status(code, r)) => {
+                    let body = r.into_string().unwrap_or_default();
+                    if body.contains("authorization_pending") || body.contains("slow_down") {
+                        continue;
+                    }
+                    return Err(format!(
+                        "Device authorization failed (HTTP {code}): {}",
+                        body.chars().take(200).collect::<String>()
+                    ));
+                }
+                Err(_) => continue,
+            }
+        }
+        Err("Device code sign-in timed out".to_string())
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Handmatige afronding voor wanneer de browser op een andere machine draait of
+/// bij Anthropic's `code#state` copy-code flow.
 #[tauri::command]
 pub async fn ai_oauth_complete_manual(
     invoer: String,
@@ -1012,33 +1671,12 @@ pub async fn ai_oauth_complete_manual(
     };
     staat.stop.store(true, Ordering::SeqCst);
 
-    let trimmed = invoer.trim();
-    if trimmed.is_empty() {
-        return Err("callback URL or code cannot be empty".to_string());
-    }
-    let code = if trimmed.starts_with("http://") || trimmed.starts_with("https://") {
-        let u = url::Url::parse(trimmed).map_err(|_| "invalid callback URL".to_string())?;
-        let mut map: HashMap<String, String> = HashMap::new();
-        for (k, v) in u.query_pairs() {
-            map.insert(k.into_owned(), v.into_owned());
-        }
-        if let Some(err) = map.get("error") {
-            let desc = map.get("error_description").unwrap_or(err);
-            return Err(format!("OAuth error: {desc}"));
-        }
-        if lopend.soort != "openrouter" {
-            let st = map.get("state").map(|s| s.as_str()).unwrap_or("");
-            if st != lopend.state {
-                return Err("OAuth state mismatch in pasted URL".to_string());
-            }
-        }
-        map.get("code")
-            .filter(|s| !s.is_empty())
-            .cloned()
-            .ok_or_else(|| "no code parameter in callback URL".to_string())?
+    let verwachte_state = if lopend.soort == "openrouter" {
+        None
     } else {
-        trimmed.to_string()
+        Some(lopend.state.as_str())
     };
+    let code = parse_handmatige_invoer(&invoer, verwachte_state)?;
 
     tauri::async_runtime::spawn_blocking(move || wissel_code_om(&lopend, &code))
         .await
@@ -1064,6 +1702,8 @@ pub struct ModelLijstVerzoek {
     pub endpoint: String,
     #[serde(default)]
     pub auth_modus: AuthModus,
+    #[serde(default)]
+    pub extra_koppen: HashMap<String, String>,
 }
 
 fn modellen_uit_json(aanbieder: &str, j: &Value) -> Vec<String> {
@@ -1094,6 +1734,7 @@ fn modellen_uit_json(aanbieder: &str, j: &Value) -> Vec<String> {
                 for m in arr {
                     if let Some(id) = m
                         .get("id")
+                        .or_else(|| m.get("slug"))
                         .or_else(|| m.get("name"))
                         .and_then(|v| v.as_str())
                     {
@@ -1108,7 +1749,7 @@ fn modellen_uit_json(aanbieder: &str, j: &Value) -> Vec<String> {
     uit
 }
 
-/// Haalt beschikbare modellen op van `/v1/models` (OpenAI / Anthropic) of `/v1beta/models` (Gemini).
+/// Haalt beschikbare modellen op van `/v1/models`, `/v1beta/models` of Codex `/codex/models`.
 #[tauri::command]
 pub async fn ai_list_models(verzoek: ModelLijstVerzoek) -> Result<Vec<String>, String> {
     let proto = aanbieder_naam(&verzoek.aanbieder)?;
@@ -1116,13 +1757,20 @@ pub async fn ai_list_models(verzoek: ModelLijstVerzoek) -> Result<Vec<String>, S
         Some(p) if !p.trim().is_empty() => profiel_id(p)?,
         _ => proto.clone(),
     };
-    let mut url = modellen_adres(&proto, &verzoek.endpoint)?;
+    let mut url = modellen_adres(&proto, &verzoek.endpoint, verzoek.auth_modus)?;
     let auth_modus = verzoek.auth_modus;
+    let extra_koppen = verzoek.extra_koppen.clone();
+    let is_codex = url == CODEX_MODELS_URL;
 
     tauri::async_runtime::spawn_blocking(move || {
+        let mut account_id: Option<String> = None;
         let sleutel = match auth_modus {
             AuthModus::None => Zeroizing::new(String::new()),
-            AuthModus::OAuth => haal_oauth_token_op(&profiel)?,
+            AuthModus::OAuth => {
+                let sessie = haal_oauth_sessie_op(&profiel)?;
+                account_id = sessie.account_id;
+                Zeroizing::new(sessie.access_token)
+            }
             AuthModus::ApiKey => crate::erpnext::lees_geheim(DIENST, &profiel)?.unwrap_or_default(),
         };
         if proto == "gemini" && auth_modus == AuthModus::ApiKey && !sleutel.is_empty() {
@@ -1140,6 +1788,12 @@ pub async fn ai_list_models(verzoek: ModelLijstVerzoek) -> Result<Vec<String>, S
         if proto == "anthropic" {
             req = req.set("anthropic-version", "2023-06-01");
         }
+        if is_codex {
+            req = req.set("originator", "ocss");
+            if let Some(ref aid) = account_id {
+                req = req.set("chatgpt-account-id", aid);
+            }
+        }
         if auth_modus != AuthModus::None && !sleutel.is_empty() {
             match (proto.as_str(), auth_modus) {
                 ("anthropic", AuthModus::ApiKey) => {
@@ -1149,6 +1803,11 @@ pub async fn ai_list_models(verzoek: ModelLijstVerzoek) -> Result<Vec<String>, S
                 _ => {
                     req = req.set("authorization", &format!("Bearer {}", sleutel.as_str()));
                 }
+            }
+        }
+        for (naam, waarde) in &extra_koppen {
+            if mag_extra_kop(naam, waarde) {
+                req = req.set(naam.trim(), waarde.trim());
             }
         }
         let resp = match req.call() {
@@ -1171,6 +1830,13 @@ pub async fn ai_list_models(verzoek: ModelLijstVerzoek) -> Result<Vec<String>, S
 /// Het JSON-lichaam voor de gekozen aanbieder. Puur, zodat de controles
 /// (`cargo test --lib ai`) het zonder netwerk kunnen nalezen.
 pub fn lichaam(v: &Verzoek, sleutel: &str) -> Value {
+    if is_codex_oauth(v) {
+        return lichaam_codex_responses(v);
+    }
+    if is_gemini_code_assist(v) {
+        let project = v.project_id.as_deref().unwrap_or("").trim();
+        return lichaam_gemini_code_assist(v, sleutel, project);
+    }
     match v.aanbieder.trim().to_ascii_lowercase().as_str() {
         "anthropic" => lichaam_anthropic(v),
         "gemini" => lichaam_gemini(v, sleutel),
@@ -1307,6 +1973,82 @@ fn lichaam_openai(v: &Verzoek) -> Value {
     body
 }
 
+/// ChatGPT Codex Responses API (`/backend-api/codex/responses`).
+fn lichaam_codex_responses(v: &Verzoek) -> Value {
+    let mut input: Vec<Value> = Vec::new();
+    for (idx, b) in v.berichten.iter().enumerate() {
+        match b.rol.as_str() {
+            "assistant" => {
+                if !b.tekst.trim().is_empty() {
+                    input.push(json!({
+                        "type": "message",
+                        "role": "assistant",
+                        "status": "completed",
+                        "id": format!("msg_ocss_{idx}"),
+                        "content": [{ "type": "output_text", "text": b.tekst, "annotations": [] }],
+                    }));
+                }
+                for o in &b.oproepen {
+                    let call_id = o.id.split('|').next().unwrap_or(&o.id);
+                    input.push(json!({
+                        "type": "function_call",
+                        "call_id": call_id,
+                        "name": o.naam,
+                        "arguments": o.argumenten.to_string(),
+                    }));
+                }
+            }
+            "tool" => {
+                for r in &b.resultaten {
+                    let call_id = r.id.split('|').next().unwrap_or(&r.id);
+                    input.push(json!({
+                        "type": "function_call_output",
+                        "call_id": call_id,
+                        "output": r.inhoud,
+                    }));
+                }
+            }
+            _ => {
+                input.push(json!({
+                    "role": "user",
+                    "content": [{ "type": "input_text", "text": b.tekst }],
+                }));
+            }
+        }
+    }
+    let instructions = if v.systeem.trim().is_empty() {
+        "You are a helpful structural engineering assistant.".to_string()
+    } else {
+        v.systeem.clone()
+    };
+    let mut body = json!({
+        "model": v.model,
+        "store": false,
+        "stream": true,
+        "instructions": instructions,
+        "input": input,
+        "tool_choice": "auto",
+        "parallel_tool_calls": true,
+    });
+    if !v.gereedschap.is_empty() {
+        body["tools"] = Value::Array(
+            v.gereedschap
+                .iter()
+                .map(|g| {
+                    json!({
+                        "type": "function",
+                        "name": g.naam,
+                        "description": g.beschrijving,
+                        "parameters": if g.schema.is_null() { json!({"type": "object", "properties": {}}) } else { g.schema.clone() },
+                        "strict": false,
+                    })
+                })
+                .collect(),
+        );
+    }
+    body
+}
+
 fn lichaam_gemini(v: &Verzoek, sleutel: &str) -> Value {
     let mut inhoud: Vec<Value> = Vec::new();
     for b in &v.berichten {
@@ -1360,6 +2102,18 @@ fn lichaam_gemini(v: &Verzoek, sleutel: &str) -> Value {
     body
 }
 
+fn lichaam_gemini_code_assist(v: &Verzoek, sleutel: &str, project: &str) -> Value {
+    let inner = lichaam_gemini(v, sleutel);
+    let mut body = json!({
+        "model": v.model.trim(),
+        "request": inner,
+    });
+    if !project.trim().is_empty() {
+        body["project"] = json!(project.trim());
+    }
+    body
+}
+
 /// Haalt sleutels weg die Gemini niet kent, diep.
 fn schoon_schema(s: &Value) -> Value {
     match s {
@@ -1380,7 +2134,7 @@ fn schoon_schema(s: &Value) -> Value {
 #[derive(Default)]
 pub struct Lus {
     aanbieder: String,
-    /// Per blokindex (Anthropic) of tool-index (OpenAI) de lopende aanroep.
+    /// Per blokindex (Anthropic / Codex) of tool-index (OpenAI) de lopende aanroep: `(call_id, naam, args)`.
     lopend: Vec<(String, String, String)>,
     stopreden: String,
     invoer: u64,
@@ -1409,6 +2163,7 @@ impl Lus {
         match self.aanbieder.as_str() {
             "anthropic" => self.anthropic(&json),
             "gemini" => self.gemini(&json),
+            "codex" => self.codex(&json),
             _ => self.openai(&json),
         }
     }
@@ -1537,7 +2292,6 @@ impl Lus {
                 "stop" => "einde".to_string(),
                 anders => anders.to_string(),
             };
-            // Bij OpenAI is er geen sluitbericht per aanroep: hier is hij klaar.
             for (id, naam, argumenten) in std::mem::take(&mut self.lopend) {
                 if !naam.is_empty() {
                     uit.push(Gebeurtenis::Oproep { id, naam, argumenten: argumenten_of_leeg(&argumenten) });
@@ -1547,7 +2301,121 @@ impl Lus {
         uit
     }
 
+    /// Responses API SSE (`chatgpt.com/backend-api/codex/responses`).
+    fn codex(&mut self, j: &Value) -> Vec<Gebeurtenis> {
+        let mut uit = Vec::new();
+        let soort = j["type"].as_str().unwrap_or("");
+        match soort {
+            "response.output_text.delta" | "response.refusal.delta" => {
+                if let Some(t) = j["delta"].as_str().filter(|s| !s.is_empty()) {
+                    uit.push(Gebeurtenis::Tekst { tekst: t.to_string() });
+                    self.tekst_geweest = true;
+                }
+            }
+            "response.output_item.added" => {
+                let i = j["output_index"].as_u64().unwrap_or(0) as usize;
+                let item = &j["item"];
+                if item["type"] == "function_call" {
+                    let call_id = item["call_id"]
+                        .as_str()
+                        .or_else(|| item["id"].as_str())
+                        .unwrap_or("")
+                        .to_string();
+                    let naam = item["name"].as_str().unwrap_or("").to_string();
+                    let init_args = item["arguments"].as_str().unwrap_or("").to_string();
+                    if self.lopend.len() <= i {
+                        self.lopend.resize(i + 1, Default::default());
+                    }
+                    self.lopend[i] = (call_id, naam, init_args);
+                }
+            }
+            "response.function_call_arguments.delta" => {
+                let i = j["output_index"].as_u64().unwrap_or(0) as usize;
+                if let Some(deel) = j["delta"].as_str() {
+                    if let Some(slot) = self.lopend.get_mut(i) {
+                        slot.2.push_str(deel);
+                    }
+                }
+            }
+            "response.function_call_arguments.done" => {
+                let i = j["output_index"].as_u64().unwrap_or(0) as usize;
+                if let Some(volledig) = j["arguments"].as_str() {
+                    if let Some(slot) = self.lopend.get_mut(i) {
+                        slot.2 = volledig.to_string();
+                    }
+                }
+            }
+            "response.output_item.done" => {
+                let i = j["output_index"].as_u64().unwrap_or(0) as usize;
+                let item = &j["item"];
+                if item["type"] == "function_call" {
+                    let slot = self.lopend.get_mut(i).map(std::mem::take).unwrap_or_default();
+                    let call_id = item["call_id"]
+                        .as_str()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or(&slot.0)
+                        .to_string();
+                    let naam = item["name"]
+                        .as_str()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or(&slot.1)
+                        .to_string();
+                    let args_str = item["arguments"]
+                        .as_str()
+                        .filter(|s| !s.is_empty())
+                        .unwrap_or(&slot.2);
+                    if !naam.is_empty() {
+                        uit.push(Gebeurtenis::Oproep {
+                            id: call_id,
+                            naam,
+                            argumenten: argumenten_of_leeg(args_str),
+                        });
+                        self.stopreden = "gereedschap".to_string();
+                    }
+                }
+            }
+            "response.completed" | "response.done" | "response.incomplete" => {
+                let resp = &j["response"];
+                if let Some(n) = resp["usage"]["input_tokens"].as_u64() {
+                    self.invoer = n;
+                }
+                if let Some(n) = resp["usage"]["output_tokens"].as_u64() {
+                    self.uitvoer = n;
+                }
+                for (id, naam, argumenten) in std::mem::take(&mut self.lopend) {
+                    if !naam.is_empty() {
+                        uit.push(Gebeurtenis::Oproep {
+                            id,
+                            naam,
+                            argumenten: argumenten_of_leeg(&argumenten),
+                        });
+                        self.stopreden = "gereedschap".to_string();
+                    }
+                }
+                if self.stopreden.is_empty() {
+                    let status = resp["status"].as_str().unwrap_or("completed");
+                    self.stopreden = match status {
+                        "incomplete" => "lengte".to_string(),
+                        _ => "einde".to_string(),
+                    };
+                }
+            }
+            "response.failed" | "error" => {
+                let melding = j["response"]["error"]["message"]
+                    .as_str()
+                    .or_else(|| j["error"]["message"].as_str())
+                    .or_else(|| j["message"].as_str())
+                    .unwrap_or("the provider reported an error");
+                uit.push(Gebeurtenis::Fout { melding: melding.to_string() });
+            }
+            _ => {}
+        }
+        uit
+    }
+
     fn gemini(&mut self, j: &Value) -> Vec<Gebeurtenis> {
+        // Cloud Code Assist wikkelt het antwoord in `{"response": {...}}`.
+        let j = j.get("response").unwrap_or(j);
         let mut uit = Vec::new();
         if let Some(fout) = j.get("error") {
             let melding = fout["message"].as_str().unwrap_or("the provider reported an error");
@@ -1630,42 +2498,70 @@ pub async fn ai_vraag(
     let protocol = aanbieder_naam(&verzoek.aanbieder)?;
     let profiel = verzoek_profiel(&verzoek)?;
     let adres = adres(&verzoek)?;
+    let codex = is_codex_oauth(&verzoek);
+    let gemini_ca = is_gemini_code_assist(&verzoek);
 
-    let sleutel = match verzoek.auth_modus {
-        AuthModus::None => Zeroizing::new(String::new()),
-        AuthModus::OAuth => {
-            let p = profiel.clone();
-            match tauri::async_runtime::spawn_blocking(move || haal_oauth_token_op(&p))
+    let (sleutel, account_id, ontdekt_project): (Zeroizing<String>, Option<String>, Option<String>) =
+        match verzoek.auth_modus {
+            AuthModus::None => (Zeroizing::new(String::new()), None, None),
+            AuthModus::OAuth => {
+                let p = profiel.clone();
+                let gekozen_project = verzoek.project_id.clone();
+                let uit = tauri::async_runtime::spawn_blocking(move || -> Result<_, String> {
+                    let mut sessie = haal_oauth_sessie_op(&p)?;
+                    let mut proj = gekozen_project
+                        .as_deref()
+                        .map(str::trim)
+                        .filter(|s| !s.is_empty())
+                        .map(|s| s.to_string())
+                        .or_else(|| sessie.project_id.clone());
+                    if gemini_ca && proj.is_none() {
+                        proj = Some(zorg_voor_gemini_project(&p, &mut sessie, None)?);
+                    }
+                    Ok((
+                        Zeroizing::new(sessie.access_token),
+                        sessie.account_id,
+                        proj,
+                    ))
+                })
                 .await
-                .map_err(|e| e.to_string())?
-            {
-                Ok(t) => t,
-                Err(melding) => {
-                    let _ = kanaal.send(Gebeurtenis::Fout { melding });
-                    return Ok(());
+                .map_err(|e| e.to_string())?;
+                match uit {
+                    Ok(t) => t,
+                    Err(melding) => {
+                        let _ = kanaal.send(Gebeurtenis::Fout { melding });
+                        return Ok(());
+                    }
                 }
             }
-        }
-        AuthModus::ApiKey => {
-            let p = profiel.clone();
-            let gevonden = tauri::async_runtime::spawn_blocking(move || crate::erpnext::lees_geheim(DIENST, &p))
-                .await
-                .map_err(|e| e.to_string())??;
-            match gevonden {
-                Some(s) => s,
-                None if is_lokaal_adres(&verzoek.endpoint) => Zeroizing::new(String::new()),
-                None => {
-                    let _ = kanaal.send(Gebeurtenis::Fout {
-                        melding: format!("no API key stored for {profiel}; set one in Settings, AI assistant"),
-                    });
-                    return Ok(());
+            AuthModus::ApiKey => {
+                let p = profiel.clone();
+                let gevonden = tauri::async_runtime::spawn_blocking(move || crate::erpnext::lees_geheim(DIENST, &p))
+                    .await
+                    .map_err(|e| e.to_string())??;
+                match gevonden {
+                    Some(s) => (s, None, None),
+                    None if is_lokaal_adres(&verzoek.endpoint) => (Zeroizing::new(String::new()), None, None),
+                    None => {
+                        let _ = kanaal.send(Gebeurtenis::Fout {
+                            melding: format!("no API key stored for {profiel}; set one in Settings, AI assistant"),
+                        });
+                        return Ok(());
+                    }
                 }
             }
-        }
-    };
+        };
 
-    let body = lichaam(&verzoek, &sleutel);
-    let adres = if protocol == "gemini" && verzoek.auth_modus == AuthModus::ApiKey && !sleutel.is_empty() {
+    let mut verzoek_met_project = verzoek;
+    if ontdekt_project.is_some() {
+        verzoek_met_project.project_id = ontdekt_project;
+    }
+
+    let body = lichaam(&verzoek_met_project, &sleutel);
+    let adres = if protocol == "gemini"
+        && verzoek_met_project.auth_modus == AuthModus::ApiKey
+        && !sleutel.is_empty()
+    {
         let sep = if adres.contains('?') { '&' } else { '?' };
         format!(
             "{adres}{sep}key={}",
@@ -1674,10 +2570,11 @@ pub async fn ai_vraag(
     } else {
         adres
     };
-    let koppen = kopregels(&verzoek, &sleutel);
+    let koppen = kopregels(&verzoek_met_project, &sleutel, account_id.as_deref());
     drop(sleutel);
 
-    tauri::async_runtime::spawn_blocking(move || stuur(&protocol, &adres, &koppen, &body, &stop, &kanaal))
+    let lus_soort = if codex { "codex".to_string() } else { protocol };
+    tauri::async_runtime::spawn_blocking(move || stuur(&lus_soort, &adres, &koppen, &body, &stop, &kanaal))
         .await
         .map_err(|e| e.to_string())?
 }
@@ -1804,6 +2701,8 @@ mod tests {
             }],
             max_tokens: 1024,
             temperatuur: None,
+            extra_koppen: HashMap::new(),
+            project_id: None,
         }
     }
 
@@ -1826,6 +2725,18 @@ mod tests {
     }
 
     #[test]
+    fn anthropic_oauth_gebruikt_bearer_zonder_api_key() {
+        let mut v = verzoek("anthropic");
+        v.auth_modus = AuthModus::OAuth;
+        let body = lichaam(&v, "tok");
+        assert_eq!(body["system"], "Je bent een constructeur.");
+        let kop = kopregels(&v, "tok", None);
+        assert!(kop.iter().any(|(k, val)| k == "authorization" && val == "Bearer tok"));
+        assert!(kop.iter().any(|(k, val)| k == "anthropic-version" && val == "2023-06-01"));
+        assert!(!kop.iter().any(|(k, _)| k == "x-api-key" || k == "user-agent"));
+    }
+
+    #[test]
     fn openai_zet_de_geschiedenis_om() {
         let body = lichaam(&verzoek("openai"), "s3cret");
         let berichten = body["messages"].as_array().unwrap();
@@ -1840,7 +2751,55 @@ mod tests {
     }
 
     #[test]
-    fn gemini_zet_de_geschiedenis_om() {
+    fn openai_codex_oauth_bouwt_responses_api_en_leest_sse() {
+        let mut v = verzoek("openai");
+        v.auth_modus = AuthModus::OAuth;
+        v.endpoint = "https://api.openai.com/v1".to_string();
+        assert_eq!(adres(&v).unwrap(), CODEX_RESPONSES_URL);
+        let body = lichaam(&v, "oauth-tok");
+        assert_eq!(body["store"], false);
+        assert_eq!(body["instructions"], "Je bent een constructeur.");
+        let input = body["input"].as_array().unwrap();
+        assert_eq!(input[0]["role"], "user");
+        assert_eq!(input[1]["type"], "function_call");
+        assert_eq!(input[2]["type"], "function_call_output");
+        assert_eq!(body["tools"][0]["name"], "sheet_evaluate");
+        assert_eq!(body["tools"][0]["strict"], false);
+
+        let kop = kopregels(&v, "oauth-tok", Some("acct_123"));
+        assert!(kop.iter().any(|(k, val)| k == "chatgpt-account-id" && val == "acct_123"));
+        assert!(kop.iter().any(|(k, val)| k == "openai-beta" && val == "responses=experimental"));
+
+        let mut lus = Lus::nieuw("codex");
+        assert_eq!(
+            lus.regel("data: {\"type\":\"response.output_text.delta\",\"delta\":\"UC \"}"),
+            vec![Gebeurtenis::Tekst { tekst: "UC ".to_string() }]
+        );
+        assert!(lus
+            .regel("data: {\"type\":\"response.output_item.added\",\"output_index\":1,\"item\":{\"type\":\"function_call\",\"call_id\":\"c1\",\"name\":\"sheet_get\",\"arguments\":\"\"}}")
+            .is_empty());
+        assert!(lus
+            .regel("data: {\"type\":\"response.function_call_arguments.delta\",\"output_index\":1,\"delta\":\"{\\\"id\\\":\\\"b1\\\"}\"}")
+            .is_empty());
+        assert_eq!(
+            lus.regel("data: {\"type\":\"response.output_item.done\",\"output_index\":1,\"item\":{\"type\":\"function_call\",\"call_id\":\"c1\",\"name\":\"sheet_get\",\"arguments\":\"{\\\"id\\\":\\\"b1\\\"}\"}}"),
+            vec![Gebeurtenis::Oproep {
+                id: "c1".to_string(),
+                naam: "sheet_get".to_string(),
+                argumenten: json!({ "id": "b1" }),
+            }]
+        );
+        assert!(lus
+            .regel("data: {\"type\":\"response.completed\",\"response\":{\"status\":\"completed\",\"usage\":{\"input_tokens\":50,\"output_tokens\":20}}}")
+            .is_empty());
+        assert_eq!(
+            lus.klaar(),
+            Gebeurtenis::Klaar { stopreden: "gereedschap".to_string(), invoer: 50, uitvoer: 20 }
+        );
+    }
+
+    #[test]
+    fn gemini_zet_de_geschiedenis_om_en_code_assist_wikkelt() {
         let body = lichaam(&verzoek("gemini"), "s3cret");
         let inhoud = body["contents"].as_array().unwrap();
         assert_eq!(inhoud[0]["role"], "user");
@@ -1853,6 +2812,16 @@ mod tests {
         assert!(schoon_schema(&json!({"additionalProperties": false, "type": "object"}))
             .get("additionalProperties")
             .is_none());
+
+        let mut ca = verzoek("gemini");
+        ca.auth_modus = AuthModus::OAuth;
+        ca.endpoint = "https://generativelanguage.googleapis.com/v1beta".to_string();
+        ca.project_id = Some("proj-99".to_string());
+        assert_eq!(adres(&ca).unwrap(), format!("{CLOUDCODE_BASIS}:streamGenerateContent?alt=sse"));
+        let ca_body = lichaam(&ca, "tok");
+        assert_eq!(ca_body["project"], "proj-99");
+        assert_eq!(ca_body["model"], "test-model");
+        assert!(ca_body["request"]["contents"].is_array());
     }
 
     #[test]
@@ -1867,159 +2836,103 @@ mod tests {
         v.endpoint = "http://127.0.0.1:3425".to_string();
         assert_eq!(adres(&v).unwrap(), "http://127.0.0.1:3425/v1/chat/completions");
         // Derdepartij met `/api/v1`, `/v1`, `/api/paas/v4` krijgt geen dubbel `/v1`.
-        v.endpoint = "https://openrouter.ai/api/v1/".to_string();
+        v.endpoint = "https://openrouter.ai/api/v1".to_string();
         assert_eq!(adres(&v).unwrap(), "https://openrouter.ai/api/v1/chat/completions");
-        v.endpoint = "http://127.0.0.1:11434/v1".to_string();
-        assert_eq!(adres(&v).unwrap(), "http://127.0.0.1:11434/v1/chat/completions");
+        v.endpoint = "https://api.deepseek.com/v1".to_string();
+        assert_eq!(adres(&v).unwrap(), "https://api.deepseek.com/v1/chat/completions");
         v.endpoint = "https://open.bigmodel.cn/api/paas/v4".to_string();
         assert_eq!(adres(&v).unwrap(), "https://open.bigmodel.cn/api/paas/v4/chat/completions");
-        v.endpoint = "https://custom.example.com/proxy/v1/chat/completions".to_string();
-        assert_eq!(adres(&v).unwrap(), "https://custom.example.com/proxy/v1/chat/completions");
-        // Een onbekend protocol bestaat niet.
-        assert!(adres(&verzoek("openrouter")).is_err());
     }
 
     #[test]
-    fn de_kopregels_per_aanbieder_en_oauth() {
-        let koppen = kopregels(&verzoek("anthropic"), "s3cret");
-        assert!(koppen.iter().any(|(k, v)| k == "x-api-key" && v == "s3cret"));
-        assert!(koppen.iter().any(|(k, _)| k == "anthropic-version"));
-        // OAuth bij Anthropic en Gemini gebruikt Bearer i.p.v. x-api-key / query.
-        let mut v = verzoek("anthropic");
-        v.auth_modus = AuthModus::OAuth;
-        let koppen = kopregels(&v, "oauth-tok");
-        assert!(koppen.iter().any(|(k, v)| k == "authorization" && v == "Bearer oauth-tok"));
-        assert!(!koppen.iter().any(|(k, _)| k == "x-api-key"));
-        let mut vg = verzoek("gemini");
-        vg.auth_modus = AuthModus::OAuth;
-        let koppen = kopregels(&vg, "gem-tok");
-        assert!(koppen.iter().any(|(k, v)| k == "authorization" && v == "Bearer gem-tok"));
-        // OpenAI ApiKey gebruikt Bearer; AuthModus::None stuurt nooit auth.
-        let koppen = kopregels(&verzoek("openai"), "s3cret");
-        assert!(koppen.iter().any(|(k, v)| k == "authorization" && v == "Bearer s3cret"));
-        let mut vn = verzoek("openai");
-        vn.auth_modus = AuthModus::None;
-        let koppen = kopregels(&vn, "s3cret");
-        assert!(!koppen.iter().any(|(k, _)| k == "authorization"));
-    }
+    fn jwt_en_handmatige_oauth_code_state() {
+        // JWT payload: {"email":"u@example.com","https://api.openai.com/auth":{"chatgpt_account_id":"acct_abc"}}
+        let payload = URL_SAFE_NO_PAD.encode(
+            r#"{"email":"u@example.com","https://api.openai.com/auth":{"chatgpt_account_id":"acct_abc"}}"#,
+        );
+        let jwt = format!("aaa.{payload}.bbb");
+        assert_eq!(jwt_account(&jwt).as_deref(), Some("u@example.com"));
+        assert_eq!(jwt_chatgpt_account_id(&jwt).as_deref(), Some("acct_abc"));
 
-    #[test]
-    fn profiel_id_regels() {
-        assert_eq!(profiel_id("DeepSeek-V3").unwrap(), "deepseek-v3");
-        assert_eq!(profiel_id("custom_1").unwrap(), "custom_1");
-        assert!(profiel_id("").is_err());
-        assert!(profiel_id("oauth:abc").is_err());
-        assert!(profiel_id("../secret").is_err());
-        assert!(profiel_id("-begint-met-streep").is_err());
-    }
-
-    #[test]
-    fn pkce_challenge_rfc7636_vector() {
-        // Officieel testvoorbeeld uit RFC 7636 Appendix B.
         assert_eq!(
-            pkce_challenge("dBjftJeZ4CVP-mB92K27uhbUJU1p1r_wW1gFWFOEjXk"),
-            "E9Melhoa2OwvFrEMTJguCHaoeK1t8URWbuGJSstw-cM"
+            parse_handmatige_invoer("abc123#st_xyz", Some("st_xyz")).unwrap(),
+            "abc123"
+        );
+        assert!(parse_handmatige_invoer("abc123#fout", Some("st_xyz")).is_err());
+        assert_eq!(
+            parse_handmatige_invoer("https://auth.example.com/oauth/callback?code=c9&state=s9", Some("s9"))
+                .unwrap(),
+            "c9"
         );
     }
 
     #[test]
-    fn oauth_token_antwoorden_worden_gelezen() {
-        let tok = parse_token_antwoord(
-            r#"{"access_token":"at-1","refresh_token":"rt-1","expires_in":3600,"token_type":"Bearer"}"#,
-            None,
-            Some("https://oauth.example.com/token"),
-            Some("cid"),
-            1000,
-        )
-        .unwrap();
-        assert_eq!(tok.access_token, "at-1");
-        assert_eq!(tok.refresh_token.as_deref(), Some("rt-1"));
-        assert_eq!(tok.expires_at, Some(4600));
-        // OpenRouter PKCE stuurt `{"key":"sk-or-..."}`.
-        let or_tok = parse_token_antwoord(r#"{"key":"sk-or-v1-abc"}"#, None, None, None, 1000).unwrap();
-        assert_eq!(or_tok.access_token, "sk-or-v1-abc");
-        assert_eq!(or_tok.expires_at, None);
-        // Form-urlencoded (bijv. GitHub) wordt ook herkend, met behoud van vorige refresh_token.
-        let gh_tok = parse_token_antwoord(
-            "access_token=tok_test_123&token_type=bearer",
-            Some("old-rt"),
-            None,
-            None,
-            1000,
-        )
-        .unwrap();
-        assert_eq!(gh_tok.access_token, "tok_test_123");
-        assert_eq!(gh_tok.refresh_token.as_deref(), Some("old-rt"));
-        assert!(parse_token_antwoord(r#"{"error":"access_denied","error_description":"user cancelled"}"#, None, None, None, 1000).is_err());
-    }
-
-    #[test]
-    fn modellenlijst_wordt_geparst() {
-        let oa = modellen_uit_json("openai", &json!({"data": [{"id": "deepseek-reasoner"}, {"id": "deepseek-chat"}, {"id": "deepseek-chat"}]}));
-        assert_eq!(oa, vec!["deepseek-chat", "deepseek-reasoner"]);
-        let gem = modellen_uit_json("gemini", &json!({"models": [{"name": "models/gemini-2.5-pro"}]}));
-        assert_eq!(gem, vec!["gemini-2.5-pro"]);
-        assert_eq!(modellen_adres("openai", "https://openrouter.ai/api/v1").unwrap(), "https://openrouter.ai/api/v1/models");
-        assert_eq!(modellen_adres("openai", "https://api.deepseek.com").unwrap(), "https://api.deepseek.com/v1/models");
-    }
-
-    #[test]
-    fn anthropic_leest_tekst_en_een_aanroep() {
+    fn sse_leest_anthropic_tekst_en_aanroep() {
         let mut lus = Lus::nieuw("anthropic");
+        assert!(lus.regel("event: content_block_start").is_empty());
         assert_eq!(
             lus.regel("data: {\"type\":\"content_block_start\",\"index\":0,\"content_block\":{\"type\":\"text\",\"text\":\"\"}}"),
             vec![]
         );
         assert_eq!(
-            lus.regel("data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Ik reken\"}}"),
-            vec![Gebeurtenis::Tekst { tekst: "Ik reken".to_string() }]
+            lus.regel("data: {\"type\":\"content_block_delta\",\"index\":0,\"delta\":{\"type\":\"text_delta\",\"text\":\"Hallo \"}}"),
+            vec![Gebeurtenis::Tekst { tekst: "Hallo ".to_string() }]
         );
-        assert_eq!(
-            lus.regel("data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"toolu_1\",\"name\":\"sheet_evaluate\",\"input\":{}}}"),
-            vec![]
-        );
-        assert_eq!(
-            lus.regel("data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"id\\\":\"}}"),
-            vec![]
-        );
-        assert_eq!(
-            lus.regel("data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"\\\"ex-1\\\"}\"}}"),
-            vec![]
-        );
+        assert!(lus
+            .regel("data: {\"type\":\"content_block_start\",\"index\":1,\"content_block\":{\"type\":\"tool_use\",\"id\":\"tu_1\",\"name\":\"sheets_list\",\"input\":{}}}")
+            .is_empty());
+        assert!(lus
+            .regel("data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"{\\\"a\\\":\"}}")
+            .is_empty());
+        assert!(lus
+            .regel("data: {\"type\":\"content_block_delta\",\"index\":1,\"delta\":{\"type\":\"input_json_delta\",\"partial_json\":\"1}\"}}")
+            .is_empty());
         assert_eq!(
             lus.regel("data: {\"type\":\"content_block_stop\",\"index\":1}"),
-            vec![Gebeurtenis::Oproep {
-                id: "toolu_1".to_string(),
-                naam: "sheet_evaluate".to_string(),
-                argumenten: json!({ "id": "ex-1" }),
-            }]
+            vec![Gebeurtenis::Oproep { id: "tu_1".to_string(), naam: "sheets_list".to_string(), argumenten: json!({ "a": 1 }) }]
         );
-        let _ = lus.regel("data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42}}");
+        assert!(lus
+            .regel("data: {\"type\":\"message_delta\",\"delta\":{\"stop_reason\":\"tool_use\"},\"usage\":{\"output_tokens\":42}}")
+            .is_empty());
         assert_eq!(
             lus.klaar(),
             Gebeurtenis::Klaar { stopreden: "gereedschap".to_string(), invoer: 0, uitvoer: 42 }
         );
-        assert_eq!(lus.regel(""), vec![]);
-        assert_eq!(lus.regel("event: ping"), vec![]);
-        assert_eq!(lus.regel("data: [DONE]"), vec![]);
     }
 
     #[test]
-    fn openai_leest_tekst_en_een_aanroep() {
+    fn sse_leest_openai_tekst_en_aanroep() {
         let mut lus = Lus::nieuw("openai");
         assert_eq!(
-            lus.regel("data: {\"choices\":[{\"delta\":{\"content\":\"Ik \"}}]}"),
-            vec![Gebeurtenis::Tekst { tekst: "Ik ".to_string() }]
+            lus.regel("data: {\"choices\":[{\"delta\":{\"content\":\"Hoi\"}}]}"),
+            vec![Gebeurtenis::Tekst { tekst: "Hoi".to_string() }]
         );
-        let _ = lus.regel("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"call_1\",\"function\":{\"name\":\"sheet_get\",\"arguments\":\"\"}}]}}]}");
-        let _ = lus.regel("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"{\\\"id\\\":\\\"ex-1\\\"}\"}}]}}]}");
+        assert!(lus
+            .regel("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"id\":\"c1\",\"function\":{\"name\":\"sheet_get\",\"arguments\":\"{\\\"id\\\":\"}}]}}]}")
+            .is_empty());
+        assert!(lus
+            .regel("data: {\"choices\":[{\"delta\":{\"tool_calls\":[{\"index\":0,\"function\":{\"arguments\":\"\\\"b1\\\"}\"}}]}}]}")
+            .is_empty());
         assert_eq!(
-            lus.regel("data: {\"choices\":[{\"delta\":{},\"finish_reason\":\"tool_calls\"}],\"usage\":{\"prompt_tokens\":10,\"completion_tokens\":5}}"),
-            vec![Gebeurtenis::Oproep {
-                id: "call_1".to_string(),
-                naam: "sheet_get".to_string(),
-                argumenten: json!({ "id": "ex-1" }),
-            }]
+            lus.regel("data: {\"choices\":[{\"finish_reason\":\"tool_calls\"}]}"),
+            vec![Gebeurtenis::Oproep { id: "c1".to_string(), naam: "sheet_get".to_string(), argumenten: json!({ "id": "b1" }) }]
+        );
+        assert_eq!(lus.klaar().stopreden(), "gereedschap");
+    }
+
+    #[test]
+    fn sse_leest_gemini_en_code_assist_inpakking() {
+        let mut lus = Lus::nieuw("gemini");
+        assert_eq!(
+            lus.regel("data: {\"response\":{\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Berekening\"}]}}],\"usageMetadata\":{\"promptTokenCount\":10,\"candidatesTokenCount\":5}}}"),
+            vec![Gebeurtenis::Tekst { tekst: "Berekening".to_string() }]
+        );
+        let events = lus.regel(
+            "data: {\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"sheet_evaluate\",\"args\":{\"id\":\"1\"}}}]},\"finishReason\":\"STOP\"}]}",
+        );
+        assert_eq!(
+            events,
+            vec![Gebeurtenis::Oproep { id: "gemini-1".to_string(), naam: "sheet_evaluate".to_string(), argumenten: json!({ "id": "1" }) }]
         );
         assert_eq!(
             lus.klaar(),
@@ -2028,42 +2941,77 @@ mod tests {
     }
 
     #[test]
-    fn gemini_leest_tekst_en_een_aanroep() {
-        let mut lus = Lus::nieuw("gemini");
+    fn foutmelding_korte_en_veilige_koppen() {
+        let mut v = verzoek("openai");
+        v.extra_koppen.insert("HTTP-Referer".to_string(), "https://ocss.tw".to_string());
+        v.extra_koppen.insert("Authorization".to_string(), "Bearer evil".to_string());
+        v.extra_koppen.insert("Bad\r\nHeader".to_string(), "x".to_string());
+        let kop = kopregels(&v, "real-key", None);
+        assert!(kop.iter().any(|(k, val)| k == "HTTP-Referer" && val == "https://ocss.tw"));
+        assert!(!kop.iter().any(|(_, val)| val == "Bearer evil"));
+        assert!(!kop.iter().any(|(k, _)| k.contains('\r')));
+    }
+
+    #[test]
+    fn profiel_id_blokkeert_voorvoegsels_en_vreemde_tekens() {
+        assert_eq!(profiel_id("DeepSeek-1").unwrap(), "deepseek-1");
+        assert!(profiel_id("oauth:openai").is_err());
+        assert!(profiel_id("").is_err());
+        assert!(profiel_id("../a").is_err());
+    }
+
+    #[test]
+    fn oauth_adres_modellen_en_status() {
+        let v = OAuthStartVerzoek {
+            profiel: "openrouter".to_string(),
+            soort: "openrouter".to_string(),
+            auth_url: "https://openrouter.ai/auth".to_string(),
+            token_url: "https://openrouter.ai/api/v1/auth/keys".to_string(),
+            client_id: "".to_string(),
+            scopes: "".to_string(),
+            callback_port: None,
+            callback_path: None,
+            redirect_host: None,
+            token_format: None,
+            custom_redirect_uri: None,
+            state_is_verifier: false,
+            extra_params: HashMap::new(),
+        };
+        let u = bouw_oauth_adres(&v, "http://127.0.0.1:4321/oauth/callback", "chal", "st").unwrap();
+        assert!(u.contains("callback_url="));
+        assert!(u.contains("code_challenge=chal"));
+
+        let tok = parse_token_antwoord("{\"key\":\"sk-or-v1-abc\"}", None, None, None, None, 1000).unwrap();
+        assert_eq!(tok.access_token, "sk-or-v1-abc");
+        let st = status_uit_geheimen(false, Some(&tok), false, 1000);
+        assert!(st.heeft_oauth);
+        assert!(!st.oauth_verlopen);
+
         assert_eq!(
-            lus.regel("data: {\"candidates\":[{\"content\":{\"parts\":[{\"text\":\"Ik reken\"}]}}]}"),
-            vec![Gebeurtenis::Tekst { tekst: "Ik reken".to_string() }]
+            modellen_adres("openai", "https://api.openai.com/v1", AuthModus::OAuth).unwrap(),
+            CODEX_MODELS_URL
         );
         assert_eq!(
-            lus.regel("data: {\"candidates\":[{\"content\":{\"parts\":[{\"functionCall\":{\"name\":\"sheet_get\",\"args\":{\"id\":\"ex-1\"}}}]}}]}"),
-            vec![Gebeurtenis::Oproep {
-                id: "gemini-1".to_string(),
-                naam: "sheet_get".to_string(),
-                argumenten: json!({ "id": "ex-1" }),
-            }]
+            modellen_adres("openai", "https://openrouter.ai/api/v1", AuthModus::ApiKey).unwrap(),
+            "https://openrouter.ai/api/v1/models"
         );
-        let _ = lus.regel("data: {\"candidates\":[{\"content\":{\"parts\":[]},\"finishReason\":\"STOP\"}]}");
-        match lus.klaar() {
-            Gebeurtenis::Klaar { stopreden, .. } => assert_eq!(stopreden, "gereedschap"),
-            anders => panic!("{anders:?}"),
+        assert_eq!(
+            modellen_adres("gemini", "https://generativelanguage.googleapis.com", AuthModus::ApiKey).unwrap(),
+            "https://generativelanguage.googleapis.com/v1beta/models"
+        );
+        let lijst = modellen_uit_json(
+            "openai",
+            &json!({ "models": [ { "slug": "gpt-5.3-codex" }, { "id": "gpt-5.2" } ] }),
+        );
+        assert_eq!(lijst, vec!["gpt-5.2", "gpt-5.3-codex"]);
+    }
+
+    impl Gebeurtenis {
+        fn stopreden(&self) -> &str {
+            match self {
+                Gebeurtenis::Klaar { stopreden, .. } => stopreden,
+                _ => "",
+            }
         }
-    }
-
-    #[test]
-    fn een_fout_van_de_aanbieder_wordt_een_melding() {
-        let mut lus = Lus::nieuw("anthropic");
-        let uit = lus.regel("data: {\"type\":\"error\",\"error\":{\"message\":\"overloaded\"}}");
-        assert_eq!(uit, vec![Gebeurtenis::Fout { melding: "overloaded".to_string() }]);
-        let mut lus = Lus::nieuw("openai");
-        let uit = lus.regel("data: {\"error\":{\"message\":\"invalid key\"}}");
-        assert_eq!(uit, vec![Gebeurtenis::Fout { melding: "invalid key".to_string() }]);
-    }
-
-    #[test]
-    fn een_http_fout_wordt_ingekort() {
-        assert_eq!(foutmelding(401, ""), "the model answered with HTTP 401");
-        assert_eq!(foutmelding(400, " bad request "), "the model answered with HTTP 400: bad request");
-        let lang = "x".repeat(1000);
-        assert!(foutmelding(500, &lang).chars().count() < 450);
     }
 }

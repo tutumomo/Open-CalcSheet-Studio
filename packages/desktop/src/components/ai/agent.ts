@@ -59,6 +59,10 @@ export interface AgentDeps {
   model: string;
   maxTokens?: number;
   temperatuur?: number;
+  /** Extra HTTP-kopregels die het profiel meekrijgt (eigen endpoints). */
+  extraKoppen?: Record<string, string>;
+  /** GCP-project voor Gemini Code Assist (Workspace-accounts). */
+  projectId?: string;
   /** De systeemprompt: wie de assistent is en wat het project nu is. */
   systeem: string;
   /** De gereedschappen zoals de aanbieder ze ziet. */
@@ -142,6 +146,10 @@ export async function voerVraagUit(
         gereedschap: deps.gereedschap,
         max_tokens: deps.maxTokens ?? 4096,
         ...(deps.temperatuur !== undefined ? { temperatuur: deps.temperatuur } : {}),
+        ...(deps.extraKoppen && Object.keys(deps.extraKoppen).length > 0
+          ? { extra_koppen: deps.extraKoppen }
+          : {}),
+        ...(deps.projectId && deps.projectId.trim() !== "" ? { project_id: deps.projectId.trim() } : {}),
       },
       (g) => {
         switch (g.soort) {

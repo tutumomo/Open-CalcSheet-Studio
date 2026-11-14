@@ -162,13 +162,36 @@
 }
 
 .ai-veld input,
-.ai-veld select {
+.ai-veld select,
+.ai-koppen-invoer {
   font: inherit;
   color: var(--oa-text);
   background: var(--oa-surface, #fff);
   border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius-s, 3px);
   padding: 3px 6px;
+}
+
+.ai-koppen-invoer {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 0.88em;
+  resize: vertical;
+}
+
+.ai-device-code {
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 1.25em;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-align: center;
+  padding: 6px 8px;
+  border: 1px dashed var(--oa-border-strong, var(--oa-border));
+  border-radius: var(--oa-radius-s, 3px);
+  background: var(--oa-surface-sunken, rgba(0, 0, 0, 0.04));
+  user-select: text;
+  -webkit-user-select: text;
 }
 
 .ai-instellingen-rij {

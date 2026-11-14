@@ -21,6 +21,7 @@ import {
   listModels,
   oauthCancel,
   oauthCompleteManual,
+  oauthDeviceStart,
   oauthLogin,
   oauthLogout,
   oauthZetClientSecret,
@@ -82,6 +83,8 @@ export interface AiOAuthLopend {
   url?: string;
   redirectUri?: string;
   waarschuwing?: string;
+  /** Device Code-aanmelding: de code die de gebruiker bij de aanbieder invoert. */
+  device?: { userCode: string; verificationUrl: string; interval: number };
 }
 
 interface AiStand {
@@ -116,7 +119,8 @@ interface AiStand {
   verwijderProfiel(id: string): Promise<void>;
   bewaarSleutel(sleutel: string): Promise<void>;
   bewaarClientSecret(secret: string): Promise<void>;
-  startOAuthLogin(): Promise<void>;
+  startOAuthLogin(copyCode?: boolean): Promise<void>;
+  startDeviceLogin(): Promise<void>;
   rondOAuthHandmatigAf(invoer: string): Promise<void>;
   annuleerOAuth(): Promise<void>;
   logOAuthUit(): Promise<void>;
@@ -295,6 +299,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
             },
           }
         : {}),
+      ...(sjabloon.extraKoppen ? { extraKoppen: { ...sjabloon.extraKoppen } } : {}),
     };
     const profielen = [...bestaande, nieuw];
     set({ profielen, actiefId: id, fout: null, oauthFout: null });
@@ -337,7 +342,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
     set({ statussen: { ...get().statussen, [p.id]: st } });
   },
 
-  async startOAuthLogin() {
+  async startOAuthLogin(copyCode) {
     const p = profielVan(get().actiefId, get().profielen);
     const oauth = p.oauth;
     if (!oauth || oauth.authUrl.trim() === "" || oauth.tokenUrl.trim() === "") {
@@ -348,6 +353,7 @@ export const useAiStore = create<AiStand>((set, get) => ({
       set({ oauthFout: i18next.t("ai:oauthClientIdMist") });
       return;
     }
+    const kopieer = copyCode === true && oauth.copyCodeRedirectUri !== undefined;
     set({ oauthLopend: { profiel: p.id }, oauthFout: null, fout: null });
     try {
       const st = await oauthLogin(
@@ -359,6 +365,11 @@ export const useAiStore = create<AiStand>((set, get) => ({
           client_id: oauth.clientId.trim(),
           scopes: oauth.scopes.trim(),
           ...(oauth.callbackPort ? { callback_port: oauth.callbackPort } : {}),
+          ...(oauth.callbackPath ? { callback_path: oauth.callbackPath } : {}),
+          ...(oauth.redirectHost ? { redirect_host: oauth.redirectHost } : {}),
+          ...(oauth.tokenFormat ? { token_format: oauth.tokenFormat } : {}),
+          ...(oauth.stateIsVerifier ? { state_is_verifier: true } : {}),
+          ...(kopieer && oauth.copyCodeRedirectUri ? { custom_redirect_uri: oauth.copyCodeRedirectUri } : {}),
           ...(oauth.extraParams ? { extra_params: oauth.extraParams } : {}),
         },
         (g) => {
@@ -366,11 +377,45 @@ export const useAiStore = create<AiStand>((set, get) => ({
           if (!lopend || lopend.profiel !== p.id) return;
           if (g.soort === "adres") {
             set({ oauthLopend: { ...lopend, url: g.url, redirectUri: g.redirect_uri } });
+          } else if (g.soort === "device") {
+            set({
+              oauthLopend: {
+                ...lopend,
+                device: { userCode: g.user_code, verificationUrl: g.verification_url, interval: g.interval },
+              },
+            });
           } else if (g.soort === "waarschuwing") {
             set({ oauthLopend: { ...lopend, waarschuwing: g.melding } });
           }
         },
       );
+      set({ statussen: { ...get().statussen, [p.id]: st }, oauthLopend: null, oauthFout: null });
+    } catch (e) {
+      const melding = e instanceof Error ? e.message : String(e);
+      set({ oauthLopend: null, oauthFout: melding });
+    }
+  },
+
+  /** Device Code-aanmelding (ChatGPT/Codex): code intypen bij de aanbieder. */
+  async startDeviceLogin() {
+    const p = profielVan(get().actiefId, get().profielen);
+    const clientId = p.oauth?.clientId ?? "";
+    set({ oauthLopend: { profiel: p.id }, oauthFout: null, fout: null });
+    try {
+      const st = await oauthDeviceStart(p.id, clientId, (g) => {
+        const lopend = get().oauthLopend;
+        if (!lopend || lopend.profiel !== p.id) return;
+        if (g.soort === "device") {
+          set({
+            oauthLopend: {
+              ...lopend,
+              device: { userCode: g.user_code, verificationUrl: g.verification_url, interval: g.interval },
+            },
+          });
+        } else if (g.soort === "waarschuwing") {
+          set({ oauthLopend: { ...lopend, waarschuwing: g.melding } });
+        }
+      });
       set({ statussen: { ...get().statussen, [p.id]: st }, oauthLopend: null, oauthFout: null });
     } catch (e) {
       const melding = e instanceof Error ? e.message : String(e);
@@ -416,6 +461,9 @@ export const useAiStore = create<AiStand>((set, get) => ({
         profiel: p.id,
         endpoint: p.endpoint,
         auth_modus: p.authModus,
+        ...(p.extraKoppen && Object.keys(p.extraKoppen).length > 0
+          ? { extra_koppen: p.extraKoppen }
+          : {}),
       });
       set({ modellen: { ...get().modellen, [p.id]: lijst }, modellenBezig: false });
     } catch (e) {
@@ -495,6 +543,8 @@ export const useAiStore = create<AiStand>((set, get) => ({
           authModus: p.authModus,
           endpoint: p.endpoint,
           model: p.model,
+          ...(p.extraKoppen && Object.keys(p.extraKoppen).length > 0 ? { extraKoppen: p.extraKoppen } : {}),
+          ...(p.projectId ? { projectId: p.projectId } : {}),
           systeem: systeemMetBereik,
           gereedschap: aiGereedschap(),
           kenmerk: (naam) => {

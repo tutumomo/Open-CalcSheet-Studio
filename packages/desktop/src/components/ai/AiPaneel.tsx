@@ -13,9 +13,9 @@
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { useAiStore } from "../../store/aiStore.ts";
-import { AI_SJABLONEN, OAUTH_SJABLONEN, type AiProfiel } from "./profielen.ts";
+import { AI_SJABLONEN, OAUTH_SJABLONEN, leesKoppen, schrijfKoppen, verwachteRedirectUri, type AiProfiel } from "./profielen.ts";
 import { voorbeeldTekst } from "./beleid.ts";
-import type { AiAanbieder, AiAuthModus, AiOAuthSoort } from "../../tauri/ai.ts";
+import type { AiAanbieder, AiAuthModus, AiOAuthSoort, AiTokenFormaat } from "../../tauri/ai.ts";
 import type { Stap } from "./agent.ts";
 import "./AiPaneel.css";
 
@@ -70,8 +70,10 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
   const status = useAiStore((s) => s.statussen[profiel.id]);
   const oauthLopend = useAiStore((s) => s.oauthLopend);
   const oauthFout = useAiStore((s) => s.oauthFout);
+  const werkProfielBij = useAiStore((s) => s.werkProfielBij);
   const werkOAuthBij = useAiStore((s) => s.werkOAuthBij);
   const startOAuthLogin = useAiStore((s) => s.startOAuthLogin);
+  const startDeviceLogin = useAiStore((s) => s.startDeviceLogin);
   const rondOAuthHandmatigAf = useAiStore((s) => s.rondOAuthHandmatigAf);
   const annuleerOAuth = useAiStore((s) => s.annuleerOAuth);
   const logOAuthUit = useAiStore((s) => s.logOAuthUit);
@@ -99,8 +101,16 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
         {aangemeld ? (
           <>
             <span className="ai-status-ok">{t("oauthAangemeld")}</span>
-            {status?.oauth_account && (
-              <span className="ai-hint"> · {t("oauthAccount", { account: status.oauth_account })}</span>
+            {(status?.oauth_account || status?.oauth_account_id) && (
+              <span className="ai-hint">
+                {" "}
+                · {t("oauthAccount", { account: status.oauth_account || status.oauth_account_id })}
+              </span>
+            )}
+            {(profiel.projectId || status?.oauth_project_id) && (
+              <div className="ai-hint">
+                {t("oauthProject", { project: profiel.projectId || status?.oauth_project_id })}
+              </div>
             )}
             {status?.oauth_verlopen && <div className="ai-hint">{t("oauthVerlopenHint")}</div>}
           </>
@@ -113,10 +123,28 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
         <button
           className="ai-knop ai-knop-primair"
           disabled={oauthLopend !== null}
-          onClick={() => void startOAuthLogin()}
+          onClick={() => void startOAuthLogin(false)}
         >
           {t("oauthInloggen")}
         </button>
+        {oauth.copyCodeRedirectUri && (
+          <button
+            className="ai-knop"
+            disabled={oauthLopend !== null}
+            onClick={() => void startOAuthLogin(true)}
+          >
+            {t("oauthInloggenKopieer")}
+          </button>
+        )}
+        {oauth.deviceCode && (
+          <button
+            className="ai-knop"
+            disabled={oauthLopend !== null}
+            onClick={() => void startDeviceLogin()}
+          >
+            {t("oauthInloggenDevice")}
+          </button>
+        )}
         {aangemeld && (
           <button className="ai-knop" onClick={() => void logOAuthUit()}>
             {t("oauthUitloggen")}
@@ -124,7 +152,23 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
         )}
       </div>
 
-      {bezig && (
+      {bezig && oauthLopend.device && (
+        <div className="ai-oauth-lopend">
+          <div className="ai-hint">{t("oauthDeviceHint")}</div>
+          <div className="ai-device-code">{oauthLopend.device.userCode}</div>
+          {oauthLopend.waarschuwing && <div className="ai-hint">{oauthLopend.waarschuwing}</div>}
+          <div className="ai-instellingen-rij">
+            <a className="ai-knop" href={oauthLopend.device.verificationUrl} target="_blank" rel="noreferrer">
+              {t("oauthOpenOpnieuw")}
+            </a>
+            <button className="ai-knop" onClick={() => void annuleerOAuth()}>
+              {t("oauthAnnuleer")}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {bezig && !oauthLopend.device && (
         <div className="ai-oauth-lopend">
           <div className="ai-hint">{t("oauthWachtBrowser")}</div>
           {oauthLopend.waarschuwing && <div className="ai-hint">{oauthLopend.waarschuwing}</div>}
@@ -168,6 +212,7 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
       <details className="ai-details" open={!aangemeld && oauth.authUrl === ""}>
         <summary>{t("oauthConfig")}</summary>
         <div className="ai-details-inhoud">
+          <div className="ai-hint">{t("oauthRedirectHint", { uri: verwachteRedirectUri(oauth) })}</div>
           <label className="ai-veld">
             <span>{t("oauthSjabloon")}</span>
             <select
@@ -257,15 +302,47 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
             />
           </label>
           {oauth.soort === "pkce" && (
-            <label className="ai-veld">
-              <span>{t("oauthScopes")}</span>
-              <input
-                type="text"
-                value={oauth.scopes}
-                spellCheck={false}
-                onChange={(e) => void werkOAuthBij(profiel.id, { scopes: e.target.value })}
-              />
-            </label>
+            <>
+              <label className="ai-veld">
+                <span>{t("oauthScopes")}</span>
+                <input
+                  type="text"
+                  value={oauth.scopes}
+                  spellCheck={false}
+                  onChange={(e) => void werkOAuthBij(profiel.id, { scopes: e.target.value })}
+                />
+              </label>
+              <label className="ai-veld">
+                <span>{t("oauthCallbackPath")}</span>
+                <input
+                  type="text"
+                  value={oauth.callbackPath ?? "/oauth/callback"}
+                  spellCheck={false}
+                  onChange={(e) => void werkOAuthBij(profiel.id, { callbackPath: e.target.value })}
+                />
+              </label>
+              <label className="ai-veld">
+                <span>{t("oauthRedirectHost")}</span>
+                <select
+                  value={oauth.redirectHost ?? "127.0.0.1"}
+                  onChange={(e) => void werkOAuthBij(profiel.id, { redirectHost: e.target.value })}
+                >
+                  {["127.0.0.1", "localhost"].map((host) => (
+                    <option key={host} value={host}>{host}</option>
+                  ))}
+                </select>
+              </label>
+              <label className="ai-veld">
+                <span>{t("oauthTokenFormat")}</span>
+                <select
+                  value={oauth.tokenFormat ?? "form"}
+                  onChange={(e) => void werkOAuthBij(profiel.id, { tokenFormat: e.target.value as AiTokenFormaat })}
+                >
+                  <option value="form">{t("oauthTokenForm")}</option>
+                  <option value="json">{t("oauthTokenJson")}</option>
+                </select>
+              </label>
+            </>
           )}
           <label className="ai-veld">
             <span>{t("oauthPort")}</span>
@@ -282,6 +359,17 @@ function OAuthSectie({ profiel }: { profiel: AiProfiel }) {
               }}
             />
           </label>
+          {profiel.aanbieder === "gemini" && (
+            <label className="ai-veld">
+              <span>{t("oauthProjectId")}</span>
+              <input
+                type="text"
+                value={profiel.projectId ?? ""}
+                spellCheck={false}
+                onChange={(e) => void werkProfielBij(profiel.id, { projectId: e.target.value.trim() || undefined })}
+              />
+            </label>
+          )}
 
           <details className="ai-details">
             <summary>{t("oauthHandmatigToken")}</summary>
@@ -348,8 +436,15 @@ function Instellingen() {
   const [nieuwOpen, setNieuwOpen] = useState(false);
   const [sjabloonId, setSjabloonId] = useState(AI_SJABLONEN[0].id);
   const [nieuwNaam, setNieuwNaam] = useState("");
+  const [koppenTekst, setKoppenTekst] = useState("");
 
   const profiel = profielen.find((p) => p.id === actiefId) ?? profielen[0];
+  const profielId = profiel?.id ?? "";
+  const opgeslagenKoppen = profiel?.extraKoppen;
+  useEffect(() => {
+    setKoppenTekst(schrijfKoppen(opgeslagenKoppen));
+  }, [profielId]);
+
   if (!profiel) return null;
 
   const status = statussen[profiel.id];
@@ -542,6 +637,26 @@ function Instellingen() {
       {profiel.authModus === "oauth" && <OAuthSectie profiel={profiel} />}
 
       {profiel.authModus === "none" && <div className="ai-hint">{t("authGeenHint")}</div>}
+
+      {!profiel.ingebouwd && (
+        <details className="ai-details">
+          <summary>{t("extraKoppen")}</summary>
+          <div className="ai-details-inhoud">
+            <textarea
+              className="ai-koppen-invoer"
+              rows={2}
+              value={koppenTekst}
+              spellCheck={false}
+              aria-label={t("extraKoppen")}
+              onChange={(e) => {
+                const v = e.target.value;
+                setKoppenTekst(v);
+                void werkProfielBij(profiel.id, { extraKoppen: leesKoppen(v) });
+              }}
+            />
+          </div>
+        </details>
+      )}
     </div>
   );
 }

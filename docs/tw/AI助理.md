@@ -47,34 +47,38 @@ App 內建的 AI 助理（OCSS 規格 P2-15）。標題列的 **AI** 按鈕開�
 
 面板的「服務提供者」區塊支援**三個預設提供者**，並可自由新增任意數量的**自定義第三方或本機大模型**，各自可選擇**API 金鑰**、**OAuth 2.0 登入**或**無須驗證**：
 
-### 預設提供者
+### 預設提供者（API 金鑰與 OAuth 2.0 登入）
 
-| 提供者 | 協定 | 端點（預設） | 模型（預設） |
-|---|---|---|---|
-| Anthropic | Anthropic | `https://api.anthropic.com` | `claude-sonnet-5-5` |
-| OpenAI | OpenAI | `https://api.openai.com` | `gpt-5` |
-| Google Gemini | Gemini | `https://generativelanguage.googleapis.com` | `gemini-2.5-pro` |
+三個預設提供者皆支援 **API 金鑰**，以及 **OAuth 2.0**（`Authorization: Bearer`）認證模式：
+
+| 提供者 | 協定 | 端點（預設） | 模型（預設） | OAuth 流程與實際端點 |
+|---|---|---|---|---|
+| Anthropic (Claude) | Anthropic | `https://api.anthropic.com` | `claude-sonnet-5-5` | 預設 API 金鑰（`x-api-key`）；支援切換至 OAuth 2.0 PKCE 並設定自訂／企業 OAuth 閘道（`Authorization: Bearer`；Anthropic 未對第三方開放訂閱 OAuth 用戶端） |
+| OpenAI (ChatGPT) | OpenAI | `https://api.openai.com` | `gpt-5` | 開箱即用 PKCE S256（`http://localhost:1455/auth/callback`）與**裝置代碼登入**（`https://auth.openai.com/codex/device`）；OAuth 模式自動改走 ChatGPT Codex Responses API（`https://chatgpt.com/backend-api/codex/responses`、`chatgpt-account-id` JWT 識別） |
+| Google Gemini | Gemini | `https://generativelanguage.googleapis.com` | `gemini-2.5-pro` | 預先帶入 PKCE S256 端點（`http://127.0.0.1:<port>/oauth2callback`）與 Code Assist 範圍；於面板填入自己的 Google Cloud 桌面端 OAuth Client ID 與 Client Secret（亦支援以 `VITE_GEMINI_OAUTH_CLIENT_ID`／`OCSS_GEMINI_OAUTH_CLIENT_SECRET` 提供），OAuth 模式自動走 Google Code Assist（`cloudcode-pa.googleapis.com/v1internal:loadCodeAssist`／`onboardUser` 自動解析 GCP 專案 ID，亦可在面板手填 Project ID） |
+
+> 注意：Anthropic 僅對第一方官方用戶端提供訂閱 OAuth 並禁止第三方工具冒用；Google 桌面端 OAuth 依規定需帶 `client_secret`，為避免在公開程式碼庫存放憑證，請於面板填入自建 Google Cloud Desktop OAuth Client ID／Secret（存於作業系統金鑰環）或直接填 Gemini API 金鑰。
 
 ### 新增第三方／本機大模型
 
-點選「**+ 新增模型**」即可建立自訂設定檔，並附有常用預設範本（建好後仍可自由修改名稱、API 協定、端點與模型）：
+點選「**+ 新增模型**」即可建立自訂設定檔，並附有常用預設範本（建好後仍可自由修改名稱、API 協定、端點、模型與**自訂 HTTP 標頭**）：
 
-- **OpenAI 相容**（`openai`）：OpenRouter、DeepSeek、Groq、xAI、vLLM、LiteLLM，以及本機 **Ollama**（`http://127.0.0.1:11434/v1`）、**LM Studio**（`http://127.0.0.1:1234/v1`）、**magpie**（`http://127.0.0.1:3425`）；
+- **OpenAI 相容**（`openai`）：OpenRouter、DeepSeek、Groq、xAI、Mistral、智譜 Z.AI、Moonshot (Kimi)、vLLM、LiteLLM，以及本機 **Ollama**（`http://127.0.0.1:11434/v1`）、**LM Studio**（`http://127.0.0.1:1234/v1`）、**magpie**（`http://127.0.0.1:3425`）；
 - **Anthropic 相容**（`anthropic`）：自架或第三方 Anthropic Messages API 代理；
 - **Google Gemini 相容**（`gemini`）：自訂 Vertex／Gemini 端點。
 
-端點處理會依第三方的路徑前綴（例如 `/api/v1`、`/openai/v1`、`/v1`）自動接上 `/chat/completions` 或 `/models`，不會重複串出 `/v1/v1`。
+端點處理會依第三方的路徑前綴（例如 `/api/v1`、`/openai/v1`、`/v1`）自動接上 `/chat/completions` 或 `/models`，不會重複串出 `/v1/v1`。自訂設定檔可填入 `Key: Value` 格式的額外 HTTP 標頭（例如 OpenRouter 的 `HTTP-Referer`、`X-Title` 或企業代理標頭；`Authorization`、`x-api-key`、`Host` 等受保護標頭由 Rust 端過濾阻擋）。
 
 ### 抓取可用模型列表
 
-每個設定檔在模型欄位旁都有「**抓取模型列表**」按鈕，呼叫對應端點的 `/models`（Anthropic、OpenAI 相容、Gemini 皆支援，並沿用該設定檔目前的 API 金鑰或 OAuth 權杖）；抓取成功後會出現下拉選單供直接選取，下方仍保留手動輸入欄以便指定任何模型 ID。
+每個設定檔在模型欄位旁都有「**抓取模型列表**」按鈕，呼叫對應端點的模型清單（Anthropic `/v1/models`、OpenAI 相容 `/v1/models`、ChatGPT Codex OAuth `chatgpt.com/backend-api/codex/models`、Gemini `/v1beta/models`，並沿用該設定檔目前的 API 金鑰、OAuth 權杖與自訂標頭）；抓取成功後會出現下拉選單供直接選取，下方仍保留手動輸入欄以便指定任何模型 ID。
 
 ### 驗證方式與金鑰環安全
 
 每個設定檔可獨立選擇：
 
 1. **API 金鑰**（`apikey`）：以 `x-api-key`（Anthropic）、`?key=`（Gemini）或 `Authorization: Bearer`（OpenAI 相容）送出；連往 `localhost`/`127.0.0.1` 時不強制填金鑰。
-2. **OAuth 登入**（`oauth`）：支援標準 **OAuth 2.0 Authorization Code + PKCE**（S256，本機臨時 `127.0.0.1` 回呼與 CSRF `state` 檢查）與 **OpenRouter PKCE**，並內建 OpenRouter、Google／Gemini、GitHub 與自訂 OAuth 範本。瀏覽器在遠端或未自動跳回時，也可貼上回呼網址／授權碼完成登入，或直接匯入既有 OAuth Token；支援 `refresh_token` 在過期時自動續期，三種協定皆以 `Authorization: Bearer` 攜帶 OAuth Access Token。
+2. **OAuth 登入**（`oauth`）：支援標準 **OAuth 2.0 Authorization Code + PKCE**（S256，可自訂回呼主機 `127.0.0.1`/`localhost`、回呼路徑與連接埠、form/JSON token 交換格式、CSRF `state` 或 `state=verifier` 驗證、`code#state` 貼上完成）、**裝置代碼登入**（OpenAI Device Code Flow）與 **OpenRouter PKCE**，並內建 Anthropic、OpenAI、Google、OpenRouter、GitHub 與自訂 OAuth 範本。支援 `refresh_token` 在過期前自動續期並回存金鑰環。
 3. **無須驗證**（`none`）：不送授權標頭，適合無需驗證的本機 Ollama／LM Studio／magpie。
 
 **所有金鑰、OAuth 權杖與選填的 Client Secret 只存在作業系統金鑰環**（Windows 認證管理員、macOS Keychain、Secret Service），由 `src-tauri/src/ai.rs` 經 `keyring` 存取（服務名稱 `open-calcsheet-studio-ai`，依設定檔代號隔離成 `<id>`、`oauth:<id>`、`oauth_secret:<id>`）。機密不會寫進 `preferences.json`、專案檔或日誌；App 只能查詢「是否已儲存／帳號／是否過期」，讀不回秘鑰內容。端點、模型、協定與 OAuth 非機密參數則存在 `preferences.json` 的 `aiInstellingen`（相容舊版單筆設定並自動遷移）。
@@ -107,7 +111,7 @@ SSE 逐段解析後以 Tauri channel 回傳，所以畫面是逐字出現的。
 ## 驗證
 
 ```bash
-node scripts/check-ai-agent.mjs                     # 81 項：政策、差異、@ 範圍、迴圈、設定檔／OAuth
+node scripts/check-ai-agent.mjs                     # 86 項：政策、差異、@ 範圍、迴圈、設定檔／OAuth
 cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib ai::
 ```
 

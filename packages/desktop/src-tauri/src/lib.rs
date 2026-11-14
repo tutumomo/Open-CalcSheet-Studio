@@ -279,6 +279,7 @@ pub fn run() {
             ai::ai_oauth_logout,
             ai::ai_oauth_zet_token,
             ai::ai_oauth_login,
+            ai::ai_oauth_device_start,
             ai::ai_oauth_complete_manual,
             ai::ai_oauth_cancel,
             ai::ai_list_models,
