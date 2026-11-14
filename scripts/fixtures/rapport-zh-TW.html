@@ -1137,6 +1137,8 @@
 
 <p class="calc-text calc-uitleg"><i>依據農業部《水土保持技術規範》（114年5月7日修正，swc_tech）第16～19條、第78條、第82～87條，內政部國土管理署《市區道路及附屬工程設計規範》（113年9月12日修正）第7章，以及《建築物混凝土結構設計規範》（112年8月10日版，rc112）第11、22、24章，提供矩形（U型溝）與梯形鋼筋混凝土排水明渠之完整水理容量（曼寧公式等速流、水力半徑、設計流速上下限、正常水深反算、出水高檢核、流態福祿數判定）與側壁土壓力結構強度（因數化彎矩與剪力強度、最小鋼筋量、鋼筋間距）綜合檢核。</i><span class="alleen-scherm"></span></p>
 
+<p class="calc-text calc-uitleg"><i>另可選串接變量流（明渠水面線）：以標準步進法自下游控制斷面推算漸變流水面線，出水高與流速檢核改採水面線之最大水深與流速範圍（與 tw-backwater-profile 之標準步進法一致）。</i><span class="alleen-scherm"></span></p>
+
 <p class="calc-text"></p>
 <h3>一、設計條件與輸入參數</h3>
 <p></p>
@@ -1178,7 +1180,19 @@
 <div class="calc-line"><span class="katex-display fleqn">${sf_{\text{cap,req}}} = \textcolor{#059669}{\boldsymbol{1.2}}$</span><span class="calc-comment">- <i>通水容量安全加成係數（非規範明文，為工程慣例之設計流量裕度，由設計者自訂；填 1.0 即不加成）</i></span></div>
 
 <p class="calc-text"></p>
-<h4>3. 側壁結構材料與土壤參數（rc112）</h4>
+<h4>3. 變量流水面線串接（下游控制水深）</h4>
+<p></p>
+
+<div class="calc-line"><span class="katex-display fleqn">${gvf_{\text{on}}} = \textcolor{#059669}{\boldsymbol{0}}$</span><span class="calc-comment calc-uitleg">- <i>變量流（明渠水面線）串接：0 = 不考慮（以等速流正常水深為設計水深）；1 = 考慮（以標準步進法自控制斷面推算漸變流水面線，出水高與流速檢核採水面線之最大水深與流速範圍）</i></span></div>
+
+<div class="calc-line"><span class="katex-display fleqn">${y_{\text{ctrl}}} = \textcolor{#059669}{\boldsymbol{0.3}}$</span><span class="calc-comment">m <i>下游控制斷面水深 y_ctrl（m；下游構造物、尾門或銜接點前之水深；gvf_on = 1 時使用）</i></span></div>
+
+<div class="calc-line"><span class="katex-display fleqn">${L_{\text{gvf}}} = \textcolor{#059669}{\boldsymbol{100}}$</span><span class="calc-comment">m <i>串接渠段長度 L（m；自控制斷面推算之渠段長度）</i></span></div>
+
+<div class="calc-line"><span class="katex-display fleqn">${N_{\text{gvf}}} = \textcolor{#059669}{\boldsymbol{20}}$</span><span class="calc-comment">- <i>標準步進法步數 N（1～100）</i></span></div>
+
+<p class="calc-text"></p>
+<h4>4. 側壁結構材料與土壤參數（rc112）</h4>
 <p></p>
 
 <div class="calc-line"><span class="katex-display fleqn">${t_{\text{wall}}} = \textcolor{#059669}{\boldsymbol{0.15}}$</span><span class="calc-comment">m <i>側壁厚度 t_wall（m）</i></span></div>
@@ -1246,23 +1260,31 @@
 <div class="calc-line"><span class="katex-display fleqn">${Fr_{\text{num}}} = \frac{{V_{\text{design}}}}{{\left(9.81 \cdot {D_{\text{hyd}}}\right)}^{0.5}} = \frac{2.096}{{\left(9.81 \cdot 0.338\right)}^{0.5}} = \textcolor{#059669}{\boldsymbol{1.151}}$</span><span class="calc-comment calc-uitleg">- <i>福祿數 Fr = V/√(g·D_h)；Fr &lt; 1 為緩流，Fr &gt; 1 為急流（非規範明文之流態參考）</i></span></div>
 
 <p class="calc-text"></p>
-<h3>四、出水高檢核（swc_tech 第 86 條）</h3>
+<h3>五、變量流水面線串接（標準步進法）</h3>
+<p></p>
+
+<p class="calc-text calc-uitleg"><i>以標準步進法（standard step method）自控制斷面推算漸變流水面線：能量方程式 z + y + V²/2g，平均摩擦坡降 Sf = n²V²/R^(4/3)；y_ctrl &gt; y_c 為緩流（自下游向上游推算），y_ctrl &lt; y_c 為急流（自上游向下游推算）。水面線之最大水深與流速範圍用於出水高與流速檢核；需水躍而無解、或控制水深過近臨界水深時不假裝求解（UC = 99）。</i></p>
+
+<p class="calc-text"></p>
+<h3>五、出水高檢核（swc_tech 第 86 條）</h3>
 <p></p>
 
 <p class="calc-text calc-uitleg"><i>規定出水高：設計水深之 25%，且不得小於 20 cm（0.20 m）</i></p>
 
-<div class="calc-line"><span class="katex-display fleqn">${fb_{\text{calc}}} = 0.25 \cdot {d_{\text{n}}} = 0.25 \cdot 0.338 = \textcolor{#059669}{\boldsymbol{0.0845}}$</span><span class="calc-comment">m</span></div>
+<div class="calc-line"><span class="katex-display fleqn">${y_{\text{design}}} = {y_{\text{design,val}}} = 0.338 = \textcolor{#059669}{\boldsymbol{0.338}}$</span><span class="calc-comment">m <i>設計水深 y_design（gvf_on = 1 時採串接水面線之最大水深與正常水深之較大者）</i></span></div>
+
+<div class="calc-line"><span class="katex-display fleqn">${fb_{\text{calc}}} = {fb_{\text{calc,val}}} = 0.0845 = \textcolor{#059669}{\boldsymbol{0.0845}}$</span><span class="calc-comment">m <i>法定出水高 25% 設計水深</i></span></div>
 
 <div class="calc-line"><span class="katex-display fleqn">${fb_{\text{min}}} = \textcolor{#059669}{\boldsymbol{0.2}}$</span><span class="calc-comment">m <i>出水高法定下限 20 cm</i></span></div>
 
 <div class="calc-line"><span class="katex-display fleqn">${fb_{\text{req}}} = {fb_{\text{req,val}}} = 0.2 = \textcolor{#059669}{\boldsymbol{0.2}}$</span><span class="calc-comment">m <i>法定最小出水高需求 fb_req</i></span></div>
 
-<div class="calc-line"><span class="katex-display fleqn">${fb_{\text{actual}}} = {H_{\text{chan}}} - {d_{\text{n}}} = 0.8 - 0.338 = \textcolor{#059669}{\boldsymbol{0.462}}$</span><span class="calc-comment">m <i>渠道實際提供之出水高 fb_act</i></span></div>
+<div class="calc-line"><span class="katex-display fleqn">${fb_{\text{actual}}} = {H_{\text{chan}}} - {y_{\text{design}}} = 0.8 - 0.338 = \textcolor{#059669}{\boldsymbol{0.462}}$</span><span class="calc-comment">m <i>渠道實際提供之出水高 fb_act</i></span></div>
 
-<div class="calc-line"><span class="katex-display fleqn">${H_{\text{req}}} = {d_{\text{n}}} + {fb_{\text{req}}} = 0.338 + 0.2 = \textcolor{#059669}{\boldsymbol{0.538}}$</span><span class="calc-comment">m <i>渠道總深度需求 H_req = d_n + fb_req</i></span></div>
+<div class="calc-line"><span class="katex-display fleqn">${H_{\text{req}}} = {y_{\text{design}}} + {fb_{\text{req}}} = 0.338 + 0.2 = \textcolor{#059669}{\boldsymbol{0.538}}$</span><span class="calc-comment">m <i>渠道總深度需求 H_req = y_design + fb_req</i></span></div>
 
 <p class="calc-text"></p>
-<h3>五、側壁結構強度檢核（rc112 / USD）</h3>
+<h3>六、側壁結構強度檢核（rc112 / USD）</h3>
 <p></p>
 
 <p class="calc-text calc-uitleg"><i>側壁受靜止土壓力與地表超載作用，側壁底部交接面承受懸臂彎矩與剪力（載重因數 1.6）</i></p>
@@ -1296,7 +1318,7 @@
 <div class="calc-line"><span class="katex-display fleqn">${s_{\text{max,wall}}} = {s_{\text{max,calc}}} = 450 = \textcolor{#059669}{\boldsymbol{450}}$</span><span class="calc-comment">mm <i>最大配筋間距限制 s_max = min(3t, 450 mm)</i></span></div>
 
 <p class="calc-text"></p>
-<h3>六、安全係數與檢核比（Unity Checks）</h3>
+<h3>七、安全係數與檢核比（Unity Checks）</h3>
 <p></p>
 
 <p class="calc-text"></p>
@@ -1315,13 +1337,17 @@
 
 <p class="calc-text"><b style="color:#047857">出水高渠深檢核：UC_fb = 0.68 ≤ 1.0 → 合格</b></p>
 
-<div class="calc-line"><span class="katex-display fleqn">${UC_{\text{vmin}}} = \frac{{V_{\text{min,req}}}}{{V_{\text{design}}}} = \frac{0.8}{2.096} = \textcolor{#059669}{\boldsymbol{0.3817}}$</span></div>
+<div class="calc-line"><span class="katex-display fleqn">${UC_{\text{vmin}}} = \frac{{V_{\text{min,req}}}}{{V_{\text{lo,all}}}} = \frac{0.8}{2.096} = \textcolor{#059669}{\boldsymbol{0.3817}}$</span></div>
 
 <p class="calc-text"><b style="color:#047857">防淤最小流速檢核（≥ 0.8 m/s）：UC_vmin = 0.39 ≤ 1.0 → 合格</b></p>
 
-<div class="calc-line"><span class="katex-display fleqn">${UC_{\text{vmax}}} = \frac{{V_{\text{design}}}}{{V_{\text{max,req}}}} = \frac{2.096}{4.57} = \textcolor{#059669}{\boldsymbol{0.4586}}$</span></div>
+<div class="calc-line"><span class="katex-display fleqn">${UC_{\text{vmax}}} = \frac{{V_{\text{hi,all}}}}{{V_{\text{max,req}}}} = \frac{2.096}{4.57} = \textcolor{#059669}{\boldsymbol{0.4586}}$</span></div>
 
 <p class="calc-text"><b style="color:#047857">防沖最大流速檢核（≤ 4.57 m/s）：UC_vmax = 0.46 ≤ 1.0 → 合格</b></p>
+
+<div class="calc-line"><span class="katex-display fleqn">${UC_{\text{gvf}}} = \text{if}\left({gvf_{\text{on}}} \; == \; 0, 0, \text{if}\left({ok_{\text{gvf}}} \; &lt; \; 0.5, 99, \text{if}\left({bad_{\text{g}}} \; &gt; \; 0.5, 99, 0\right)\right)\right) = \text{if}\left(0 \; == \; 0, 0, \text{if}\left(0 \; &lt; \; 0.5, 99, \text{if}\left(0 \; &gt; \; 0.5, 99, 0\right)\right)\right) = \textcolor{#059669}{\boldsymbol{0}}$</span></div>
+
+<p class="calc-text"><b style="color:#047857">變量流水面線可解性（gvf_on = 1 時檢核）：UC_gvf = 0 ≤ 1.0 → 合格</b></p>
 
 <p class="calc-text"></p>
 <h4>2. 構造幾何限制檢核（swc_tech 第 78 條）</h4>
@@ -1360,13 +1386,13 @@
 <p class="calc-text"><b style="color:#047857">側壁鋼筋間距上限檢核：UC_s_wall = 0.45 ≤ 1.0 → 合格</b></p>
 
 <p class="calc-text"></p>
-<h3>七、檢核總結與控制項目</h3>
+<h3>八、檢核總結與控制項目</h3>
 <p></p>
 
 <div class="calc-line"><span class="calc-formula"><span class="katex-display fleqn">${UC_{\text{max}}} = 0.68$</span></span><span class="calc-comment"><span class="alleen-afdruk"></span></span></div>
 
 <p class="calc-text"></p>
-<h3>八、總結</h3>
+<h3>九、總結</h3>
 <p></p>
 
 <p class="calc-text"><b>控制 UC = 0.68</b> ≤ 1.0 → <b>排水溝水理與結構檢核合格</b></p>

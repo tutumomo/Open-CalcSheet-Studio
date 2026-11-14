@@ -357,5 +357,156 @@ function solveIndep({ C, I, A, B, H, z, S, n, Vmin = 0.8, Vmax = 4.57, sf = 1.2,
   meld(n_d === n_dtot, `牛頓疊代正常水深與二分法一致（通過 ${n_d} / ${n_dtot}）`);
 }
 
+// -----------------------------------------------------------------------------
+// 5. 變量流水面線串接（標準步進法）
+// -----------------------------------------------------------------------------
+console.log("\n5. 變量流水面線串接（標準步進法，swc_tech 84～86 條）");
+
+/** 第二套獨立求解器：曼寧反算正常水深、臨界水深、標準步進法水面線 */
+function gvfRef({ B, H, z, S, n, Q, y_ctrl, L, N }) {
+  const sec = Math.sqrt(1 + z * z);
+  const A = (y) => (B + z * y) * y;
+  const P = (y) => B + 2 * y * sec;
+  const T = (y) => B + 2 * z * y;
+  const V = (y) => Q / A(y);
+  const Sf = (y) => (n * n * V(y) * V(y)) / Math.pow(A(y) / P(y), 4 / 3);
+  const E = (y) => y + (V(y) * V(y)) / (2 * 9.81);
+  const bis = (f, lo0, hi0) => {
+    let lo = lo0, hi = hi0;
+    for (let i = 0; i < 200; i++) {
+      const mid = (lo + hi) / 2;
+      if (f(lo) * f(mid) <= 0) hi = mid; else lo = mid;
+    }
+    return (lo + hi) / 2;
+  };
+  const yn = bis((y) => A(y) * Math.pow(A(y) / P(y), 2 / 3) * Math.sqrt(S) / n - Q, 1e-4, 100);
+  const yc = bis((y) => (Q * Q * T(y)) / (9.81 * Math.pow(A(y), 3)) - 1, 1e-4, 100);
+  const sub = y_ctrl > yc;
+  const dx = L / N;
+  let y = y_ctrl, ymax = y, ymin = y, vmax = V(y), vmin = V(y), jump = false, nok = 0;
+  for (let i = 1; i <= N; i++) {
+    const Ep = E(y), Sfp = Sf(y);
+    let lo2 = sub ? yc : 1e-4, hi2 = sub ? 100 : yc;
+    for (let it = 0; it < 90; it++) {
+      const mid = (lo2 + hi2) / 2;
+      const sgn = sub ? 1 : -1;
+      const Fl = S * dx + sgn * (E(lo2) - Ep) - (dx * (Sf(lo2) + Sfp)) / 2;
+      const Fm = S * dx + sgn * (E(mid) - Ep) - (dx * (Sf(mid) + Sfp)) / 2;
+      if (Fl * Fm <= 0) hi2 = mid; else lo2 = mid;
+    }
+    let yn2 = (lo2 + hi2) / 2;
+    const Fe = S * dx + (sub ? 1 : -1) * (E(yn2) - Ep) - (dx * (Sf(yn2) + Sfp)) / 2;
+    if (Math.abs(Fe) > 1e-6) { yn2 = yc; jump = true; } else nok++;
+    y = yn2;
+    ymax = Math.max(ymax, y); ymin = Math.min(ymin, y);
+    vmax = Math.max(vmax, V(y)); vmin = Math.min(vmin, V(y));
+  }
+  return { yn, yc, ymax, ymin, vmax, vmin, jump, nok, dx };
+}
+
+/** 套用變量流輸入 */
+function metGvf(tpl, { y_ctrl, L = 100, N = 20 }) {
+  let t = vervang(tpl, "gvf_on = 0'-", "gvf_on = 1'-");
+  t = vervang(t, "y_ctrl = 0.30'm", `y_ctrl = ${y_ctrl}'m`);
+  t = vervang(t, "L_gvf = 100'm", `L_gvf = ${L}'m`);
+  t = vervang(t, "N_gvf = 20'-", `N_gvf = ${N}'-`);
+  return t;
+}
+
+// 5.1 預設渠道（陡坡）＋ 下游控制水深 0.45 m（緩流）：水面線向上游推算，壅水使出水高不足
+{
+  const { uit, res } = draai(metGvf(twDrainageChannel, { y_ctrl: 0.45 }));
+  meld(!isNaN(uit.UC_max), "變量流基準案例：無 NaN");
+  checkNabij("y_n（正常水深）", uit.y_n_g_out, 0.3379827, 1e-5);
+  checkNabij("y_c（臨界水深）", uit.y_c_g_out, 0.371195, 1e-5);
+  checkNabij("y_max（最大水深）", uit.y_max_g_out, 0.45, 1e-9);
+  checkNabij("y_min（最小水深＝臨界）", uit.y_min_g_out, 0.371195, 1e-5);
+  checkNabij("V_max", uit.V_max_g_out, 1.9082513, 1e-6);
+  checkNabij("V_min", uit.V_min_g_out, 1.5740741, 1e-6);
+  // 壅水後設計水深 0.45 m > 正常水深 0.338 m → 出水高以 0.45 m 計：(0.45 + 0.20) / 0.80 = 0.8125
+  checkNabij("UC_fb（壅水後）", uit.UC_fb, 0.8125, 1e-9);
+  checkNabij("UC_vmin（水面線流速）", uit.UC_vmin, 0.8 / 1.5740741, 1e-5);
+  // 流速檢核取等速流與水面線流速之較大者：max(V_design, V_max) / 4.57
+  checkNabij("UC_vmax", uit.UC_vmax, Math.max(2.0957684, 1.9082513) / 4.57, 1e-5);
+  checkNabij("UC_gvf", uit.UC_gvf, 0, 1e-9);
+  meld(res.voldoet === true, "變量流基準案例：判定合格");
+}
+
+// 5.2 緩坡 M1 水面線（B = 1.0、H = 1.2、S = 0.2%，控制水深 0.45 m）
+{
+  let t = twDrainageChannel;
+  t = vervang(t, "B_chan = 0.60'm", "B_chan = 1.00'm");
+  t = vervang(t, "H_chan = 0.80'm", "H_chan = 1.20'm");
+  t = vervang(t, "S_chan = 0.01'-", "S_chan = 0.002'-");
+  t = metGvf(t, { y_ctrl: 0.45, L: 200 });
+  const { uit, res } = draai(t);
+  const ref = gvfRef({ B: 1.0, H: 1.2, z: 0, S: 0.002, n: 0.014, Q: 0.425, y_ctrl: 0.45, L: 200, N: 20 });
+  meld(!ref.jump, "緩坡 M1 案例：全渠段可解");
+  checkNabij("y_n", uit.y_n_g_out, ref.yn, 1e-5);
+  checkNabij("y_c", uit.y_c_g_out, ref.yc, 1e-5);
+  checkNabij("y_max", uit.y_max_g_out, ref.ymax, 1e-6);
+  checkNabij("y_min", uit.y_min_g_out, ref.ymin, 1e-6);
+  checkNabij("V_max", uit.V_max_g_out, ref.vmax, 1e-6);
+  checkNabij("V_min", uit.V_min_g_out, ref.vmin, 1e-6);
+  checkNabij("x_lim（壅水影響長度）", uit.x_lim_g_out, 200, 1e-9);
+  meld(res.voldoet === true, "緩坡 M1 案例：判定合格");
+}
+
+// 5.3 參數掃描：與獨立求解器交叉比對
+{
+  let n_ok = 0, n_tot = 0;
+  const Bs = [0.6, 1.0];
+  const Hs = [0.8, 1.2];
+  const Ss = [0.002, 0.01];
+  const zs = [0, 0.5];
+  const ctrls = [0.3, 0.45, 0.6];
+  for (const B of Bs) for (const H of Hs) for (const S of Ss) for (const z of zs) for (const y_ctrl of ctrls) {
+    let t = twDrainageChannel;
+    t = vervang(t, "B_chan = 0.60'm", `B_chan = ${B}'m`);
+    t = vervang(t, "H_chan = 0.80'm", `H_chan = ${H}'m`);
+    t = vervang(t, "S_chan = 0.01'-", `S_chan = ${S}'-`);
+    t = vervang(t, "z_side = 0.0'-", `z_side = ${z}'-`);
+    t = metGvf(t, { y_ctrl });
+    const { uit } = draai(t);
+    const ref = gvfRef({ B, H, z, S, n: 0.014, Q: 0.425, y_ctrl, L: 100, N: 20 });
+    n_tot++;
+    const ys = ["y_n_g_out", "y_c_g_out", "y_max_g_out", "y_min_g_out", "V_max_g_out", "V_min_g_out"];
+    const refs = [ref.yn, ref.yc, ref.ymax, ref.ymin, ref.vmax, ref.vmin];
+    let ok = true;
+    for (let i = 0; i < ys.length; i++) {
+      const a = uit[ys[i]], b = refs[i];
+      if (typeof a !== "number" || Math.abs(a - b) > 1e-5 * Math.max(Math.abs(b), 1e-3) + 1e-6) {
+        ok = false;
+        meld(false, `掃描 B=${B} H=${H} S=${S} z=${z} y_ctrl=${y_ctrl} ${ys[i]}`, `範本 ${a}，獨立 ${b}`);
+      }
+    }
+    if (ok) n_ok++;
+  }
+  meld(n_ok === n_tot, `變量流水面線與獨立求解器一致（通過 ${n_ok} / ${n_tot}）`);
+}
+
+// 5.4 負向案例
+{
+  // 壅水使出水高不足：控制水深 0.62 m > 渠深可容納水深（H = 0.80，出水高 0.20 → 設計水深上限 0.60）
+  const { uit, res } = draai(metGvf(twDrainageChannel, { y_ctrl: 0.62 }));
+  meld(uit.UC_fb > 1 && res.voldoet === false, `壅水造成出水高不足：UC_fb = ${uit.UC_fb.toFixed(3)}，判定不合格`);
+  // 急流（控制水深低於臨界水深）自上游向下游推算
+  const { uit: u2 } = draai(metGvf(twDrainageChannel, { y_ctrl: 0.25 }));
+  const ref = gvfRef({ B: 0.6, H: 0.8, z: 0, S: 0.01, n: 0.014, Q: 0.425, y_ctrl: 0.25, L: 100, N: 20 });
+  checkNabij("急流 y_max", u2.y_max_g_out, ref.ymax, 1e-6);
+  checkNabij("急流 V_max", u2.V_max_g_out, ref.vmax, 1e-6);
+  // 無效輸入：gvf_on = 2、步數 0、控制水深 0
+  const bad1 = draai(vervang(twDrainageChannel, "gvf_on = 0'-", "gvf_on = 2'-")).uit;
+  meld(bad1.UC_gvf === 99, `gvf_on = 2（無效值）：UC_gvf = ${bad1.UC_gvf}`);
+  const bad2 = draai(metGvf(twDrainageChannel, { y_ctrl: 0.45 }).replace("N_gvf = 20'-", "N_gvf = 0'-")).uit;
+  meld(bad2.UC_gvf === 99, `步數 0（無效值）：UC_gvf = ${bad2.UC_gvf}`);
+  const bad3 = draai(metGvf(twDrainageChannel, { y_ctrl: 0 })).uit;
+  meld(bad3.UC_gvf === 99, `控制水深 0（無效值）：UC_gvf = ${bad3.UC_gvf}`);
+  // 控制水深過近臨界水深：無法推算
+  const yc = 0.3711949960603932;
+  const bad4 = draai(metGvf(twDrainageChannel, { y_ctrl: yc * 1.001 })).uit;
+  meld(bad4.UC_gvf === 99, `控制水深過近臨界水深：UC_gvf = ${bad4.UC_gvf}`);
+}
+
 console.log(`\n=== 檢核總結：失敗 ${fouten} 項 ===`);
 process.exit(fouten === 0 ? 0 : 1);
