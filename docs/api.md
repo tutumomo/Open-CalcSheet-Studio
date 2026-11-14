@@ -88,6 +88,12 @@ curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
 # Ongedaan maken
 curl -X POST -H "Authorization: Bearer $T" $API/undo
 
+# Een wegwerpwerkblad: rekenen zonder het open project aan te raken
+curl -X POST -H "Authorization: Bearer $T" $API/session/new
+curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+  -d '{"force": "true"}' $API/session/new
+curl -X POST -H "Authorization: Bearer $T" $API/session/close
+
 # Elke tool generiek, en de lijst met schema's
 curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
   -d '{"id": "<id>", "evaluate": false}' $API/tools/sheet_get
@@ -111,6 +117,8 @@ de alleen-lezenstand.
 | `GET /info` | `app_info` | lezen | — |
 | `GET /project` | `project_get` | lezen | evaluate |
 | `POST /project/new` | `project_new` | wijzigen | force |
+| `POST /session/new` | `session_new` | wijzigen | force |
+| `POST /session/close` | `session_close` | wijzigen | — |
 | `POST /project/open` | `project_open` | wijzigen | **path**, force |
 | `POST /project/save` | `project_save` | bestand | path |
 | `POST /project/save-as` | `project_save_as` | bestand | **path** |
@@ -123,6 +131,7 @@ de alleen-lezenstand.
 | `POST /undo` | `undo` | wijzigen | — |
 | `POST /redo` | `redo` | wijzigen | — |
 | `GET /modules` | `modules_list` | lezen | — |
+| `GET /modules/{templateId}/schema` | `module_schema` | lezen | **templateId** |
 | `GET /sheets` | `sheets_list` | lezen | evaluate |
 | `POST /sheets` | `sheet_add` | wijzigen | kind, templateId, name, source, text, code, graph, drawing, paper, orientation, path, base64, fileName, withCode, automatic |
 | `POST /sheets/pdf` | `sheet_add_pdf` | wijzigen | path, base64, fileName, force, name |
@@ -141,9 +150,13 @@ de alleen-lezenstand.
 | `POST /sheets/{id}/move` | `sheet_move` | wijzigen | **id**, **direction**, steps |
 | `DELETE /sheets/{id}` | `sheet_remove` | wijzigen | **id** |
 | `POST /sheets/{id}/select` | `sheet_select` | beeld | **id** (ook `project`, `report`) |
-| `POST /sheets/{id}/evaluate` | `sheet_evaluate` | lezen | id, numbers, names |
+| `POST /sheets/{id}/evaluate` | `sheet_evaluate` | lezen | id, numbers, names, lines, conventionalUnits, strict |
 | `POST /sheets/{id}/formulas` | `sheet_insert_formula` | wijzigen | **id**, **formulaId**, position, language |
-| `POST /evaluate` | `calc_evaluate` | lezen | **source**, values, useProjectData, maxLines |
+| `POST /evaluate` | `calc_evaluate` | lezen | **source**, values, useProjectData, maxLines, conventionalUnits, strict |
+| `POST /evaluate/batch` | `calc_evaluate_batch` | lezen | **items** (elk de argumenten van `calc_evaluate`) |
+| `POST /jobs` | `job_start` | lezen (201) | **items** |
+| `GET /jobs/{jobId}` | `job_status` | lezen | **jobId**, results |
+| `DELETE /jobs/{jobId}` | `job_cancel` | lezen | **jobId** |
 | `GET /library` | `library_list` | lezen | refresh |
 | `POST /library/{id}/install` | `library_install` | wijzigen | **id** |
 | `DELETE /library/{id}` | `library_remove` | wijzigen | **id** |
@@ -177,9 +190,9 @@ Vaste routes: `GET /api/v1` (overzicht met alle routes), `GET /api/v1/tools`
 | 403 | Request met een `Origin`-header: browsers worden geweigerd (Rust). |
 | 404 | Onbekende route, blad, module, formule, rapportpad of bestand (`NOT_FOUND`). |
 | 405 | Bekende route, andere methode (met de toegestane in de melding). |
-| 409 | Niet opgeslagen werk zou verloren gaan (`project_new`, `project_open`); geef `force: true` (`CONFLICT`). |
+| 409 | Niet opgeslagen werk zou verloren gaan (`project_new`, `project_open`, `session_new`); geef `force: true` (`CONFLICT`). Ook: er staat al een wegwerpwerkblad open (`session_new`) of er staat er geen open (`session_close`). |
 | 413 | Body groter dan 50 MiB (Rust). |
-| 422 | Een berekening rekent niet door (`CALC_ERROR`). |
+| 422 | Een berekening rekent niet door (`CALC_ERROR`), of `strict` staat aan en er is een eenheidswaarschuwing (`UNIT_WARNING`, met `warnings[]` in `data`). |
 | 423 | Alleen-lezen staat aan (`READ_ONLY`). |
 | 500 | Interne fout, met de melding (`INTERNAL`). |
 | 501 | Niet beschikbaar: in de browser in plaats van de desktop-app, geen internet, of geen rapportengine (`NOT_AVAILABLE`). |

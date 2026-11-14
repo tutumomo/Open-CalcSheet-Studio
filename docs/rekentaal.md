@@ -85,6 +85,9 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
 - `"Title`, `'tekst`, `// commentaar`
 - `#if … #else if … #else … #end if`, `#hide / #show / #pre / #post`
 - `#repeat n … #end repeat` en `#for var = lo : hi … #loop`, ook genest
+- `#while voorwaarde … #loop`; met `max=N` aan het eind begrensd. `#iterate x tol=… max=… … #loop`
+  herhaalt tot |x_k − x_(k−1)| ≤ tol (in SI; standaard `tol=1e-9`, `max=100`). Een begrensde lus die
+  zijn grens haalt zonder klaar te zijn, geeft een foutregel `NOT_CONVERGED` (via MCP met rondes en residu)
 - `#def name(p1; p2; …) … #end def` voor macro's, `#def Name$ = literal` voor constanten
 - `#include filename.cpd` voor externe macro's en SVG-tekeningen
 - `$Plot{ … @ x = lo : hi }` voor grafieken in het blad

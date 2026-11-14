@@ -204,7 +204,10 @@ export function vergeetUitkomsten(): void {
 }
 
 export function resultaatJson(r: Resultaat): Record<string, unknown> {
-  return { title: r.titel, norm: r.norm, uc: jsonGetal(r.uc), passes: r.voldoet };
+  // Nooit "pass" zonder oordeel: een blad dat niet toetst of geen slotregel heeft,
+  // is "unchecked" (docs/OCSS_TW_開發需求規格.md, P1-7).
+  const check = r.nietGetoetst || r.voldoet === null ? "unchecked" : r.voldoet ? "pass" : "fail";
+  return { title: r.titel, norm: r.norm, uc: jsonGetal(r.uc), passes: r.voldoet, check };
 }
 
 // ── PDF ─────────────────────────────────────────────────────────────────────

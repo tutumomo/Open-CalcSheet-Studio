@@ -140,8 +140,13 @@ const REPEAT_RE = /^#repeat\b\s*(.*)$/i;
 const ENDREPEAT_RE = /^#end\s+repeat\b/i;
 // `#for var = lo : hi … #loop` (#break supported as early exit)
 const FOR_RE = /^#for\s+([\p{L}_][\p{L}\p{N}_]*)\s*=\s*(.+?)\s*:\s*(.+)$/iu;
-// `#while voorwaarde … #loop`
+// `#while voorwaarde … #loop`; met `max=N` aan het eind begrensd (NOT_CONVERGED).
 const WHILE_RE = /^#while\s+(.+)$/i;
+// `#iterate x tol=… max=… … #loop`: tot |x_k − x_(k−1)| ≤ tol, hoogstens max rondes.
+const ITERATE_RE = /^#iterate\s+([\p{L}_][\p{L}\p{N}_]*)\b\s*(.*)$/iu;
+/** Standaard bovengrens en tolerantie van `#iterate` (docs/tw/OCSS接入實作計畫.md, P1-9). */
+const ITERATE_MAX = '100';
+const ITERATE_TOL = '1e-9';
 const LOOP_RE = /^#loop\b/i;
 const BREAK_RE = /^#break\b/i;
 const CONTINUE_RE = /^#continue\b/i;
@@ -1192,12 +1197,41 @@ function parseLines(
     const whileMatch = trimmed.match(WHILE_RE);
     if (whileMatch) {
       const wasHidden = state.hidden;
-      const conditie = stripCondWrapping(whileMatch[1]);
+      // `max=N` aan het eind maakt de lus begrensd; zonder blijft alles zoals het was.
+      const { rest, opties } = lusOpties(whileMatch[1]);
+      const conditie = stripCondWrapping(rest);
       i++;
       const bodyResult = parseLines(lines, i, end, state, (t) => LOOP_RE.test(t));
       i = bodyResult.endIndex;
       if (i < end) i++;
-      const repeatNode = { type: 'repeat' as const, count: '', conditie, body: bodyResult.nodes };
+      const repeatNode = {
+        type: 'repeat' as const,
+        count: '',
+        conditie,
+        ...(opties.max !== undefined ? { max: opties.max } : {}),
+        body: bodyResult.nodes,
+      };
+      nodes.push(wasHidden ? { ...repeatNode, hidden: true } : repeatNode);
+      continue;
+    }
+
+    // `#iterate x tol=… max=… … #loop`: herhaal tot x niet meer verandert.
+    const iterateMatch = trimmed.match(ITERATE_RE);
+    if (iterateMatch) {
+      const wasHidden = state.hidden;
+      const { opties } = lusOpties(iterateMatch[2]);
+      i++;
+      const bodyResult = parseLines(lines, i, end, state, (t) => LOOP_RE.test(t));
+      i = bodyResult.endIndex;
+      if (i < end) i++;
+      const repeatNode = {
+        type: 'repeat' as const,
+        count: '',
+        volg: iterateMatch[1],
+        tol: opties.tol ?? ITERATE_TOL,
+        max: opties.max ?? ITERATE_MAX,
+        body: bodyResult.nodes,
+      };
       nodes.push(wasHidden ? { ...repeatNode, hidden: true } : repeatNode);
       continue;
     }
@@ -1565,6 +1599,23 @@ function markHidden<T extends AstNode>(node: T, state: ParserState): T {
  * `'<!--'a ≡ 0'-->`  →  `a ≡ 0`
  * Also normalises language-specific operators to math.js-compatible forms.
  */
+/**
+ * Haalt `tol=…` en `max=…` van het eind van een lusregel (`#while`, `#iterate`).
+ * Alleen met spatie ervoor en `=` erna, zodat `max(a; b)` in een voorwaarde blijft staan.
+ */
+function lusOpties(tekst: string): { rest: string; opties: { tol?: string; max?: string } } {
+  const opties: { tol?: string; max?: string } = {};
+  let rest = tekst.trim();
+  for (;;) {
+    const m = /(?:^|\s)(tol|max)\s*=\s*([^\s=]+)\s*$/i.exec(rest);
+    if (!m) break;
+    const sleutel = m[1].toLowerCase() as 'tol' | 'max';
+    if (opties[sleutel] === undefined) opties[sleutel] = normalizeExpression(m[2]);
+    rest = rest.slice(0, m.index).trim();
+  }
+  return { rest, opties };
+}
+
 function stripCondWrapping(cond: string): string {
   const m = cond.match(HTML_COMMENT_WRAPPER_RE);
   let stripped = m ? m[1].trim() : cond.trim();

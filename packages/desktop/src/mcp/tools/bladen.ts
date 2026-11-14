@@ -2,7 +2,7 @@
  * Tools voor de bladen: modules, toevoegen, lezen, invoer, doorrekenen,
  * volgorde, PDF-bladen, formules invoegen en losse teksten doorrekenen.
  */
-import type { JsonSchema, McpBlad, McpContext, McpMarkdown, McpToolDef } from "../contracts.ts";
+import type { JsonSchema, McpBlad, McpContext, McpMarkdown, McpToolDef, McpToolResultaat } from "../contracts.ts";
 import { projectScope } from "../../store/projectGegevens.ts";
 import { bibliotheek, moduleCatalogus, modulesPerTemplate, type TreeNode } from "../../components/calc/projectTree.ts";
 import { isPdfBlad, base64Bytes, bladnaamVoor } from "../../store/pdfBijlage.ts";
@@ -18,7 +18,10 @@ import {
 import { isMarimoBlad, bladnaamVoorMarimo, isMarimoCode, marimoCellen, marimoStartCode, MARIMO_MAX_TEKENS } from "../../store/marimoBlad.ts";
 import { codeVan } from "../../components/ribbon/formules.ts";
 import { alleFormules } from "../../store/library.ts";
-import { jsonGetal, regels, rekenDoor, ucWaarden, type Doorrekening } from "../rekenen.ts";
+import {
+  eenheidWaarschuwingen, jsonGetal, nietKlaar, normArtikelen, regelPerNaam, regels, rekenDoor, ucWaarden,
+  type Doorrekening,
+} from "../rekenen.ts";
 import {
   LEEG_BLAD, LEEG_BLAD_NAAM, LEEG_BLAD_TEKST, LEZEN, NIEUW, WEG, WIJZIGEN,
   alsTekst, bekendeUitkomst, bladSoort, bladUit, fout, geenBlad, geenPdfBlad, idOptioneel, idVerplicht, invoerJson,
@@ -198,6 +201,61 @@ export const BLADTOOLS: McpToolDef[] = [
         });
       }
       return ok({ modules });
+    },
+  },
+
+  {
+    name: "module_schema",
+    kind: "read",
+    description:
+      "Describe a module from modules_list: its input fields (name, label, kind, unit, default, choices) and the norm clauses its calculation text cites, so a client can build a case.json for it. " +
+      "The bounds a field has to satisfy are not declared in the text: the sheet checks them itself and refuses outside them, so the comparing lines of the text that mention the field are returned as guards.",
+    inputSchema: objectSchema(
+      { templateId: { type: "string", minLength: 1, description: "Module (templateId from modules_list)." } },
+      ["templateId"],
+    ),
+    annotations: LEZEN,
+    rest: [{ method: "GET", path: "/modules/{templateId}/schema" }],
+    handler: (args, ctx) => {
+      const id = String(args.templateId);
+      const bron = ctx.omgeving.sjabloon(id);
+      if (bron === undefined) return fout("NOT_FOUND", `Unknown module "${id}".`, { templateId: id });
+      const gelezen = veldenVan(bron);
+      if (gelezen.fout) return fout("CALC_ERROR", `The text of "${id}" could not be read: ${gelezen.fout}`, { templateId: id });
+      const velden = gelezen.velden.map((v) => {
+        const json = invoerJson(v, {}, bron);
+        delete json.value;
+        delete json.isSet;
+        delete json.selectedText;
+        return json;
+      });
+      // De regels die deze invoer noemen en hem ergens mee vergelijken: geen
+      // sluitende berekening, wel de plek waar het blad zelf afbakent.
+      const tekst = bron.split(/\r?\n/);
+      const guards: Record<string, string[]> = {};
+      for (const v of gelezen.velden) {
+        const naam = v.naam.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const re = new RegExp(`(?<![\\p{L}\\p{N}_])${naam}(?![\\p{L}\\p{N}_])`, "u");
+        const regels: string[] = [];
+        for (const regel of tekst) {
+          if (regels.length >= 3) break;
+          if (!re.test(regel)) continue;
+          if (!/(≥|≤|>=|<=|>|<)/.test(regel)) continue;
+          const schoon = regel.replace(/^\s*#\s*(hide|show)\s*/, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+          if (schoon && !schoon.startsWith("'")) regels.push(schoon.slice(0, 160));
+        }
+        if (regels.length) guards[v.naam] = regels;
+      }
+      const artikelen = normArtikelen(bron);
+      const normen = [...new Set(artikelen.map((a) => a.clause.split(" ")[0]))];
+      return ok({
+        templateId: id,
+        name: ctx.omgeving.moduleNaam(id) ?? id,
+        norms: normen,
+        inputs: velden,
+        clauses: artikelen.map((a) => a.clause),
+        guards,
+      });
     },
   },
 
@@ -940,6 +998,15 @@ export const BLADTOOLS: McpToolDef[] = [
       id: idOptioneel,
       numbers: { type: "boolean", description: "Include the numbers of the sheet. Default true." },
       names: { type: "array", items: { type: "string" }, description: "Only these numbers (variable names)." },
+      lines: { type: "boolean", description: "Also return the calculation line by line, as calc_evaluate does. Default false." },
+      conventionalUnits: {
+        type: "boolean",
+        description: "Also give each value in the conventional unit where there is one (kN/mm^2 → MPa, tf/m^2 → kPa). Default false.",
+      },
+      strict: {
+        type: "boolean",
+        description: "Refuse the calculation when a unit warning is raised. Default false.",
+      },
     }),
     annotations: LEZEN,
     rest: [{ method: "POST", path: "/sheets/{id}/evaluate" }],
@@ -952,7 +1019,33 @@ export const BLADTOOLS: McpToolDef[] = [
       const uitkomst = rekenBlad(blad, stand.gegevens);
       if (!uitkomst.ok) return fout("CALC_ERROR", `Sheet "${blad.naam}" could not be computed: ${uitkomst.fout}`, { id: blad.id });
       const { resultaat, getallen } = uitkomst.d;
-      const data: Record<string, unknown> = { id: blad.id, name: blad.naam, ...resultaatJson(resultaat), ucValues: ucWaarden(getallen) };
+      const waarschuwingen = eenheidWaarschuwingen(uitkomst.d.nodes, regelPerNaam(blad.source));
+      if (args.strict === true && waarschuwingen.length > 0) {
+        return fout(
+          "UNIT_WARNING",
+          `Sheet "${blad.naam}" has ${waarschuwingen.length} unit warning(s); strict mode refuses to compute it.`,
+          { id: blad.id, warnings: waarschuwingen },
+        );
+      }
+      const data: Record<string, unknown> = {
+        id: blad.id,
+        name: blad.naam,
+        ...resultaatJson(resultaat),
+        warnings: waarschuwingen,
+        ucValues: ucWaarden(getallen),
+      };
+      const niet = nietKlaar(uitkomst.d.nodes);
+      data.notConverged = niet;
+      if (niet.length > 0) data.check = "unchecked";
+      if (args.lines === true) {
+        const { regels: lijst, afgekapt } = regels(uitkomst.d.nodes, 5000, {
+          bron: blad.source,
+          conventioneel: args.conventionalUnits === true,
+        });
+        data.lines = lijst;
+        data.truncated = afgekapt;
+        data.uncheckedLines = lijst.filter((r) => r.check === "unchecked").length;
+      }
       if (Array.isArray(args.names)) {
         const gevraagd = args.names.filter((n): n is string => typeof n === "string");
         data.numbers = Object.fromEntries(gevraagd.map((n) => [n, n in getallen ? jsonGetal(getallen[n]) : null]));
@@ -1026,39 +1119,70 @@ export const BLADTOOLS: McpToolDef[] = [
         values: { type: "object", description: "Input values {name: value}.", additionalProperties: tekstOfGetal },
         useProjectData: { type: "boolean", description: "Make the project data available as variables. Default true." },
         maxLines: { type: "integer", minimum: 1, maximum: 5000, description: "At most this many lines. Default 400." },
+        conventionalUnits: {
+          type: "boolean",
+          description: "Also give each value in the conventional unit where there is one (kN/mm^2 → MPa, tf/m^2 → kPa). Default false.",
+        },
+        strict: {
+          type: "boolean",
+          description: "Refuse the calculation when a unit warning is raised (warnings[] would not be empty). Default false.",
+        },
       },
       ["source"],
     ),
     annotations: LEZEN,
     rest: [{ method: "POST", path: "/evaluate" }],
-    handler: (args, ctx) => {
-      const source = String(args.source);
-      const waarden: Record<string, string> = {};
-      if (args.values && typeof args.values === "object") {
-        for (const [k, w] of Object.entries(args.values as Record<string, unknown>)) {
-          const t = alsTekst(w);
-          if (t !== null) waarden[k] = t;
-        }
-      }
-      const scope = args.useProjectData === false ? {} : projectScope(ctx.omgeving.stand().gegevens);
-      let d: Doorrekening;
-      try {
-        d = rekenDoor(source, waarden, scope, "");
-      } catch (e) {
-        return fout("CALC_ERROR", `The text could not be computed: ${e instanceof Error ? e.message : String(e)}`);
-      }
-      const max = typeof args.maxLines === "number" ? args.maxLines : 400;
-      const { regels: lijst, afgekapt } = regels(d.nodes, max);
-      return ok({
-        ...resultaatJson(d.resultaat),
-        lines: lijst,
-        truncated: afgekapt,
-        errorLines: lijst.filter((r) => typeof r.error === "string").length,
-        ucValues: ucWaarden(d.getallen),
-      });
-    },
+    handler: (args, ctx) => rekenTekstUit(args, ctx),
   },
 ];
+
+/**
+ * Wat calc_evaluate doet, los: ook calc_evaluate_batch en job_start (tools/taken.ts)
+ * rekenen hiermee, zodat één tekst overal hetzelfde antwoord geeft.
+ */
+export function rekenTekstUit(args: Record<string, unknown>, ctx: McpContext): McpToolResultaat {
+  const source = String(args.source);
+  const waarden: Record<string, string> = {};
+  if (args.values && typeof args.values === "object") {
+    for (const [k, w] of Object.entries(args.values as Record<string, unknown>)) {
+      const t = alsTekst(w);
+      if (t !== null) waarden[k] = t;
+    }
+  }
+  const scope = args.useProjectData === false ? {} : projectScope(ctx.omgeving.stand().gegevens);
+  let d: Doorrekening;
+  try {
+    d = rekenDoor(source, waarden, scope, "");
+  } catch (e) {
+    return fout("CALC_ERROR", `The text could not be computed: ${e instanceof Error ? e.message : String(e)}`);
+  }
+  const max = typeof args.maxLines === "number" ? args.maxLines : 400;
+  const waarschuwingen = eenheidWaarschuwingen(d.nodes, regelPerNaam(source));
+  if (args.strict === true && waarschuwingen.length > 0) {
+    return fout(
+      "UNIT_WARNING",
+      `The text has ${waarschuwingen.length} unit warning(s); strict mode refuses to compute it.`,
+      { warnings: waarschuwingen },
+    );
+  }
+  const { regels: lijst, afgekapt } = regels(d.nodes, max, {
+    bron: source,
+    conventioneel: args.conventionalUnits === true,
+  });
+  // Een lus die niet klaar kwam: het oordeel steunt op een niet-geconvergeerde waarde.
+  const niet = nietKlaar(d.nodes);
+  return ok({
+    ...resultaatJson(d.resultaat),
+    lines: lijst,
+    truncated: afgekapt,
+    errorLines: lijst.filter((r) => typeof r.error === "string").length,
+    uncheckedLines: lijst.filter((r) => r.check === "unchecked").length,
+    warnings: waarschuwingen,
+    ucValues: ucWaarden(d.getallen),
+    ...(niet.length > 0 ? { check: "unchecked" } : {}),
+    notConverged: niet,
+  });
+}
 
 /** De bladen als lijst, met `nuRekenen` eerst doorgerekend; gedeeld met project_get. */
 export function lijstVan(ctx: McpContext, nuRekenen: boolean): Record<string, unknown>[] {

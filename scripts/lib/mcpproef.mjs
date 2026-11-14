@@ -45,6 +45,10 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
   const s = leeg();
   let verleden = [];
   let toekomst = [];
+  // Het wegwerpwerkblad (session_new): het project en de geschiedenis opzij.
+  let sessieStand = null;
+  let sessieVerleden = [];
+  let sessieToekomst = [];
   let teller = 0;
   const acties = [];
   const momentopname = () => ({ exemplaren: s.exemplaren, gegevens: s.gegevens, rapport: s.rapport, activeId: s.activeId });
@@ -243,6 +247,28 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
         verleden = [];
         toekomst = [];
       },
+      // Een wegwerpwerkblad: het project gaat opzij en komt met eindigSessie terug.
+      beginSessie: () => {
+        if (sessieStand) return false;
+        sessieStand = { ...s };
+        sessieVerleden = verleden;
+        sessieToekomst = toekomst;
+        acties.push("nieuwProject");
+        Object.assign(s, leeg());
+        verleden = [];
+        toekomst = [];
+        return true;
+      },
+      eindigSessie: () => {
+        if (!sessieStand) return false;
+        const stand = sessieStand;
+        sessieStand = null;
+        Object.assign(s, stand);
+        verleden = sessieVerleden;
+        toekomst = sessieToekomst;
+        return true;
+      },
+      sessieActief: () => sessieStand !== null,
       openProject: async (pad) => {
         if (!schijf.has(pad)) throw new McpFout("NOT_FOUND", `File not found: ${pad}`);
         acties.push("laadProject");

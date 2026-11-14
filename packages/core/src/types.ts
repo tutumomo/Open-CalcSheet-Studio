@@ -131,6 +131,16 @@ export interface RepeatNode {
   count: string;
   /** `#while`: herhaal zolang deze voorwaarde waar is (count wordt dan genegeerd). */
   conditie?: string;
+  /**
+   * Begrensde lus (`#while cond max=N`, `#iterate x tol=… max=…`): bovengrens van
+   * het aantal rondes. Is hij bereikt zonder dat de lus klaar is, dan geeft de lus
+   * een tekstregel met `iteratie.code = 'NOT_CONVERGED'`.
+   */
+  max?: string;
+  /** `#iterate x tol=…`: klaar zodra |x_k − x_(k−1)| ≤ tol. */
+  tol?: string;
+  /** `#iterate x`: de naam waarvan het verschil tussen twee rondes het residu is. */
+  volg?: string;
   body: AstNode[];
   hidden?: boolean;
   /** Alleen op het scherm, niet op papier (`#pre`). */
@@ -461,6 +471,22 @@ export interface EvaluatedText {
   inline?: boolean;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
+  /** Een begrensde lus die niet klaar kwam (RepeatNode.max). */
+  iteratie?: LusNietKlaar;
+}
+
+/** Wat een begrensde lus meldt als hij zijn bovengrens haalt zonder klaar te zijn. */
+export interface LusNietKlaar {
+  code: 'NOT_CONVERGED';
+  /** Aantal gedraaide rondes (= max). */
+  rondes: number;
+  max: number;
+  /** `#while`: de voorwaarde die nog waar was. */
+  voorwaarde?: string;
+  /** `#iterate`: de gevolgde naam, de tolerantie en het laatste residu (als getal, SI). */
+  naam?: string;
+  tol?: number;
+  residu?: number | null;
 }
 
 /**

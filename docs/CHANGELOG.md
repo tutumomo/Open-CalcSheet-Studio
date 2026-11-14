@@ -7,6 +7,10 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（OCSS 接入 P1-6～P1-10）：`calc_evaluate`／`sheet_evaluate` 每行回傳 `expr`、`si_value`、`clause`、`check`（`pass`／`fail`／`unchecked`，未計算的 `@toets`／`@fem` 一律 `unchecked`）與 `warnings[]`（非整數次方量綱），`strict: true` 時以 `UNIT_WARNING` 拒算，`conventionalUnits: true` 另給慣用單位；新增 `module_schema` 回傳模組的輸入欄位、規範條號與檢核行；計算語言新增有上限的迴圈 `#while 條件 max=N` 與 `#iterate x tol=… max=…`，未收斂回報 `NOT_CONVERGED`（含迭代數與殘差）；新增 `calc_evaluate_batch` 與背景工作 `job_start`／`job_status`／`job_cancel`。工具數 49 → 56，既有工具的欄位只增不改。
+
+- 台灣版（OCSS 接入 P0-5）：新增拋棄式工作階段工具 `session_new`／`session_close`（REST：`POST /api/v1/session/new`、`POST /api/v1/session/close`）。開啟後目前的專案、報告與復原紀錄會先擱置、換成空白專案，期間的工具呼叫（新增表單、計算、產生 PDF）都不會動到使用者真正的專案；關閉後一律還原，包含「尚未儲存」狀態與復原紀錄，並清除工作階段期間取得的 FEM 回應。`project_new` 另接受 `scratch: true` 作為同義用法。
+
 - 無頭模式與命令列（`docs/OCSS_TW_開發需求規格.md` P0-1～P0-4）：`--headless` 只啟動 API 與 MCP 伺服器而不開視窗，`--version`／`--help` 直接輸出後結束，`eval <檔案>` 與 `render <檔案> --pdf <輸出>` 以同一套工具 registry 計算與產出 PDF；建置時寫入 edition／tag／commit／建置日期，`app_info` 增列 `edition`、`tag`、`commit`、`buildDate`；新增免權杖的 `GET /api/v1/health`，可分辨台灣版與上游版。台灣版建置改為編譯報表引擎（`--features rapportengine`），安裝檔版本帶 `-tw.N`。說明見 `docs/tw/無頭模式與CLI.md`。
 
 - 台灣版（rc112 柱）：`@kern` 第二套獨立對照擴充到 `tw-rc-column`。新增 `scripts/fixtures/kern/bladen.mjs` 的 `TW_KOLOM`（沿用 `tw-rc-column` 範本文字、材料對齊 C30/37 與 B500B，呼叫 `concrete_column_check`），並在 `scripts/check-kern-blok.mjs` 新增章節「De Taiwanse kolom tegen Open FEM Studio」：同一斷面在 P_u = 1800 kN 下，rc112 三點折線得 φMn,cap = 393.89 kN·m、EN 1992-1-1 §5.8 得 M_Rdz = 531.03 kN·m（比值 0.742），差異來源為側筋不計、φ 與分項係數之別及折線之保守近似。

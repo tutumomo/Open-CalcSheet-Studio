@@ -89,6 +89,20 @@ function nietOpgeslagen(ctx: McpContext, force: unknown): ReturnType<typeof fout
     : null;
 }
 
+/** Een wegwerpwerkblad openen; zie session_new. */
+function nieuweSessie(ctx: McpContext, force: unknown): ReturnType<typeof ok> | ReturnType<typeof fout> {
+  if (ctx.omgeving.bestanden.sessieActief()) {
+    return fout("CONFLICT", "A throwaway sheet is already open; close it with session_close first.");
+  }
+  const conflict = nietOpgeslagen(ctx, force);
+  if (conflict) return conflict;
+  if (!ctx.omgeving.bestanden.beginSessie()) {
+    return fout("CONFLICT", "The throwaway sheet could not be opened.");
+  }
+  const stand = ctx.omgeving.stand();
+  return ok({ session: true, projectName: stand.projectNaam, sheets: 0 });
+}
+
 /** Een stuk van het rapport op een pad als "belastingen.wind" of "revisies.0". */
 function opPad(rapport: unknown, pad: string): { gevonden: boolean; waarde: unknown } {
   let w: unknown = rapport;
@@ -176,14 +190,48 @@ export const PROJECTTOOLS: McpToolDef[] = [
     name: "project_new",
     kind: "mutate",
     description: "Start a new, empty project. Refused with CONFLICT when the open project has unsaved changes, unless force=true (then those changes are lost).",
-    inputSchema: objectSchema({ force: { type: "boolean", description: "Discard unsaved changes." } }),
+    inputSchema: objectSchema({
+      force: { type: "boolean", description: "Discard unsaved changes." },
+      scratch: { type: "boolean", description: "Open a throwaway sheet instead: same as session_new (the open project comes back with session_close)." },
+    }),
     annotations: { ...WEG, idempotentHint: false },
     rest: [{ method: "POST", path: "/project/new" }],
     handler: (args, ctx) => {
+      if (args.scratch === true) return nieuweSessie(ctx, args.force);
       const conflict = nietOpgeslagen(ctx, args.force);
       if (conflict) return conflict;
       ctx.omgeving.bestanden.nieuwProject();
       return ok({ projectName: ctx.omgeving.stand().projectNaam, sheets: 0 });
+    },
+  },
+
+  {
+    name: "session_new",
+    kind: "mutate",
+    description:
+      "Open a throwaway sheet: the open project is set aside (name, path, sheets, report, undo history and the unsaved flag) and an empty project takes its place. " +
+      "Everything the tools do from then on stays out of the real project and out of the recent files. Close it with session_close, which puts the project back exactly as it was. " +
+      "Useful for a computation that should not touch the user's project. Refused with CONFLICT when a session is already open, or when the open project has unsaved changes and force is not true.",
+    inputSchema: objectSchema({ force: { type: "boolean", description: "Set the open project aside even when it has unsaved changes; those changes are not lost." } }),
+    annotations: { ...NIEUW },
+    rest: [{ method: "POST", path: "/session/new" }],
+    handler: (args, ctx) => nieuweSessie(ctx, args.force),
+  },
+
+  {
+    name: "session_close",
+    kind: "mutate",
+    description:
+      "Close the throwaway sheet opened with session_new (or project_new with scratch=true) and put the project back exactly as it was, including the unsaved flag and the undo history. " +
+      "The answers from Open FEM Studio that were fetched during the session are dropped. Refused with CONFLICT when no session is open.",
+    inputSchema: objectSchema({}),
+    annotations: { ...NIEUW },
+    rest: [{ method: "POST", path: "/session/close" }],
+    handler: (_args, ctx) => {
+      if (!ctx.omgeving.bestanden.sessieActief()) return fout("CONFLICT", "No throwaway sheet is open; open one with session_new first.");
+      ctx.omgeving.bestanden.eindigSessie();
+      const stand = ctx.omgeving.stand();
+      return ok({ session: false, projectName: stand.projectNaam, filePath: stand.bestandspad, sheets: stand.exemplaren.length, dirty: stand.dirty });
     },
   },
 

@@ -16,6 +16,7 @@ import { standaardTeksten } from "../rapport/standaardteksten";
 import { documentToReport, projectToReport } from "../lib/documentToReport";
 import { projectScope } from "../store/projectGegevens";
 import { rekenDoor } from "./rekenen";
+import { wisSessie } from "../rekenen/toetsCache";
 import { appKoppeling, type SplitModus } from "./appKoppeling";
 import { McpFout, type McpBibliotheekModule, type McpInstellingen, type McpOmgeving, type McpWeergave } from "./contracts";
 
@@ -29,6 +30,49 @@ import { McpFout, type McpBibliotheekModule, type McpInstellingen, type McpOmgev
  */
 
 const isTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
+
+/**
+ * Een wegwerpwerkblad (OCSS TW 開發需求規格 P0-5): het open project gaat opzij
+ * en er komt een leeg project, zodat een client kan rekenen zonder het project
+ * van de gebruiker aan te raken. `eindigSessie` zet alles terug — ook de vlag
+ * "niet opgeslagen" en de stapel ongedaan maken — en ruimt de antwoorden op die
+ * tijdens het werkblad zijn opgehaald.
+ */
+type SessieStand = Pick<
+  ReturnType<typeof useProjectStore.getState>,
+  "projectNaam" | "bestandspad" | "gegevens" | "exemplaren" | "rapport" | "activeId" | "verborgen" | "dirty" | "verleden" | "toekomst"
+>;
+
+let sessieStand: SessieStand | null = null;
+
+function beginSessie(): boolean {
+  if (sessieStand) return false;
+  const s = useProjectStore.getState();
+  sessieStand = {
+    projectNaam: s.projectNaam,
+    bestandspad: s.bestandspad,
+    gegevens: s.gegevens,
+    exemplaren: s.exemplaren,
+    rapport: s.rapport,
+    activeId: s.activeId,
+    verborgen: s.verborgen,
+    dirty: s.dirty,
+    verleden: s.verleden,
+    toekomst: s.toekomst,
+  };
+  s.nieuwProject();
+  return true;
+}
+
+function eindigSessie(): boolean {
+  if (!sessieStand) return false;
+  const stand = sessieStand;
+  sessieStand = null;
+  useProjectStore.setState(stand);
+  // De antwoorden van het werkblad horen niet bij het echte project.
+  wisSessie();
+  return true;
+}
 
 const fs = () => import("@tauri-apps/plugin-fs");
 
@@ -157,6 +201,9 @@ export const liveOmgeving: McpOmgeving = {
   bestanden: {
     beschikbaar: isTauri,
     nieuwProject: () => useProjectStore.getState().nieuwProject(),
+    beginSessie,
+    eindigSessie,
+    sessieActief: () => sessieStand !== null,
     openProject: async (pad) => {
       const raw = await lees(pad, async () => (await fs()).readTextFile(pad));
       const store = useProjectStore.getState();

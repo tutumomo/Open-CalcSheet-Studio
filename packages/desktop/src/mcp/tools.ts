@@ -9,13 +9,15 @@
  *
  * Indeling: tools/project.ts (project, bestanden, rapport, ongedaan maken),
  * tools/bladen.ts (modules, bladen, doorrekenen), tools/overig.ts
- * (modulebibliotheek, formules, export, afdrukken, weergave, instellingen).
+ * (modulebibliotheek, formules, export, afdrukken, weergave, instellingen),
+ * tools/taken.ts (batch en achtergrondjobs).
  */
 import type { McpToolDef } from "./contracts.ts";
 import { PROJECTTOOLS } from "./tools/project.ts";
 import { BLADTOOLS } from "./tools/bladen.ts";
 import { OVERIGE_TOOLS } from "./tools/overig.ts";
+import { TAAKTOOLS } from "./tools/taken.ts";
 
 export { vergeetUitkomsten } from "./tools/hulp.ts";
 
-export const MCP_TOOLS: McpToolDef[] = [...PROJECTTOOLS, ...BLADTOOLS, ...OVERIGE_TOOLS];
+export const MCP_TOOLS: McpToolDef[] = [...PROJECTTOOLS, ...BLADTOOLS, ...TAAKTOOLS, ...OVERIGE_TOOLS];

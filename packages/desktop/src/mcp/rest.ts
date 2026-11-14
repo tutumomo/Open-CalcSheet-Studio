@@ -39,6 +39,7 @@ export const FOUT_STATUS: Record<McpFoutCode, number> = {
   NOT_FOUND: 404,
   CONFLICT: 409,
   CALC_ERROR: 422,
+  UNIT_WARNING: 422,
   READ_ONLY: 423,
   INTERNAL: 500,
   NOT_AVAILABLE: 501,

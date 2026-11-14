@@ -40,6 +40,7 @@ import {
 import { LEGE_WERKMAP } from "../packages/desktop/src/store/spreadsheetBlad.ts";
 import { pakWerkmapIn, startNotebook } from "../packages/desktop/src/store/jupyterBlad.ts";
 import { maakApp, maakContext, PROJECT_ID, RAPPORT_ID } from "./lib/mcpproef.mjs";
+import { laadTemplate } from "./lib/refcheck.mjs";
 
 let fouten = 0;
 let aantal = 0;
@@ -51,7 +52,7 @@ const meld = (ok, wat, detail = "") => {
 const gelijk = (a, b, wat) => meld(JSON.stringify(a) === JSON.stringify(b), wat, `${JSON.stringify(a)} tegen ${JSON.stringify(b)}`);
 
 // Een projectstore in het geheugen (scripts/lib/mcpproef.mjs).
-const app = maakApp();
+const app = maakApp({ sjablonen: { ligger: laadTemplate("ligger.ts"), "tw-rc-beam": laadTemplate("tw-rc-beam.ts") } });
 const vlaggen = { alleenLezen: false, gepauzeerd: false };
 const deps = {
   tools: MCP_TOOLS,
@@ -109,6 +110,7 @@ console.log("Dispatcher:");
   const verwacht = [
     "project_get", "project_set_data", "modules_list", "sheet_add", "sheet_get", "sheet_set_source",
     "sheet_set_input", "sheet_rename", "sheet_remove", "sheet_select", "sheet_evaluate", "calc_evaluate",
+    "module_schema", "calc_evaluate_batch", "job_start", "job_status", "job_cancel",
   ];
   meld(verwacht.every((n) => namen.includes(n)), "tools/list: de twaalf oorspronkelijke tools", verwacht.filter((n) => !namen.includes(n)).join());
   meld(namen.length === MCP_TOOLS.length && new Set(namen).size === namen.length, `tools/list: alle ${MCP_TOOLS.length} tools, elk één keer`);
@@ -296,6 +298,49 @@ console.log("其他表單種類:");
 }
 
 // ── 5. calc_evaluate ─────────────────────────────────────────────────────────
+// ── 4c. 拋棄式工作階段（session_new／session_close）────────────────────────
+console.log("拋棄式工作階段:");
+{
+  // Een tekstveld wijzigen maakt het project "niet opgeslagen" zonder de rekengegevens te raken.
+  await roep("project_set_data", { name: "locatie", value: "Proeflocatie" });
+  const voor = { naam: app.s.projectNaam, aantal: app.s.exemplaren.length, dirty: app.s.dirty, locatie: app.s.gegevens.locatie };
+  meld(voor.dirty === true, "vooraf: het project heeft niet-opgeslagen wijzigingen");
+
+  const zonderForce = await roep("session_new");
+  meld(zonderForce.isError && zonderForce.data.code === "CONFLICT", "session_new: niet-opgeslagen wijzigingen geweigerd", JSON.stringify(zonderForce.data));
+
+  const open = await roep("session_new", { force: true });
+  meld(!open.isError && open.data.session === true && open.data.sheets === 0, "session_new: leeg werkblad", JSON.stringify(open.data));
+  meld(app.s.exemplaren.length === 0 && app.s.dirty === false && app.s.bestandspad === null, "session_new: leeg project, niets openstaand");
+
+  const tweeKeer = await roep("session_new", { force: true });
+  meld(tweeKeer.isError && tweeKeer.data.code === "CONFLICT", "session_new: tweede werkblad geweigerd");
+
+  const toegevoegd = await roep("sheet_add", { templateId: "ligger" });
+  meld(!toegevoegd.isError && app.s.exemplaren.length === 1, "in het werkblad: sheet_add werkt");
+  const gerekend = await roep("sheet_evaluate", { id: toegevoegd.data.id });
+  meld(!gerekend.isError, "in het werkblad: sheet_evaluate werkt");
+
+  const dicht = await roep("session_close");
+  meld(!dicht.isError && dicht.data.session === false, "session_close: werkblad dicht", JSON.stringify(dicht.data));
+  meld(
+    app.s.projectNaam === voor.naam && app.s.exemplaren.length === voor.aantal && app.s.gegevens.locatie === voor.locatie,
+    "session_close: het oude project staat er weer",
+    `${app.s.projectNaam}／${app.s.exemplaren.length}／${app.s.gegevens.locatie}`,
+  );
+  meld(app.s.dirty === voor.dirty, "session_close: de vlag niet-opgeslagen blijft zoals hij was");
+  meld(!app.s.exemplaren.some((e) => e.id === toegevoegd.data.id), "session_close: het blad uit het werkblad is weg");
+
+  const nogEens = await roep("session_close");
+  meld(nogEens.isError && nogEens.data.code === "CONFLICT", "session_close: zonder werkblad geweigerd");
+
+  const viaNew = await roep("project_new", { scratch: true, force: true });
+  meld(!viaNew.isError && viaNew.data.session === true, "project_new met scratch=true opent hetzelfde werkblad", JSON.stringify(viaNew.data));
+  meld(app.s.exemplaren.length === 0, "project_new scratch: leeg werkblad");
+  await roep("session_close");
+  meld(app.s.exemplaren.length === voor.aantal, "project_new scratch: session_close zet het project terug");
+}
+
 console.log("calc_evaluate:");
 {
   const voorAantal = app.acties.length;
@@ -329,6 +374,153 @@ console.log("calc_evaluate:");
   const kort = await roep("calc_evaluate", { source: tekst, maxLines: 2 });
   meld(kort.data.lines.length === 2 && kort.data.truncated === true, "maxLines kapt af");
   meld(app.acties.length === voorAantal, "calc_evaluate wijzigt het project niet");
+}
+
+// ── 5b. Eenheidswaarschuwingen en gestructureerde regels (P1-6, P1-7) ───────
+console.log("Eenheidswaarschuwingen en gestructureerde regels:");
+{
+  // m^(2/3): de dimensie van V is geen hele macht van een basiseenheid.
+  const bron = [
+    `"Proef — eenheid",`,
+    "R = 0.25 m",
+    "V = (1/0.013)*R^(2/3)*(0.001)^(1/2)",
+    "sigma = 0.5 kN/mm^2",
+    "M = 12 kN*m', 彎矩（rc112 22.2）" + "'",
+    "UC_max = 1.6",
+  ].join("\n");
+  const r = await roep("calc_evaluate", { source: bron, conventionalUnits: true });
+  meld(!r.isError, "rekent met een gebroken exponent", JSON.stringify(r.data).slice(0, 200));
+  const w = r.data.warnings;
+  meld(Array.isArray(w) && w.length === 1, "warnings[]: één waarschuwing", JSON.stringify(w));
+  meld(
+    w[0]?.code === "UNIT_FRACTIONAL_EXPONENT" && w[0]?.line === 3 && w[0]?.name === "V",
+    "warnings[]: code, regel en naam",
+    JSON.stringify(w[0]),
+  );
+  const V = r.data.lines.find((x) => x.name === "V");
+  meld(V && V.expr === "(1/0.013)*R^(2/3)*(0.001)^(1/2)" && V.expression === V.expr, "regel: expr naast expression", JSON.stringify(V));
+  meld(V && typeof V.si_value === "number" && typeof V.si_unit === "string", "regel: si_value en si_unit", `${V?.si_value} ${V?.si_unit}`);
+  const sigma = r.data.lines.find((x) => x.name === "sigma");
+  meld(
+    sigma?.unit === "kN / mm^2" && sigma?.conventional?.value === 500 && sigma?.conventional?.unit === "MPa",
+    "conventionalUnits: kN/mm^2 → MPa",
+    JSON.stringify(sigma),
+  );
+  const M = r.data.lines.find((x) => x.name === "M");
+  meld(M?.clause === "rc112 22.2", "regel: clause uit de norm op die regel", JSON.stringify(M));
+  meld(M?.check === "unchecked", "regel zonder UC: check = unchecked");
+  const ucm = r.data.lines.find((x) => x.name === "UC_max");
+  meld(ucm?.uc === 1.6 && ucm?.check === "fail", "UC-regel: uc en check = fail", JSON.stringify(ucm));
+  meld(r.data.check === "fail" && r.data.uc === 1.6, "samenvatting: check volgt het oordeel", JSON.stringify({ check: r.data.check, uc: r.data.uc }));
+
+  const streng = await roep("calc_evaluate", { source: bron, strict: true });
+  meld(streng.isError && streng.data.code === "UNIT_WARNING", "strict: gebroken exponent is een fout", JSON.stringify(streng.data));
+  meld(Array.isArray(streng.data.data?.warnings) && streng.data.data.warnings.length === 1, "strict: de waarschuwing gaat mee");
+  const schoon = await roep("calc_evaluate", { source: "a = 2 m\nb = 3*a", strict: true });
+  meld(!schoon.isError, "strict: zonder waarschuwing gewoon rekenen", JSON.stringify(schoon.data));
+}
+
+// ── 5c. sheet_evaluate met regels en waarschuwingen ─────────────────────────
+console.log("sheet_evaluate: regels en waarschuwingen:");
+{
+  const zonder = await roep("sheet_evaluate", { id: liggerId, numbers: false });
+  meld(Array.isArray(zonder.data.warnings), "sheet_evaluate: warnings[] ook zonder regels", JSON.stringify(zonder.data.warnings));
+  const met = await roep("sheet_evaluate", { id: liggerId, numbers: false, lines: true });
+  meld(Array.isArray(met.data.lines) && met.data.lines.length > 0, "sheet_evaluate: lines=true geeft de regels", `${met.data.lines?.length}`);
+  meld(typeof met.data.uncheckedLines === "number", "sheet_evaluate: aantal unchecked-regels", `${met.data.uncheckedLines}`);
+  meld(
+    met.data.lines.some((x) => x.type === "assignment" && typeof x.expr === "string"),
+    "sheet_evaluate: elke toekenning heeft expr",
+  );
+}
+
+// ── 5d. module_schema (P1-8) ────────────────────────────────────────────────
+console.log("module_schema:");
+{
+  const r = await roep("module_schema", { templateId: "tw-rc-beam" });
+  meld(!r.isError, "module_schema: leest een module", JSON.stringify(r.data).slice(0, 180));
+  const d = r.data;
+  meld(d.templateId === "tw-rc-beam" && typeof d.name === "string" && d.name.length > 0, "module_schema: id en naam");
+  meld(Array.isArray(d.inputs) && d.inputs.length >= 5, "module_schema: invoervelden", `${d.inputs?.length}`);
+  const veld = d.inputs.find((v) => v.name === "b_t") ?? d.inputs[0];
+  meld(veld && typeof veld.name === "string" && typeof veld.kind === "string" && "default" in veld, "module_schema: naam, soort en standaardwaarde", JSON.stringify(veld));
+  meld(!("value" in veld) && !("isSet" in veld), "module_schema: geen waarde of ingesteld-vlag (dat is een blad, geen module)");
+  meld(d.inputs.some((v) => v.kind === "choice" && Array.isArray(v.options) && v.options.length > 0), "module_schema: keuzelijst met opties");
+  meld(d.inputs.some((v) => typeof v.unit === "string" && v.unit.length > 0), "module_schema: eenheid per veld");
+  meld(Array.isArray(d.norms) && d.norms.includes("rc112"), "module_schema: de normen van de tekst", JSON.stringify(d.norms));
+  meld(Array.isArray(d.clauses) && d.clauses.length >= 5 && d.clauses.every((c) => /^[a-z_]+\d*\s/.test(c)), "module_schema: de artikelen", `${d.clauses?.length}`);
+  meld(d.clauses.includes("rc112 22.2"), "module_schema: een bekend artikel uit de tekst", JSON.stringify(d.clauses?.slice(0, 4)));
+  meld(d.guards && typeof d.guards === "object" && Object.keys(d.guards).length > 0, "module_schema: de vergelijkende regels per veld", JSON.stringify(Object.keys(d.guards ?? {})).slice(0, 120));
+
+  const onbekend = await roep("module_schema", { templateId: "bestaat-niet" });
+  meld(onbekend.isError && onbekend.data.code === "NOT_FOUND", "module_schema: onbekende module geweigerd", JSON.stringify(onbekend.data));
+}
+
+// ── 5e. Begrensde lussen (P1-9) en batch/jobs (P1-10) ───────────────────────
+console.log("Lussen, batch en jobs:");
+{
+  const nietKlaar = ["x = 0", "#while x < 50 max=10", "x = x + 1", "#loop"].join("\n");
+  const r = await roep("calc_evaluate", { source: nietKlaar, useProjectData: false });
+  const n = r.data?.notConverged ?? [];
+  meld(!r.isError && n.length === 1 && n[0].code === "NOT_CONVERGED" && n[0].iterations === 10 && n[0].condition === "x < 50",
+    "#while max=: NOT_CONVERGED met aantal rondes en voorwaarde", JSON.stringify(n));
+  meld(r.data?.check === "unchecked", "niet geconvergeerd: oordeel unchecked");
+  const regel = (r.data?.lines ?? []).find((l) => l.code === "NOT_CONVERGED");
+  meld(regel?.type === "text" && typeof regel.error === "string" && r.data.errorLines >= 1, "de regel zelf draagt de fout");
+  const klaar = ["x = 0", "#while x < 5 max=5", "x = x + 1", "#loop"].join("\n");
+  const k = await roep("calc_evaluate", { source: klaar, useProjectData: false });
+  meld((k.data?.notConverged ?? []).length === 0 && k.data.lines.filter((l) => l.name === "x").at(-1)?.value === 5,
+    "#while max=: precies op de grens klaar is geen fout");
+  const oud = ["x = 0", "#while x < 50", "x = x + 1", "#loop"].join("\n");
+  const o = await roep("calc_evaluate", { source: oud, useProjectData: false });
+  meld((o.data?.notConverged ?? []).length === 0 && o.data.lines.filter((l) => l.name === "x").at(-1)?.value === 50,
+    "#while zonder max: gedrag ongewijzigd");
+  const wortel = ["x = 1", "#iterate x tol=1e-12 max=50", "x = (x + 2/x)/2", "#loop"].join("\n");
+  const w = await roep("calc_evaluate", { source: wortel, useProjectData: false });
+  const xw = w.data?.lines.filter((l) => l.name === "x").at(-1)?.value;
+  meld((w.data?.notConverged ?? []).length === 0 && Math.abs(xw - Math.SQRT2) < 1e-12, "#iterate: Newton voor √2 convergeert", String(xw));
+  const kort = ["x = 1", "#iterate x tol=1e-12 max=3", "x = (x + 2/x)/2", "#loop"].join("\n");
+  const kn = (await roep("calc_evaluate", { source: kort, useProjectData: false })).data?.notConverged ?? [];
+  meld(kn.length === 1 && kn[0].name === "x" && kn[0].iterations === 3 && kn[0].tol === 1e-12 && kn[0].residual > 1e-3,
+    "#iterate max=3: NOT_CONVERGED met residu en tolerantie", JSON.stringify(kn));
+  const eenheid = ["L = 1 m", "#iterate L tol=0.001", "L = (L + 2 m^2/L)/2", "#loop"].join("\n");
+  const e = await roep("calc_evaluate", { source: eenheid, useProjectData: false });
+  const L = e.data?.lines.filter((l) => l.name === "L").at(-1);
+  meld((e.data?.notConverged ?? []).length === 0 && L?.unit === "m" && Math.abs(L.value - Math.SQRT2) < 1e-3, "#iterate met eenheid");
+
+  // Batch: zelfde antwoord als calc_evaluate, fouten per item.
+  const items = [
+    { source: "a = 2\nb = a*3", useProjectData: false },
+    { source: "c = onbekend + 1", useProjectData: false },
+    { source: nietKlaar, useProjectData: false },
+  ];
+  const b = await roep("calc_evaluate_batch", { items });
+  meld(!b.isError && b.data?.total === 3 && b.data.results.length === 3 && b.data.results.every((x, i) => x.index === i), "batch: drie antwoorden op volgorde");
+  const los = await roep("calc_evaluate", items[0]);
+  gelijk(b.data?.results[0].lines, los.data?.lines, "batch item 0 = calc_evaluate");
+  meld(b.data?.results[2].notConverged?.[0]?.code === "NOT_CONVERGED", "batch: NOT_CONVERGED komt mee");
+  const bs = await roep("calc_evaluate_batch", { items: [{ source: "s = 0.5 kN/mm^2\nR = 0.25 m\nV = R^(2/3)", strict: true }] });
+  meld(bs.data?.results[0].ok === false && bs.data.results[0].error.code === "UNIT_WARNING" && bs.data.failed === 1, "batch: fout per item (strict → UNIT_WARNING)");
+  meld((await roep("calc_evaluate_batch", { items: [{ waarden: 1 }] })).isError, "batch: item zonder source geweigerd");
+
+  // Jobs: start geeft meteen terug, status volgt, annuleren stopt.
+  const st = await roep("job_start", { items });
+  meld(!st.isError && typeof st.data?.jobId === "string" && st.data.state === "running" && st.data.total === 3, "job_start: jobId, running");
+  let status = null;
+  for (let i = 0; i < 50; i++) {
+    status = (await roep("job_status", { jobId: st.data.jobId })).data;
+    if (status?.state !== "running") break;
+    await new Promise((k) => setTimeout(k, 5));
+  }
+  meld(status?.state === "done" && status.done === 3 && status.succeeded === 3 && status.results.length === 3, "job_status: done met alle antwoorden", JSON.stringify({ s: status?.state, d: status?.done }));
+  gelijk(status?.results[0].lines, los.data?.lines, "job item 0 = calc_evaluate");
+  const lang = await roep("job_start", { items: Array.from({ length: 50 }, () => items[0]) });
+  const stop = await roep("job_cancel", { jobId: lang.data.jobId });
+  meld(!stop.isError, "job_cancel");
+  await new Promise((k) => setTimeout(k, 30));
+  const na = (await roep("job_status", { jobId: lang.data.jobId, results: false })).data;
+  meld(na?.state === "cancelled" && na.done < 50 && na.results === undefined, "geannuleerd: stopt en zonder results", JSON.stringify({ s: na?.state, d: na?.done }));
+  meld((await roep("job_status", { jobId: "job-bestaat-niet" })).isError, "onbekende job: fout");
 }
 
 // ── 6. Pauze en alleen-lezen ─────────────────────────────────────────────────

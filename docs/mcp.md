@@ -62,19 +62,19 @@ leesbare tekst: deel ze niet.
 
 ## Tools
 
-49 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
+56 tools; beschrijvingen en veldnamen zijn Engels (de client vertaalt zelf).
 De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 [api.md](api.md#routes). In het kort:
 
 | Onderwerp | Tools |
 |---|---|
 | App | `app_info` |
-| Project | `project_get`, `project_new`, `project_open`, `project_save`, `project_save_as`, `recent_files`, `project_set_name`, `project_set_data`, `project_set_visibility` |
+| Project | `project_get`, `project_new`, `project_open`, `project_save`, `project_save_as`, `recent_files`, `project_set_name`, `project_set_data`, `project_set_visibility`, `session_new`, `session_close` |
 | Rapport | `report_get`, `report_set` |
 | Geschiedenis | `undo`, `redo` |
-| Modules | `modules_list`, `library_list`, `library_install`, `library_remove` |
+| Modules | `modules_list`, `module_schema`, `library_list`, `library_install`, `library_remove` |
 | Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_insert_formula` |
-| Rekenen | `calc_evaluate` |
+| Rekenen | `calc_evaluate`, `calc_evaluate_batch`, `job_start`, `job_status`, `job_cancel` |
 | Formules | `formulas_list`, `formula_get` |
 | Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
 | Weergave en instellingen | `view_get`, `view_set`, `settings_get`, `settings_set` |
@@ -102,9 +102,37 @@ doorgerekend en de invoer sindsdien niet veranderde.
 
 Een fout komt terug als toolresultaat met `isError: true` en een code:
 `VALIDATION`, `NOT_FOUND`, `CONFLICT`, `READ_ONLY`, `PAUSED`, `CALC_ERROR`,
-`NOT_AVAILABLE` of `INTERNAL`. Een PDF schrijven naar een pad kan alleen met de
+`UNIT_WARNING`, `NOT_AVAILABLE` of `INTERNAL`. Een PDF schrijven naar een pad kan alleen met de
 rapportengine; anders opent `print` de printdialoog (zie
 [api.md](api.md#wat-er-niet-helemaal-kan)).
+
+Elke regel uit `calc_evaluate` (en uit `sheet_evaluate` met `lines: true`) is
+machineleesbaar: `name`, `expr`, `value`, `unit`, `si_value`/`si_unit`, `clause`
+(het normartikel dat de bron op die regel noemt), en `check` met `pass`, `fail`
+of `unchecked`, plus `uc` bij een UC. Een `@toets`- of `@fem`-blok zonder
+antwoord is altijd `unchecked`, nooit `pass`. `conventionalUnits: true` geeft
+daarnaast de gebruikelijke eenheid waar die bestaat (`kN/mm^2` → `MPa`,
+`tf/m^2` → `kPa`). Een gebroken exponent in de dimensie (`R^(2/3)` → `m^0.667`)
+geeft een waarschuwing in `warnings[]` met code, regel en naam; met `strict:
+true` is zo'n waarschuwing een fout (`UNIT_WARNING`).
+
+`module_schema` geeft van een module de invoervelden (naam, label, eenheid,
+standaard, keuzes), de normen en artikelen die de tekst noemt, en per veld de
+regels die het vergelijken (`guards`). De rekentaal kent geen vaste min/max;
+de tool verzint ze dus niet.
+
+Een begrensde lus: `#while voorwaarde max=N` stopt na N rondes, en
+`#iterate x tol=… max=…` (standaard `tol=1e-9`, `max=100`) herhaalt tot
+|x_k − x_(k−1)| ≤ tol (in SI). Haalt de lus zijn grens zonder klaar te zijn,
+dan staat er een regel met `code: "NOT_CONVERGED"` (met `iterations`, `max`,
+`condition` of `name`/`tol`/`residual`), komt hij in `notConverged[]` en is
+het oordeel `check: "unchecked"`. `#while` zonder `max=` werkt als voorheen.
+
+`calc_evaluate_batch` rekent meerdere teksten in één verzoek (elk item zoals
+`calc_evaluate`, fouten per item). Voor werk langer dan de time-out van de brug
+(120 s): `job_start` geeft meteen een `jobId`, `job_status` de voortgang en
+antwoorden, `job_cancel` stopt na het lopende item. Jobs staan alleen in het
+geheugen van de app.
 
 ## Hoe het werkt
 

@@ -1710,6 +1710,79 @@ const MAX_RONDES = 10000;
 /** Bovengrens van een lus zonder aantal (`#while`, `#repeat` zonder n), tegen een oneindige lus. */
 const MAX_RONDES_OPEN = 100000;
 
+/** Het getal van een uitkomst in SI: een mathjs-Unit bewaart zijn waarde al in SI. */
+function siGetal(v: unknown): number {
+  if (v && typeof v === 'object' && Array.isArray((v as { units?: unknown }).units) && typeof (v as { value?: unknown }).value === 'number') {
+    return (v as { value: number }).value;
+  }
+  return asNumber(v);
+}
+
+/** Tijdelijke naam in de scope voor de vorige waarde van `#iterate x`. */
+const VORIGE = '__iteratie_vorige__';
+
+/**
+ * `#iterate x tol=… max=…`: draait de lus tot |x_k − x_(k−1)| ≤ tol (in SI), hoogstens
+ * `max` rondes. Niet klaar is een tekstregel met `iteratie.code = 'NOT_CONVERGED'`,
+ * het aantal rondes en het laatste residu.
+ */
+function evalueerIteratie(
+  node: Extract<AstNode, { type: 'repeat' }>,
+  max: number,
+  scope: Scope,
+  selectValues: SelectValues,
+  stand: Stand,
+): { nodes: EvaluatedNode[]; melding: EvaluatedNode | null } {
+  const naam = node.volg as string;
+  const nodes: EvaluatedNode[] = [];
+  let tol = NaN;
+  try {
+    tol = siGetal(reken(node.tol ?? '1e-9', scope));
+  } catch {
+    /* hieronder gemeld */
+  }
+  if (!Number.isFinite(tol) || tol < 0) {
+    return { nodes, melding: { type: 'text', text: `Error: loop tolerance tol=${node.tol} must be a number of at least 0.` } };
+  }
+  let residu: number | null = null;
+  let rondes = 0;
+  for (let iter = 1; iter <= max; iter++) {
+    const vorige = scope[naam];
+    scope['_i'] = iter;
+    nodes.push(...evaluateNodes(node.body, scope, selectValues, stand));
+    delete scope[CONTINUE_FLAG];
+    rondes = iter;
+    if (scope[BREAK_FLAG]) {
+      delete scope[BREAK_FLAG];
+      return { nodes, melding: null };
+    }
+    if (!(naam in scope)) {
+      return { nodes, melding: { type: 'text', text: `Error: #iterate ${naam}: the loop never assigns "${naam}".` } };
+    }
+    if (vorige === undefined) continue;
+    scope[VORIGE] = vorige;
+    try {
+      residu = siGetal(reken(`abs(${naam} - ${VORIGE})`, scope));
+    } catch {
+      residu = null;
+    } finally {
+      delete scope[VORIGE];
+    }
+    if (residu === null || !Number.isFinite(residu)) {
+      return { nodes, melding: { type: 'text', text: `Error: #iterate ${naam}: the change between two iterations cannot be computed.` } };
+    }
+    if (residu <= tol) return { nodes, melding: null };
+  }
+  return {
+    nodes,
+    melding: {
+      type: 'text',
+      text: `Error: loop did not converge: ${naam} still changes by ${residu} after ${rondes} iterations (tol=${tol}, max=${max}).`,
+      iteratie: { code: 'NOT_CONVERGED', rondes, max, naam, tol, residu },
+    },
+  };
+}
+
 function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValues, stand: Stand): EvaluatedNode[] {
   const result: EvaluatedNode[] = [];
 
@@ -1925,7 +1998,31 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
         // `#repeat n`, `#for` (count) en `#while` (conditie). Zonder aantal en
         // zonder voorwaarde herhaalt de lus tot een #break, tot de bovengrens.
         let count = 0;
-        if (node.conditie !== undefined || node.count.trim() === '') {
+        // Begrensd (`max=`, `#iterate`): de bovengrens komt uit de tekst; niet klaar
+        // bij die grens is een fout (NOT_CONVERGED) en geen stille stop.
+        let grens: number | null = null;
+        if (node.max !== undefined) {
+          let g = NaN;
+          try {
+            g = Math.trunc(asNumber(reken(node.max, scope)));
+          } catch {
+            /* hieronder gemeld */
+          }
+          if (!Number.isFinite(g) || g < 1 || g > MAX_RONDES_OPEN) {
+            result.push({ type: 'text', text: `Error: loop limit max=${node.max} must be a whole number from 1 to ${MAX_RONDES_OPEN}.` });
+            break;
+          }
+          grens = g;
+        }
+        if (node.volg !== undefined) {
+          const uitkomst = evalueerIteratie(node, grens ?? 100, scope, selectValues, stand);
+          if (!node.hidden) result.push(...uitkomst.nodes);
+          if (uitkomst.melding) result.push(uitkomst.melding);
+          break;
+        }
+        if (grens !== null) {
+          count = grens;
+        } else if (node.conditie !== undefined || node.count.trim() === '') {
           count = MAX_RONDES_OPEN;
         } else {
           try {
@@ -1939,6 +2036,7 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             count = Math.min(Math.max(count, 0), MAX_RONDES);
           }
         }
+        let klaar = false;
         for (let iter = 1; iter <= count; iter++) {
           if (node.conditie !== undefined) {
             let door = false;
@@ -1947,7 +2045,10 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             } catch {
               if (!node.hidden) result.push({ type: 'text', text: `Error evaluating condition: ${node.conditie}` });
             }
-            if (!door) break;
+            if (!door) {
+              klaar = true;
+              break;
+            }
           }
           scope['_i'] = iter;
           const children = evaluateNodes(node.body, scope, selectValues, stand);
@@ -1957,7 +2058,24 @@ function evaluateNodes(nodes: AstNode[], scope: Scope, selectValues: SelectValue
             // Iteration stopped — consume the flag so outer loops aren't
             // also broken out of.
             delete scope[BREAK_FLAG];
+            klaar = true;
             break;
+          }
+        }
+        if (grens !== null && !klaar && node.conditie !== undefined) {
+          // Na de laatste ronde nog één keer kijken: werd de voorwaarde net onwaar, dan is de lus klaar.
+          let door = true;
+          try {
+            door = Boolean(asNumber(reken(node.conditie, scope)));
+          } catch {
+            /* al gemeld */
+          }
+          if (door) {
+            result.push({
+              type: 'text',
+              text: `Error: loop did not converge: "${node.conditie}" still holds after ${grens} iterations (max=${grens}).`,
+              iteratie: { code: 'NOT_CONVERGED', rondes: grens, max: grens, voorwaarde: node.conditie },
+            });
           }
         }
         break;

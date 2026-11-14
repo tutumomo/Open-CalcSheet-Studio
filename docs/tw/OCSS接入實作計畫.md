@@ -82,7 +82,12 @@
 | 2026-11-14 | P0-2 API 產 PDF | 完成 | `release-tw.yml` 建置加 `--features rapportengine`；`render --pdf` 走 `export_pdf`。無報表引擎的建置仍回 `NOT_AVAILABLE`，不假裝成功 |
 | 2026-11-14 | P0-3 版本可辨識 | 完成 | `src-tauri/build.rs` 寫入 `OCSS_EDITION`／`OCSS_BUILD_TAG`／`OCSS_GIT_COMMIT`／`OCSS_BUILD_DATE`，`src/kenmerken.rs` 對外提供；`app_info` 增 `edition`／`tag`／`commit`／`buildDate`（既有 `version` 不動）；`release-tw.yml` 打包前把 `tauri.conf.json` 版本改為 `X.Y.Z-tw.N` |
 | 2026-11-14 | P0-4 免 token 的 health | 完成 | `GET /api/v1/health` 由 Rust 於 token 檢查前回應，內容不含專案資料；`openapi.ts`、`docs/api.md` 已文件化 |
-| — | P0-5 拋棄式工作階段 | 待做 | 需在 `McpOmgeving` 加快照／還原，屬跨檔改動，排在 P0 收尾後單獨一個 commit |
+| beda0b6 之後 | P0-5 拋棄式工作階段 | 完成 | `McpOmgeving.bestanden` 新增 `beginSessie`／`eindigSessie`／`sessieActief`，快照放 `mcp/omgeving.ts`（不動 store，縮小上游衝突面）；工具 `session_new`／`session_close`（`POST /session/new`、`POST /session/close`），`project_new` 另接受 `scratch: true`；`scripts/lib/mcpproef.mjs` 同步，`check-mcp.mjs` 第 4c 節 15 項 |
+| beda0b6 之後 | P1-6 單位安全 | 完成 | `rekenen.ts` 的 `eenheidWaarschuwingen`：量綱為非整數次方（`R^(2/3)`）回 `UNIT_FRACTIONAL_EXPONENT`（含行號與名稱）；`calc_evaluate`／`sheet_evaluate` 回 `warnings[]`，`strict: true` 改回 `UNIT_WARNING`（REST 422）；`conventionalUnits: true` 另給慣用單位（`kN/mm^2 → MPa`）。「同式加減不同量綱」mathjs 本身即報錯，走既有 `CALC_ERROR` |
+| beda0b6 之後 | P1-7 結構化結果 | 完成 | 每行加 `expr`、`si_value`／`si_unit`、`line`、`clause`（由該行文字辨識 `rc112 22.2` 類條號）、`check`（`pass`／`fail`／`unchecked`）、`uc`；`@toets`／`@fem`／`@kern` 無答案一律 `unchecked`；摘要另有 `check` |
+| beda0b6 之後 | P1-8 `module_schema` | 完成 | `GET /modules/{templateId}/schema`：輸入欄位直接重用 `velden.ts`，加上規範、條號與每個欄位的比較行（`guards`）。計算語言沒有宣告式上下限，工具不自行編造範圍 |
+| beda0b6 之後 | P1-9 收斂迭代 | 完成 | core `parser.ts`／`evaluator.ts`：`#while cond max=N`、`#iterate x tol=… max=…`（預設 1e-9、100，殘差以 SI 計）；未收斂產生帶 `iteratie` 的錯誤文字行，MCP 回 `code: NOT_CONVERGED`（`iterations`、`max`、`condition` 或 `name`／`tol`／`residual`）與 `notConverged[]`，並把摘要 `check` 降為 `unchecked`。無 `max=` 的 `#while` 行為不變 |
+| beda0b6 之後 | P1-10 長工作 | 完成 | 新檔 `tools/taken.ts`：`calc_evaluate_batch`（`POST /evaluate/batch`，每項等同 `calc_evaluate`，錯誤逐項回報，上限 200）；`job_start`／`job_status`／`job_cancel`（`POST /jobs`、`GET`／`DELETE /jobs/{jobId}`），每項之間 `setTimeout` 讓出事件迴圈，狀態只存記憶體、保留最近 20 個已結束的 job。工具總數 49 → 56 |
 
 ## 8. 上游可合併性
 
@@ -96,9 +101,13 @@
 | `src-tauri/build.rs` | 原本幾乎為空，新增寫入 4 個環境變數 | 上游若加自己的 `cargo:rustc-env`，兩段並存 |
 | `src/App.tsx` | 開頭插一段 `startCli()` 判斷 | 上游若改動最外層元件，先保留上游寫法，再把 `startCli()` 放回最前面 |
 | `src/mcp/openapi.ts`、`tools/project.ts` | 只新增路徑與欄位 | 純新增，衝突少；`app_info` 若上游改結構，把 4 個新欄位補回 |
+| `src/mcp/contracts.ts`、`src/mcp/omgeving.ts` | `bestanden` 介面多 3 個方法與其實作（快照放 `omgeving.ts`，不動 store） | 上游若改 `McpOmgeving`，把 3 個方法補進新的介面與實作即可；store 本體未改，衝突面最小 |
+| `packages/core/src/parser.ts`、`evaluator.ts`、`types.ts` | `#iterate` 與 `max=`／`tol=` 為新增分支；`RepeatNode`、`EvaluatedText` 只加選用欄位 | 上游改 `repeat` 求值時衝突在同一個 `case`，保留上游邏輯後把 `grens`／`evalueerIteratie` 接回 |
+| `src/mcp/tools/taken.ts` | 全新檔案；`tools.ts` 多一行登記 | 不衝突 |
+| `src/mcp/tools/bladen.ts`、`rekenen.ts`、`hulp.ts`、`rest.ts` | `calc_evaluate` 本體搬成 `rekenTekstUit`；回傳只加欄位 | 上游改 `calc_evaluate` 時，把改動套進 `rekenTekstUit` |
 | `release-tw.yml` | 台灣版專屬，上游沒有 | 不合併上游 |
 | `docs/api.md`、README 三份 | 新增段落與腳本計數 | 計數以 `node scripts/check-readme.mjs` 為準重算 |
 
 合併後固定要跑：`npm run check`、`valideer-tw-basis.mjs`、`valideer-tw-i18n-keys.mjs`、`cargo test --lib`、
-`node scripts/check-ocss-headless.mjs`。新增的上游命令若也要在無頭模式可用，記得在 `cli.rs` 補一個
+`node scripts/check-ocss-headless.mjs`、`node scripts/check-mcp.mjs`（拋棄式工作階段在假環境也要同步）。新增的上游命令若也要在無頭模式可用，記得在 `cli.rs` 補一個
 `Opdracht` 變體，而不是在 Rust 端另外實作。

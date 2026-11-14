@@ -1,6 +1,7 @@
 export { parse, type ParseOptions } from './parser.js';
 export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, type EvalOpties } from './evaluator.js';
-export { geldigeEenheidNaam } from './eenheden.js';
+export { geldigeEenheidNaam, naarSI, vasteEenheid, gebrokenExponent } from './eenheden.js';
+export type { EenheidWaarde } from './eenheden.js';
 export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding } from './verwijzing.js';
 export { STELSELS, grootheidVan, decimalenNa, doelInStelsel, toonInvoer, invoerNaarBron, omrekenen, eenheidUitBeeld, eenheidInBeeld, type Grootheid, type Stelsel } from './eenheidstelsel.js';
 export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';

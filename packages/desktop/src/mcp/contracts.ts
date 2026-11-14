@@ -169,6 +169,17 @@ export interface McpOmgeving {
   bestanden: {
     beschikbaar(): boolean;
     nieuwProject(): void;
+    /**
+     * Een wegwerpwerkblad: het open project gaat opzij (naam, pad, bladen,
+     * rapport, geschiedenis en de vlag "niet opgeslagen") en er komt een leeg
+     * project. Wat de tools daarna doen, raakt het echte project niet en komt
+     * niet in de recente bestanden. Geeft `false` als er al zo'n werkblad is.
+     */
+    beginSessie(): boolean;
+    /** Het wegwerpwerkblad weg en het oude project terug. `false` als er niets opzij stond. */
+    eindigSessie(): boolean;
+    /** Of er nu een wegwerpwerkblad open is. */
+    sessieActief(): boolean;
     /** Leest een projectbestand, laadt het en zet het bij de recente bestanden. */
     openProject(pad: string): Promise<void>;
     /** Schrijft het project naar `pad` (zelfde inhoud als Opslaan in de app) en markeert het als opgeslagen. */
@@ -221,6 +232,7 @@ export type McpFoutCode =
   | "READ_ONLY"
   | "PAUSED"
   | "CALC_ERROR"
+  | "UNIT_WARNING"
   | "NOT_AVAILABLE"
   | "INTERNAL";
 
