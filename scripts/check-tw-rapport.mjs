@@ -14,6 +14,20 @@
  */
 
 import { normaliseerRapport, RAPPORT_VERSIE, standaardRapport } from "../packages/desktop/src/rapport/model.ts";
+import { wisselTaal } from "../packages/desktop/src/rapport/taalwissel.ts";
+import {
+  BEVESTIGING_VANAF,
+  OPMERKING_RUIMTE,
+  bevestigingBegin,
+  tekstBreedte,
+} from "../packages/desktop/src/rapport/materialen.ts";
+import {
+  KOLOMMEN_TW,
+  TW_BEVESTIGING_TYPEN,
+  TW_MATERIAAL_TYPEN,
+  twBevestigingKwaliteitOpties,
+  twMateriaalSoortOpties,
+} from "../packages/desktop/src/rapport/tw/materialen.ts";
 import { inhoudsopgave, bijlagen, bouwOpzet } from "../packages/desktop/src/rapport/opzet.ts";
 import {
   OPZET_TW,
@@ -342,6 +356,153 @@ console.log("\n7. 台灣專案參數 (twGrondslagen.ts)");
   waar("臺南市區不列在 32.5 m/s 區", !optie("32.5").includes("臺南"));
   waar("每個 V10 選項的地名都屬於該風速區（抽查）",
     optie("37.5").includes("臺南市中西") && optie("32.5").includes("臺中市中") && optie("27.5").includes("烏日"));
+}
+
+console.log("\n8. 台灣版採用材料規格、緊結件預設值與聯動建議清單 (tw/materialen.ts)");
+{
+  const tw = standaardRapport("20-11-2026", {}, "zh-TW");
+  const nl = standaardRapport("20-11-2026", {}, "nl");
+  const en = standaardRapport("20-11-2026", {}, "en");
+
+  // 預設材料 5 列與無歐規殘留
+  const mat = tw.uitgangspunten.materialen;
+  waar("zh-TW 預設材料為 5 列", mat.length === 5);
+  waar("場鑄混凝土預設 fc'=280 kgf/cm²", mat.some((m) => m.type === "場鑄混凝土" && m.soort === "fc'=280 kgf/cm²"));
+  waar("鋼筋預設 SD420W", mat.some((m) => m.type === "鋼筋" && m.soort === "SD420W"));
+  waar("結構用鋼材預設 SN490B", mat.some((m) => m.type === "結構用鋼材" && m.soort === "SN490B"));
+  waar("無收縮水泥砂漿預設 fc'=420 kgf/cm²", mat.some((m) => m.type === "鋼骨座漿無收縮水泥砂漿" && m.soort === "fc'=420 kgf/cm²"));
+  waar("木材預設 針葉樹Ⅱ類（普通）", mat.some((m) => m.type === "木材" && m.soort === "針葉樹Ⅱ類（普通）"));
+
+  const eurocodeSoorten = ["C20/25", "C24", "CE2+", "B500", "S235", "K50"];
+  waar("zh-TW 預設材料不含歐規強度代號", mat.every((m) => !eurocodeSoorten.includes(m.soort)));
+
+  // 預設緊結件 3 列與無歐規殘留
+  const bev = tw.uitgangspunten.bevestiging;
+  waar("zh-TW 預設緊結件為 3 列", bev.length === 3);
+  waar("緊結件預設含 F10T / A307 / SUS304",
+    bev.some((b) => b.type === "高強度螺栓" && b.kwaliteit === "F10T") &&
+    bev.some((b) => b.type === "普通螺栓" && b.kwaliteit === "A307") &&
+    bev.some((b) => b.type === "化學錨栓" && b.kwaliteit === "SUS304"));
+  waar("zh-TW 預設緊結件不含歐規等級 8.8 / 4.6 / 5.8", bev.every((b) => !["8.8", "4.6", "5.8"].includes(b.kwaliteit)));
+
+  // 歐規報告維持原樣
+  waar("nl / en 報告維持原本 6 列歐規材料與 3 列歐規緊結件",
+    nl.uitgangspunten.materialen.length === 6 &&
+    en.uitgangspunten.materialen.length === 6 &&
+    nl.uitgangspunten.materialen.some((m) => m.soort === "S235") &&
+    en.uitgangspunten.materialen.some((m) => m.soort === "C20/25") &&
+    nl.uitgangspunten.bevestiging.some((b) => b.kwaliteit === "8.8") &&
+    en.uitgangspunten.bevestiging.some((b) => b.kwaliteit === "8.8"));
+
+  // normaliseerRapport 向下相容性
+  const opgeslagenTw = {
+    versie: 6,
+    taal: "zh-TW",
+    opzetSoort: "tw",
+    uitgangspunten: {
+      materialen: [{ type: "場鑄混凝土", soort: "C20/25", opmerking: "舊檔自訂" }],
+      bevestiging: [{ type: "螺栓", kwaliteit: "8.8" }],
+    },
+  };
+  const normSaved = normaliseerRapport(opgeslagenTw, "20-11-2026", {}, "zh-TW");
+  waar("已存檔報告之材料與緊結件原樣保留不覆寫",
+    normSaved.uitgangspunten.materialen.length === 1 &&
+    normSaved.uitgangspunten.materialen[0].soort === "C20/25" &&
+    normSaved.uitgangspunten.bevestiging[0].kwaliteit === "8.8");
+
+  const normV5 = normaliseerRapport({ versie: 5, taal: "nl" }, "20-11-2026", {}, "zh-TW");
+  waar("舊版 v5 缺 materialen 時補歐規 6 列", normV5.opzetSoort === "eurocode" && normV5.uitgangspunten.materialen.length === 6);
+
+  const normTwLeeg = normaliseerRapport({ versie: 6, taal: "zh-TW", opzetSoort: "tw" }, "20-11-2026", {}, "zh-TW");
+  waar("v6 tw 缺 materialen 時補台灣 5 列",
+    normTwLeeg.opzetSoort === "tw" &&
+    normTwLeeg.uitgangspunten.materialen.length === 5 &&
+    normTwLeeg.uitgangspunten.materialen[0].soort === "fc'=280 kgf/cm²");
+
+  // 種類建議清單與依種類聯動
+  waar("材料種類與緊結件種類清單非空", TW_MATERIAAL_TYPEN.length >= 10 && TW_BEVESTIGING_TYPEN.length >= 6);
+
+  const betonOpties = twMateriaalSoortOpties("場鑄混凝土").map((o) => o.waarde);
+  const verwachtFc = [140, 175, 210, 245, 280, 350, 420, 490, 560].map((v) => `fc'=${v} kgf/cm²`);
+  waar("混凝土清單涵蓋 140～560 共 9 級", verwachtFc.every((v) => betonOpties.includes(v)));
+
+  const groutOpties = twMateriaalSoortOpties("鋼骨座漿無收縮水泥砂漿").map((o) => o.waarde);
+  waar("無收縮水泥砂漿不會誤分類為一般混凝土",
+    groutOpties.includes("fc'=420 kgf/cm²") && !groutOpties.includes("fc'=140 kgf/cm²"));
+
+  const rebarOpties = twMateriaalSoortOpties("鋼筋").map((o) => o.waarde);
+  waar("鋼筋清單含 SD280～SD550W 與 CNS 6919",
+    ["SD280", "SD280W", "SD420", "SD420W", "SD490", "SD490W", "SD550W", "CNS 6919"].every((v) => rebarOpties.includes(v)));
+
+  const staalOpties = twMateriaalSoortOpties("結構用鋼材").map((o) => o.waarde);
+  waar("結構鋼清單含 SS400／SM490B／SN490B／ASTM A36／A572 Gr.50／A992",
+    ["SS400", "SM490B", "SN490B", "ASTM A36", "ASTM A572 Gr.50", "ASTM A992"].every((v) => staalOpties.includes(v)));
+
+  const buisOpties = twMateriaalSoortOpties("結構用鋼管").map((o) => o.waarde);
+  waar("鋼管清單含 STKR400／STKR490／STK400／STK490",
+    ["STKR400", "STKR490", "STK400", "STK490"].every((v) => buisOpties.includes(v)) && !buisOpties.includes("SS400"));
+
+  const houtOpties = twMateriaalSoortOpties("木材").map((o) => o.waarde);
+  waar("木材清單含針葉樹／闊葉樹與 CNS 11031 集成材",
+    houtOpties.includes("針葉樹Ⅱ類（普通）") &&
+    houtOpties.includes("闊葉樹Ⅰ類（普通）") &&
+    houtOpties.some((v) => v.includes("CNS 11031")));
+
+  const glulamOpties = twMateriaalSoortOpties("結構用集成材").map((o) => o.waarde);
+  waar("集成材清單含 CNS 11031 等級", glulamOpties.includes("E85-F255") && glulamOpties.includes("E120-F330"));
+
+  const plaatOpties = twMateriaalSoortOpties("結構用合板").map((o) => o.waarde);
+  waar("合板清單含 CNS 11671", plaatOpties.some((v) => v.includes("CNS 11671")));
+
+  const metselOpties = twMateriaalSoortOpties("磚石／砌體").map((o) => o.waarde);
+  waar("磚石清單含 CNS 382／CNS 8905", metselOpties.some((v) => v.includes("CNS 382")) && metselOpties.some((v) => v.includes("CNS 8905")));
+
+  waar("未知材料種類回傳非空預設清單", twMateriaalSoortOpties("自訂複合材料").length > 0 && twMateriaalSoortOpties("").length > 0);
+
+  // 緊結件聯動
+  const hsOpties = twBevestigingKwaliteitOpties("高強度螺栓").map((o) => o.waarde);
+  const gewOpties = twBevestigingKwaliteitOpties("普通螺栓").map((o) => o.waarde);
+  const ankOpties = twBevestigingKwaliteitOpties("化學錨栓").map((o) => o.waarde);
+  const lasOpties = twBevestigingKwaliteitOpties("銲條／銲材").map((o) => o.waarde);
+  const studOpties = twBevestigingKwaliteitOpties("剪力釘").map((o) => o.waarde);
+  waar("高強度螺栓清單含 F10T／S10T／A325／A490",
+    ["F10T", "S10T", "ASTM A325", "ASTM A490"].every((v) => hsOpties.includes(v)));
+  waar("普通螺栓清單含 A307／SS400／SUS304",
+    ["A307", "SS400", "SUS304"].every((v) => gewOpties.includes(v)));
+  waar("錨栓清單含 F1554／SUS304／SUS316",
+    ["ASTM F1554 Gr.36", "SUS304", "SUS316"].every((v) => ankOpties.includes(v)));
+  waar("銲材清單含 AWS E70XX／CNS 13719",
+    lasOpties.includes("AWS E70XX") && lasOpties.includes("CNS 13719"));
+  waar("剪力釘清單含 AWS D1.1／CNS 4689",
+    studOpties.includes("AWS D1.1 Type B") && studOpties.includes("CNS 4689"));
+  waar("未知緊結件種類回傳非空預設清單", twBevestigingKwaliteitOpties("自訂扣件").length > 0);
+
+  // KOLOMMEN_TW 與並列對齊檢核
+  const eind = (k) => k[0] + k[1] - 1;
+  waar("KOLOMMEN_TW 欄位相接且最右欄不超過第 9 欄",
+    eind(KOLOMMEN_TW.type) + 1 === KOLOMMEN_TW.soort[0] &&
+    eind(KOLOMMEN_TW.soort) + 1 === KOLOMMEN_TW.opmerking[0] &&
+    eind(KOLOMMEN_TW.opmerking) + 1 === KOLOMMEN_TW.bevestigingType[0] &&
+    eind(KOLOMMEN_TW.bevestigingType) + 1 === KOLOMMEN_TW.bevestigingKwaliteit[0] &&
+    eind(KOLOMMEN_TW.bevestigingKwaliteit) <= 9);
+  waar("台灣預設材料第 3～5 列備註寬度小於等於 OPMERKING_RUIMTE，緊結件從第 3 列並列",
+    mat.slice(BEVESTIGING_VANAF).every((m) => tekstBreedte(m.opmerking) <= OPMERKING_RUIMTE) &&
+    bevestigingBegin(mat, bev.length) === BEVESTIGING_VANAF);
+
+  // 語言雙向切換無損
+  const naarTw = wisselTaal(nl, "zh-TW");
+  const terugNl = wisselTaal(naarTw, "nl");
+  waar("歐規 nl -> zh-TW -> nl 切換材料與緊結件無損",
+    JSON.stringify(terugNl.uitgangspunten.materialen) === JSON.stringify(nl.uitgangspunten.materialen) &&
+    JSON.stringify(terugNl.uitgangspunten.bevestiging) === JSON.stringify(nl.uitgangspunten.bevestiging));
+
+  const twNaarEn = wisselTaal(tw, "en");
+  const twTerug = wisselTaal(twNaarEn, "zh-TW");
+  waar("台灣版 zh-TW -> en -> zh-TW 切換材料與緊結件無損",
+    twNaarEn.uitgangspunten.materialen[0].type === "In-situ concrete" &&
+    twNaarEn.uitgangspunten.bevestiging[0].type === "High-strength bolts" &&
+    JSON.stringify(twTerug.uitgangspunten.materialen) === JSON.stringify(tw.uitgangspunten.materialen) &&
+    JSON.stringify(twTerug.uitgangspunten.bevestiging) === JSON.stringify(tw.uitgangspunten.bevestiging));
 }
 
 console.log(`\n台灣報告架構檢核完成：共 ${getest} 項檢查，${fouten} 項失敗。`);

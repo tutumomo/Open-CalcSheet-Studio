@@ -51,7 +51,8 @@
     "toevoegen": "Rij toevoegen",
     "leeg": "Nog geen regels.",
     "bewerken": "Bewerken",
-    "verwijderen": "Rij verwijderen"
+    "verwijderen": "Rij verwijderen",
+    "opties": "Toon voorgestelde keuzes"
   },
   "document": {
     "intro": "Wat op het voorblad staat. Projectnummer, projectnaam, opdrachtgever en locatie komen uit de projectgegevens.",

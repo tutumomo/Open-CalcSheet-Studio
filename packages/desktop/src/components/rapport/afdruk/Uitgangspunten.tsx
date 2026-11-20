@@ -10,6 +10,7 @@ import {
   ontwerpSupervisie,
 } from "../../../rapport/normwaarden";
 import { KOLOMMEN, materialenRijen } from "../../../rapport/materialen";
+import { KOLOMMEN_TW } from "../../../rapport/tw/materialen";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import type { RapportWeergave } from "./useRapportWeergave";
 import { Bijschrift, Cel, Eenheid, Index, Leeg, Rij, Tekst } from "./raster";
@@ -94,7 +95,9 @@ export function Brand({ w }: { w: RapportWeergave }) {
 export function Materialen({ w }: { w: RapportWeergave }) {
   const u = w.rapport.uitgangspunten;
   const bijschrift = w.bijschriften.get(bijschriftSleutel.materialen);
-  const { type, soort, opmerking, bevestigingType, bevestigingKwaliteit } = KOLOMMEN;
+  const isTw = w.rapport.opzetSoort === "tw";
+  const { type, soort, opmerking, bevestigingType, bevestigingKwaliteit } = isTw ? KOLOMMEN_TW : KOLOMMEN;
+  const middenKlasse = isTw ? "rpa-midden rpa-afbreken" : "rpa-midden";
   return (
     <>
       <Bijschrift tekst={bijschrift} />
@@ -107,7 +110,7 @@ export function Materialen({ w }: { w: RapportWeergave }) {
           {m && (
             <>
               <Cel k={type[0]} n={type[1]} o l>{m.type}</Cel>
-              <Cel k={soort[0]} n={soort[1]} o l r klasse="rpa-midden">{m.soort}</Cel>
+              <Cel k={soort[0]} n={soort[1]} o l r klasse={middenKlasse}>{m.soort}</Cel>
               {/* Naast de bevestigingsmiddelen blijft de opmerking binnen haar eigen kolommen. */}
               <Cel k={opmerking[0]} n={opmerking[1]} klasse={f ? "rpa-afbreken" : undefined}>{m.opmerking}</Cel>
             </>
@@ -115,7 +118,7 @@ export function Materialen({ w }: { w: RapportWeergave }) {
           {f && (
             <>
               <Cel k={bevestigingType[0]} n={bevestigingType[1]} b={eerste} o l klasse="rpa-midden">{f.type}</Cel>
-              <Cel k={bevestigingKwaliteit[0]} n={bevestigingKwaliteit[1]} b={eerste} o l r klasse="rpa-midden">
+              <Cel k={bevestigingKwaliteit[0]} n={bevestigingKwaliteit[1]} b={eerste} o l r klasse={middenKlasse}>
                 {f.kwaliteit}
               </Cel>
             </>

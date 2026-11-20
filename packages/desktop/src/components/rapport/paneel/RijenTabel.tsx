@@ -1,10 +1,12 @@
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { leesPad, zetOpPad } from "../../../rapport/pad";
+import type { TwSuggestieOptie } from "../../../rapport/tw/materialen";
 import { useProjectStore } from "../../../store/projectStore";
 import { opPad, verplaatst } from "./hulp";
 import type { Optie } from "./velden";
 import { EenheidInvoer } from "./EenheidInvoer";
+import SuggestieInvoer from "./SuggestieInvoer";
 
 /**
  * Een bewerkbare tabel van rijen in het rapport: revisies, materialen,
@@ -27,6 +29,10 @@ export interface Kolom<T> {
   lijst?: string;
   /** Vaste keuzes: een keuzelijst in plaats van een tekstveld. */
   keuzes?: readonly Optie[];
+  /** 台灣版：可輸入且可展開之建議清單（支援依當列內容動態回傳）。 */
+  suggesties?: readonly TwSuggestieOptie[] | ((rij: T) => readonly TwSuggestieOptie[]);
+  /** 建議清單相對於儲存格之水平對齊方式。 */
+  suggestieUitlijnen?: "links" | "rechts";
   /** Een getal: rechts uitgelijnd. */
   getal?: boolean;
   /** De eenheid waarin de cel wordt opgeslagen ("kN/m²"); in beeld in het eenhedenstelsel. */
@@ -127,6 +133,7 @@ export default function RijenTabel<T extends object>({
               {kolommen.map((k) => {
                 const waarde = String(rij[k.sleutel] ?? "");
                 const celPad = `${pad}.${i}.${k.sleutel}`;
+                const suggesties = typeof k.suggesties === "function" ? k.suggesties(rij) : k.suggesties;
                 return (
                   <td key={k.sleutel}>
                     {k.keuzes ? (
@@ -147,6 +154,16 @@ export default function RijenTabel<T extends object>({
                         placeholder={k.placeholder}
                         lijst={k.lijst}
                         className={k.getal ? "rapport-getal" : undefined}
+                        onWijzig={(w) => zet(celPad, w)}
+                      />
+                    ) : suggesties && suggesties.length > 0 ? (
+                      <SuggestieInvoer
+                        waarde={waarde}
+                        opties={suggesties}
+                        placeholder={k.placeholder}
+                        className={k.getal ? "rapport-getal" : undefined}
+                        uitlijnen={k.suggestieUitlijnen}
+                        knopTitel={t("rijen.opties")}
                         onWijzig={(w) => zet(celPad, w)}
                       />
                     ) : (

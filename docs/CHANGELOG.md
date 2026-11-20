@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（報告材料規格）：台灣架構（`opzetSoort === "tw"`）的「採用材料規格」與「緊結件」改用台灣現行規範與常用預設值（場鑄混凝土 `fc'=280 kgf/cm²`、鋼筋 `SD420W`、結構用鋼材 `SN490B`、無收縮水泥砂漿 `fc'=420 kgf/cm²`、木材 `針葉樹Ⅱ類（普通）`；高強度螺栓 `F10T`、普通螺栓 `A307`、化學錨栓 `SUS304`），並於兩表的種類與強度等級／材質等級欄提供依種類聯動的可輸入下拉建議清單；列印表格依台灣規格加寬強度等級欄（`KOLOMMEN_TW`）。歐規與舊版已存檔報告維持不變。
 - 台灣版（上游同步 v2026.47.2）：納入上游 v2026.47.0～47.2 的報告 PDF 書籤與可點連結、報告圖片與圖說、「附錄 A 的表單也在本章列為小節」開關、載重區塊（`@last`）、canvas 形式的專案資料與自訂專案變數、`sheet_add` 的 canvas `units`、`report_export_pdf`、只在第一次開啟時出現的歡迎面板，以及歐規的預力預鑄樁模組與載重類別 E。預力樁模組與其他上游模組一樣，在目錄與列印上都標示「Eurocode，非台灣規範」。上游改為在說明文字的數值外加上 `calc-waarde`，讓列印套用各語言的小數點，所以繁中報告的黃金檔已重新產生，差異只有這一項。台灣版保留自己的 `--headless`／`eval`／`render` CLI；專案資料頁維持台灣設計基礎與工址在上、歐規欄位收入摺疊區；結構檢核總結卡在表單只放附錄時照樣顯示。dev-build 使用台灣版自己的 identifier `tw.opencalcsheet.studio.dev`。新增的介面文字都已補上繁體中文。
 - 台灣版（計算表編輯器）：長行不再需要橫向捲動，超出視窗寬度時自動換行（CodeMirror `EditorView.lineWrapping`）。
 - 台灣版（版本號）：標題列、狀態列、Backstage「關於」、設定「關於」與意見回饋一律取自 `app_kenmerken` 的 release tag（例 `v2026.46.2-tw.13`），不再有的地方顯示 `2026.46.2`、有的地方顯示 `-tw.N`。

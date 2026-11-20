@@ -19,6 +19,12 @@ import {
   ontwerpSupervisie,
 } from "../../../rapport/normwaarden";
 import { noemtVorigeProductnaam, VORIGE_PRODUCTNAAM } from "../../../rapport/standaardteksten";
+import {
+  TW_BEVESTIGING_TYPEN,
+  TW_MATERIAAL_TYPEN,
+  twBevestigingKwaliteitOpties,
+  twMateriaalSoortOpties,
+} from "../../../rapport/tw/materialen";
 import { kFiVoor, projectWaarde } from "../../../store/projectGegevens";
 import { useProjectStore } from "../../../store/projectStore";
 import RijenTabel, { type Kolom } from "./RijenTabel";
@@ -33,18 +39,51 @@ function jaNee(t: TFunction<"rapport">): Optie[] {
   ];
 }
 
-function materiaalKolommen(t: TFunction<"rapport">): Kolom<Materiaalregel>[] {
+function materiaalKolommen(t: TFunction<"rapport">, isTw: boolean): Kolom<Materiaalregel>[] {
+  if (!isTw) {
+    return [
+      { sleutel: "type", kop: t("uitgangspunten.materiaaltype"), breedte: "30%" },
+      { sleutel: "soort", kop: t("uitgangspunten.sterkteklasse"), breedte: "24%" },
+      { sleutel: "opmerking", kop: t("uitgangspunten.opmerking") },
+    ];
+  }
   return [
-    { sleutel: "type", kop: t("uitgangspunten.materiaaltype"), breedte: "30%" },
-    { sleutel: "soort", kop: t("uitgangspunten.sterkteklasse"), breedte: "24%" },
+    {
+      sleutel: "type",
+      kop: t("uitgangspunten.materiaaltype"),
+      breedte: "28%",
+      suggesties: TW_MATERIAAL_TYPEN,
+    },
+    {
+      sleutel: "soort",
+      kop: t("uitgangspunten.sterkteklasse"),
+      breedte: "30%",
+      suggesties: (rij) => twMateriaalSoortOpties(rij.type),
+    },
     { sleutel: "opmerking", kop: t("uitgangspunten.opmerking") },
   ];
 }
 
-function bevestigingKolommen(t: TFunction<"rapport">): Kolom<Bevestigingsregel>[] {
+function bevestigingKolommen(t: TFunction<"rapport">, isTw: boolean): Kolom<Bevestigingsregel>[] {
+  if (!isTw) {
+    return [
+      { sleutel: "type", kop: t("uitgangspunten.bevestigingsmiddel"), breedte: "55%" },
+      { sleutel: "kwaliteit", kop: t("uitgangspunten.kwaliteit") },
+    ];
+  }
   return [
-    { sleutel: "type", kop: t("uitgangspunten.bevestigingsmiddel"), breedte: "55%" },
-    { sleutel: "kwaliteit", kop: t("uitgangspunten.kwaliteit") },
+    {
+      sleutel: "type",
+      kop: t("uitgangspunten.bevestigingsmiddel"),
+      breedte: "48%",
+      suggesties: TW_BEVESTIGING_TYPEN,
+    },
+    {
+      sleutel: "kwaliteit",
+      kop: t("uitgangspunten.kwaliteit"),
+      suggesties: (rij) => twBevestigingKwaliteitOpties(rij.type),
+      suggestieUitlijnen: "rechts",
+    },
   ];
 }
 
@@ -86,6 +125,7 @@ export default function UitgangspuntenSectie() {
   const bouwjaar = getal(u.bestaand.bouwjaar);
   const jaNeeOpties = jaNee(t);
   const taal = rapport.taal;
+  const isTw = rapport.opzetSoort === "tw";
 
   return (
     <Sectie
@@ -177,7 +217,7 @@ export default function UitgangspuntenSectie() {
         <RijenTabel<Materiaalregel>
           pad="uitgangspunten.materialen"
           rijen={u.materialen}
-          kolommen={materiaalKolommen(t)}
+          kolommen={materiaalKolommen(t, isTw)}
           nieuweRij={() => ({ type: "", soort: "", opmerking: "" })}
           toevoegen={t("uitgangspunten.materiaalToevoegen")}
         />
@@ -186,7 +226,7 @@ export default function UitgangspuntenSectie() {
         <RijenTabel<Bevestigingsregel>
           pad="uitgangspunten.bevestiging"
           rijen={u.bevestiging}
-          kolommen={bevestigingKolommen(t)}
+          kolommen={bevestigingKolommen(t, isTw)}
           nieuweRij={() => ({ type: "", kwaliteit: "" })}
           toevoegen={t("uitgangspunten.bevestigingToevoegen")}
         />

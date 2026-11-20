@@ -51,7 +51,8 @@
     "toevoegen": "Add row",
     "leeg": "No rows yet.",
     "bewerken": "Edit",
-    "verwijderen": "Remove row"
+    "verwijderen": "Remove row",
+    "opties": "Show suggested options"
   },
   "document": {
     "intro": "What appears on the cover page. Project number, project name, client and location come from the project data.",

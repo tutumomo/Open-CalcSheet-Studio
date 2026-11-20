@@ -907,3 +907,100 @@ p.rapport-hint {
 .rapport-beeld-breedte {
   width: 84px;
 }
+
+/* ── 台灣版：表格欄位下拉建議清單 ── */
+
+.rapport-suggestie {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.rapport-panel .rapport-tabel .rapport-suggestie input[type="text"] {
+  padding-right: 22px;
+}
+
+.rapport-suggestie-knop {
+  position: absolute;
+  right: 1px;
+  top: 1px;
+  bottom: 1px;
+  width: 20px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--theme-text-secondary);
+  background: transparent;
+  border: 0;
+  border-radius: 0 3px 3px 0;
+  cursor: pointer;
+}
+
+.rapport-suggestie-knop:hover {
+  color: var(--theme-accent, #d97706);
+  background: var(--theme-hover, rgba(217, 119, 6, 0.1));
+}
+
+.rapport-suggestie-lijst {
+  position: absolute;
+  top: calc(100% + 2px);
+  left: 0;
+  min-width: 100%;
+  width: max-content;
+  max-width: 320px;
+  max-height: 240px;
+  overflow-y: auto;
+  z-index: 30;
+  padding: 3px;
+  background: var(--theme-bg-lighter, #fff);
+  border: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.35));
+  border-radius: 4px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.rapport-suggestie-lijst.rapport-suggestie-rechts {
+  left: auto;
+  right: 0;
+}
+
+.rapport-suggestie-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1px;
+  width: 100%;
+  padding: 5px 8px;
+  text-align: left;
+  font-family: inherit;
+  color: var(--theme-text);
+  background: transparent;
+  border: 0;
+  border-radius: 3px;
+  cursor: pointer;
+}
+
+.rapport-suggestie-item:hover,
+.rapport-suggestie-item.is-actief {
+  background: var(--theme-hover, rgba(217, 119, 6, 0.12));
+}
+
+.rapport-suggestie-item.is-geselecteerd .rapport-suggestie-waarde {
+  color: var(--theme-accent, #d97706);
+  font-weight: 600;
+}
+
+.rapport-suggestie-waarde {
+  font-size: 12px;
+  line-height: 1.3;
+  white-space: nowrap;
+}
+
+.rapport-suggestie-uitleg {
+  font-size: 10.5px;
+  line-height: 1.3;
+  color: var(--theme-text-secondary);
+}

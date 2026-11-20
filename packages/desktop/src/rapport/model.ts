@@ -14,6 +14,13 @@ import { inTaal, type Meertalig } from "./meertalig.ts";
 import { normaliseerSituatie, type Situatie } from "./situatie.ts";
 import { normaliseerTw, type TwOpzet } from "./tw/blok.ts";
 import { metSymbolen } from "./belastingBronnen.ts";
+// ── 台灣版 ────────────────────────────────────────────────────────────────
+import {
+  TW_MEEGELEVERD_BEVESTIGING,
+  TW_MEEGELEVERD_MATERIAAL_OPMERKING,
+  twStandaardBevestiging,
+  twStandaardMaterialen,
+} from "./tw/materialen.ts";
 
 
 export type Fase = "" | "SO" | "VO" | "DO" | "TO" | "UO";
@@ -457,9 +464,9 @@ export const MEEGELEVERD = {
   soortBouwwerk: SOORTEN_BOUWWERK,
   revisie: [EERSTE_UITGAVE],
   materiaalType: MATERIALEN.map((m) => m.type),
-  materiaalOpmerking: MATERIALEN.map((m) => m.opmerking).filter(meertalig),
+  materiaalOpmerking: [...MATERIALEN.map((m) => m.opmerking).filter(meertalig), ...TW_MEEGELEVERD_MATERIAAL_OPMERKING],
   materialenNoot: [MATERIALEN_NOOT],
-  bevestiging: BEVESTIGING.map((b) => b.type),
+  bevestiging: [...BEVESTIGING.map((b) => b.type), ...TW_MEEGELEVERD_BEVESTIGING],
   conserveringOnderdeel: CONSERVERING.map((c) => c.onderdeel),
   conserveringSysteem: CONSERVERING.map((c) => c.systeem),
   conserveringSlot: [CONSERVERING_SLOT],
@@ -496,17 +503,21 @@ function standaardRol(taal: string): Rol {
   return { rol: inTaal(ROLLEN[0], taal), architect: inTaal(NIET_VAN_TOEPASSING, taal), datumOnderlegger: inTaal(NIET_VAN_TOEPASSING, taal) };
 }
 
-function standaardUitgangspunten(taal: string): Uitgangspunten {
+function standaardUitgangspunten(taal: string, opzetSoort: "eurocode" | "tw" = "eurocode"): Uitgangspunten {
   return {
     soortBouwwerk: inTaal(SOORTEN_BOUWWERK[0], taal),
     brand: { hoofddraagconstructie: "-", brandscheiding: "-", vluchtroute: "-", verwijzing: "" },
-    materialen: MATERIALEN.map((m) => ({
-      type: inTaal(m.type, taal),
-      soort: m.soort,
-      opmerking: typeof m.opmerking === "string" ? m.opmerking : inTaal(m.opmerking, taal),
-    })),
+    materialen: opzetSoort === "tw"
+      ? twStandaardMaterialen(taal)
+      : MATERIALEN.map((m) => ({
+          type: inTaal(m.type, taal),
+          soort: m.soort,
+          opmerking: typeof m.opmerking === "string" ? m.opmerking : inTaal(m.opmerking, taal),
+        })),
     materialenNoot: inTaal(MATERIALEN_NOOT, taal),
-    bevestiging: BEVESTIGING.map((b) => ({ type: inTaal(b.type, taal), kwaliteit: b.kwaliteit })),
+    bevestiging: opzetSoort === "tw"
+      ? twStandaardBevestiging(taal)
+      : BEVESTIGING.map((b) => ({ type: inTaal(b.type, taal), kwaliteit: b.kwaliteit })),
     conservering: CONSERVERING.map((c) => ({ onderdeel: inTaal(c.onderdeel, taal), systeem: inTaal(c.systeem, taal) })),
     conserveringSlot: inTaal(CONSERVERING_SLOT, taal),
     bestaand: {
@@ -547,11 +558,16 @@ function standaardBelastingen(taal: string): Belastingen {
 }
 
 /** Een nieuw rapport in deze taal. `vandaag` in dd-mm-jjjj; `teksten` komen uit de standaardteksten. */
-export function standaardRapport(vandaag: string, teksten: Record<string, string>, taal = "en"): Rapport {
+export function standaardRapport(
+  vandaag: string,
+  teksten: Record<string, string>,
+  taal = "en",
+  opzetSoort: "eurocode" | "tw" = taal === "zh-TW" ? "tw" : "eurocode",
+): Rapport {
   return {
     versie: RAPPORT_VERSIE,
     taal,
-    opzetSoort: taal === "zh-TW" ? "tw" : "eurocode",
+    opzetSoort,
     tekstTaal: {},
     titel: inTaal(TITELS[0], taal),
     kenmerk: "",
@@ -563,7 +579,7 @@ export function standaardRapport(vandaag: string, teksten: Record<string, string
     revisies: [{ code: "A", datum: vandaag, omschrijving: inTaal(EERSTE_UITGAVE, taal), status: "concept" }],
     teksten: { ...teksten },
     rol: standaardRol(taal),
-    uitgangspunten: standaardUitgangspunten(taal),
+    uitgangspunten: standaardUitgangspunten(taal, opzetSoort),
     belastingen: standaardBelastingen(taal),
     beelden: {},
     toelichting: {},
@@ -739,7 +755,13 @@ export function normaliseerRapport(
   // Zonder geldig versienummer: een rapport van vóór versie 2.
   const versie = o && typeof o.versie === "number" && Number.isInteger(o.versie) && o.versie >= 1 ? o.versie : 1;
   const taal = !o ? nieuweTaal : leesTaal(o.taal) ?? (versie < 5 ? "nl" : nieuweTaal);
-  const s = standaardRapport(vandaag, typeof teksten === "function" ? teksten(taal) : teksten, taal);
+  // 台灣版：先決定 opzetSoort，再產生對應預設材料與緊結件（版本 < 6 或無指定時維持 "eurocode"）。
+  const opzetSoort: "eurocode" | "tw" = !o
+    ? (nieuweTaal === "zh-TW" ? "tw" : "eurocode")
+    : o.opzetSoort === "tw" || o.opzetSoort === "eurocode"
+      ? o.opzetSoort
+      : (versie < 6 ? "eurocode" : (taal === "zh-TW" ? "tw" : "eurocode"));
+  const s = standaardRapport(vandaag, typeof teksten === "function" ? teksten(taal) : teksten, taal, opzetSoort);
   if (!o) return s;
 
   const rol = object(o.rol) ?? {};
@@ -760,11 +782,6 @@ export function normaliseerRapport(
   const opmaak = object(o.opmaak) ?? {};
   const keuze = (x: unknown, standaard: boolean) => (typeof x === "boolean" ? x : versie < 3 ? false : standaard);
   const situatie = normaliseerSituatie(o.situatie);
-  // 台灣版：報告架構種類。版本小於 6 或未指定時預設為 "eurocode"，確保舊報告輸出維持原樣。
-  const opzetSoort: "eurocode" | "tw" =
-    o && (o.opzetSoort === "tw" || o.opzetSoort === "eurocode")
-      ? o.opzetSoort
-      : (versie < 6 ? "eurocode" : s.opzetSoort);
 
   return {
     // Een nieuwer rapport houdt zijn hogere versie: zijn eigen bijwerkingen zijn al gedaan.

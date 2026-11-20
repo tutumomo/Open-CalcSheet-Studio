@@ -51,7 +51,8 @@
     "toevoegen": "新增列",
     "leeg": "尚無列資料。",
     "bewerken": "編輯",
-    "verwijderen": "刪除列"
+    "verwijderen": "刪除列",
+    "opties": "顯示常用規格清單"
   },
   "document": {
     "intro": "封面顯示內容。專案編號、專案名稱、業主與工程地點取自專案資料。",
