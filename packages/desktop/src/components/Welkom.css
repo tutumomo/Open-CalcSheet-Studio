@@ -231,14 +231,6 @@
   color: var(--theme-text-secondary);
 }
 
-.welkom-bijstart {
-  margin-top: 10px;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  color: var(--theme-text-secondary);
-}
-
 .welkom-sluit {
   position: absolute;
   top: 10px;

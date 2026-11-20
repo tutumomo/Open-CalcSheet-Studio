@@ -9,6 +9,7 @@ import { IFCX_RE, leesIfcxBlok } from './ifcxBlok.js';
 import { TOETS_START_RE, leesToetsBlok } from './toetsBlok.js';
 import { FEM_START_RE, leesFemBlok } from './femBlok.js';
 import { KERN_START_RE, leesKernBlok } from './kernBlok.js';
+import { LAST_START_RE, leesLastNode } from './lastBlok.js';
 import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.js';
 
 /**
@@ -66,6 +67,7 @@ import { JS_PLEK_RE, haalJsBlokkenUit, leesJsBlok, type JsCode } from './jsBlok.
  *                       `@toets naam = tool … @end` — normtoets door Open FEM Studio; zie toetsBlok.ts
  *                       `@fem naam … @end` — plaatmodel, gerekend door Open FEM Studio; zie femBlok.ts
  *                       `@kern naam = tool … @end` — rekentool van Open FEM Studio met geneste invoer; zie kernBlok.ts
+ *                       `@last symbool "naam" lijn … @end` — lijnlast of puntlast uit belastingen; zie lastBlok.ts
  *                       `@js … @end` — JavaScript, letterlijk en afgeschermd; zie jsBlok.ts
  *
  *   Statement separator: `,'` (single comma + single-quote) splits one line into
@@ -239,22 +241,38 @@ function foldSubscriptCommas(source: string): string {
  */
 export function rekendelen(source: string): string {
   const delen: string[] = [];
-  alleenInCode(source, (code) => {
+  const neem = (code: string) => {
     delen.push(code);
     return code;
-  });
+  };
+  // Ook de regels van een `@last`-blok, zonder hun omschrijving: een `#2.R_A` daarin is
+  // een verwijzing naar een ander blad.
+  alleenInCode(source, neem, (regel) => neem(regel.replace(/"[^"]*"/g, '""')));
   return delen.join('\n');
 }
 
-function alleenInCode(source: string, fn: (code: string) => string): string {
+function alleenInCode(source: string, fn: (code: string) => string, inLastBlok?: (regel: string) => void): string {
   let inSelect = false;
   let in3d = false;
+  let inLast = false;
   return source
     .split('\n')
     .map((regel) => {
       const t = regel.trim();
       if (inSelect) {
         if (/^@end\b/.test(t)) inSelect = false;
+        return regel;
+      }
+      // Een `@last`-blok gaat ook ongemoeid door: de naam in de kop en de omschrijvingen
+      // blijven letterlijk, `Q: N` is geen formaataanduiding, en de uitdrukkingen krijgen
+      // de herschrijvingen bij het inlezen van het blok (normaliseer3d).
+      if (inLast) {
+        if (/^@end\b/.test(t)) inLast = false;
+        else inLastBlok?.(regel);
+        return regel;
+      }
+      if (LAST_START_RE.test(t)) {
+        inLast = true;
         return regel;
       }
       // Een `@3d`-blok gaat ongemoeid door: zijn teksten blijven letterlijk, en
@@ -318,7 +336,7 @@ function alleenInCode(source: string, fn: (code: string) => string): string {
  * preceding word char.
  */
 function stripDollarSuffix(source: string): string {
-  if (!/^\s*@(?:3d\s*$|fem\b|kern\b|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
+  if (!/^\s*@(?:3d\s*$|fem\b|kern\b|last\b|iframe\b|ifcx\b|js\u0003)/im.test(source)) return source.replace(/([\p{L}\p{N}_])\$/gu, '$1');
   // De teksten in een `@3d`-blok blijven letterlijk (zie alleenInCode).
   let in3d = false;
   return source
@@ -329,7 +347,7 @@ function stripDollarSuffix(source: string): string {
         if (/^@end\b/.test(t)) in3d = false;
         return regel;
       }
-      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t)) in3d = true;
+      if (DRIE_D_START_RE.test(t) || FEM_START_RE.test(t) || KERN_START_RE.test(t) || LAST_START_RE.test(t)) in3d = true;
       // Een dollarteken in een adres is geen achtervoegsel van een naam.
       if (IFRAME_RE.test(t) || IFCX_RE.test(t) || JS_PLEK_RE.test(t)) return regel;
       return regel.replace(/([\p{L}\p{N}_])\$/gu, '$1');
@@ -955,7 +973,8 @@ function parseBron(source: string, options: ParseOptions): AstNode[] {
       if (BLOCK_END_RE.test(trimmed)) in3d = false;
       continue;
     }
-    if (DRIE_D_START_RE.test(trimmed) || FEM_START_RE.test(trimmed)) {
+    // Zo ook een `@last`-blok: een apostrof in een omschrijving hoort bij die tekst.
+    if (DRIE_D_START_RE.test(trimmed) || FEM_START_RE.test(trimmed) || LAST_START_RE.test(trimmed)) {
       in3d = true;
       lines.push(raw);
       continue;
@@ -1342,6 +1361,21 @@ function parseLines(
       const blok = leesKernBlok(kernMatch[1], kernMatch[2], blokRegels, normaliseer3d);
       if (i >= end) blok.fouten.push('@kern-blok zonder @end');
       nodes.push(markHidden({ type: 'kern', ...blok }, state));
+      if (i < end) i++;
+      continue;
+    }
+
+    // Lastblok (`@last symbool "naam" lijn … @end`): een lijnlast of puntlast uit belastingen (lastBlok.ts).
+    if (LAST_START_RE.test(trimmed)) {
+      const blokRegels: string[] = [];
+      i++;
+      while (i < end && !BLOCK_END_RE.test(lines[i].trim())) {
+        blokRegels.push(lines[i]);
+        i++;
+      }
+      const blok = leesLastNode(trimmed, blokRegels, normaliseer3d);
+      if (i >= end) blok.fouten.push('@last-blok zonder @end');
+      nodes.push(markHidden({ type: 'last', ...blok }, state));
       if (i < end) i++;
       continue;
     }

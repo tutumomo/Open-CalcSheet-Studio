@@ -305,7 +305,8 @@ kop("3f. Een waarde in de toelichting achter een formule");
 {
   const r = reken("a = 2', waarde 'a*3' mm'\nb = 5', zie 'onbekend' hier'");
   const regelA = r.html.split("\n").find((l) => l.includes("calc-comment") && l.includes("waarde")) ?? "";
-  meld(/<span class="calc-comment">, waarde 6 mm<\/span><\/div>/.test(regelA), "x = …', tekst 'expr' tekst' toont de waarde naast de formule", regelA.slice(-120));
+  // Het ingevulde getal staat in een calc-waarde, voor de komma op papier (decimaalteken.ts).
+  meld(/<span class="calc-comment">, waarde <span class="calc-waarde">6<\/span> mm<\/span><\/div>/.test(regelA), "x = …', tekst 'expr' tekst' toont de waarde naast de formule", regelA.slice(-120));
   meld(!/<p class="calc-text">a\*3<\/p>/.test(r.html), "de expressie valt niet terug op een losse alinea", "");
   meld(/calc-comment">, zie onbekend hier</.test(r.html), "een expressie die niet rekent, blijft als tekst in de toelichting", (r.html.match(/calc-comment">[^<]*/g) ?? []).join(" | "));
 }

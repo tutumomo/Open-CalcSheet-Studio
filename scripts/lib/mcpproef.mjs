@@ -88,6 +88,7 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
   };
   const app = { splitMode: "vu", activeView: "default", voorbeeld: null };
   const afdrukken = [];
+  const rapportPdfs = [];
 
   const omgeving = {
     stand: () => ({ ...s, stappenTerug: verleden.length, stappenVooruit: toekomst.length }),
@@ -376,6 +377,12 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
       pdfViaEngine: async () => {
         throw new McpFout("NOT_AVAILABLE", "This build of the app has no report engine.");
       },
+      // Het rapport naar een bestand: hier alleen onthouden waarheen; `rapportPdfFout` laat het mislukken.
+      rapportPdf: async (pad) => {
+        if (app.rapportPdfFout) throw new McpFout(app.rapportPdfFout.code, app.rapportPdfFout.melding);
+        rapportPdfs.push(pad);
+        return 12345;
+      },
     },
     // sheet_run: zoals omgeving.ts het blad opent en het venster laat draaien; wat het
     // venster doet, geeft de controle zelf mee (`zetNotebookUitvoer`).
@@ -392,7 +399,7 @@ export function maakApp({ sjablonen = { ligger: laadTemplate("ligger.ts") }, bur
   const zetNotebookUitvoer = (f) => {
     notebookUitvoer = f;
   };
-  return { s, acties, omgeving, schijf, afdrukken, app, sjablonen, geinstalleerd, notebookRondes, zetNotebookUitvoer };
+  return { s, acties, omgeving, schijf, afdrukken, rapportPdfs, app, sjablonen, geinstalleerd, notebookRondes, zetNotebookUitvoer };
 }
 
 /** Een context zoals brug.ts hem per request bouwt. */

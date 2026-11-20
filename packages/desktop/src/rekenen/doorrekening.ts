@@ -17,6 +17,7 @@ import i18next from "i18next";
 import { setAngleMode, type AngleMode, type EvalOpties, type ToetsVerzoek } from "@ifc-calc/core";
 import { useProjectStore } from "../store/projectStore";
 import { evalOptiesVan } from "../store/projectEenheden";
+import { projectTekstVan } from "../store/projectBlad";
 import type { BladUitkomst, Resultaat } from "../components/calc/bladLezen";
 import type { CanvasUitwerking } from "../components/calc/canvasRekenen";
 import type { BladInvoer } from "../components/calc/invoer/velden";
@@ -169,7 +170,14 @@ export function useDoorrekening(
   const taal = i18next.language ?? "";
   // Het eenhedenstelsel van het project: een wissel geeft een nieuwe sleutel.
   const gegevens = useProjectStore((s) => s.gegevens);
-  const basisOpties = useMemo(() => evalOptiesVan(gegevens), [gegevens]);
+  // De belastingen uit hoofdstuk 5 en de eigen elementen van de projectgegevens rekenen vóór
+  // het blad; de worker kent het project niet en krijgt die tekst dus mee.
+  const belastingen = useProjectStore((s) => s.rapport.belastingen);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
+  const basisOpties = useMemo(() => {
+    const project = projectTekstVan(gegevens, belastingen, rapportTaal);
+    return { ...evalOptiesVan(gegevens), ...(project ? { project } : {}) };
+  }, [gegevens, belastingen, rapportTaal]);
   // Een nieuw antwoord van FEM Studio maakt elke doorrekening verouderd; de antwoorden
   // zelf staan niet in de sleutel (ze zijn groot), hun versie wel.
   const toetsV = useToetsVersie();

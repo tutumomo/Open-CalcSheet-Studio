@@ -118,6 +118,11 @@ jobs:
         if: matrix.platform == 'ubuntu-22.04'
         run: cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib erpnext
 
+      # De bladwijzers achter de rapport-PDF: zuivere code, zonder venster.
+      - name: Test de bladwijzers van de rapport-PDF (Ubuntu only)
+        if: matrix.platform == 'ubuntu-22.04'
+        run: cargo test --manifest-path packages/desktop/src-tauri/Cargo.toml --lib bladwijzers
+
       # De brug naar Open FEM Studio: protocol en procesbeheer, zonder Tauri en dus ook
       # op Windows. De proeven met de echte server zijn #[ignore] (geen FEM Studio op de runner).
       - name: Test de brug naar FEM Studio

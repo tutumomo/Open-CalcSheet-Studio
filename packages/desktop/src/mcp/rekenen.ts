@@ -23,9 +23,15 @@ import { leesGetallen, leesResultaat, metRefNamen, type Resultaat } from "../com
 import { rekenEenhedenDoor } from "../components/calc/canvasRekenen.ts";
 import { heeftEenheden } from "../store/canvasBlad.ts";
 
+// Een API-aanvraag leest doorgaans de velden en rekent meteen dezelfde bron door.
+let laatstGelezen: { source: string; ast: AstNode[] } | undefined;
+
 /** Leest een rekentekst in, met dezelfde includes en afbeeldingen als de uitwerking. */
 export function leesBron(source: string): AstNode[] {
-  return parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
+  if (laatstGelezen?.source === source) return laatstGelezen.ast;
+  const ast = parse(source, { includes: rekentaalIncludes, imageUrls: rekentaalImageUrls });
+  laatstGelezen = { source, ast };
+  return ast;
 }
 
 export interface Doorrekening {

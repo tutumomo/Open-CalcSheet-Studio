@@ -351,7 +351,7 @@ const eerste = leesProjectBestand(tekst1, "x");
   const export_ = JSON.parse(JSON.stringify(stil(() => projectIfcx(VOLLEDIG))));
   delete opgeslagen.header.timestamp;
   delete export_.header.timestamp;
-  meld(verschillen(opgeslagen, export_).length === 0, "het bestand en de export naar .ifcx zijn hetzelfde");
+  meld(verschillen(opgeslagen, export_).length === 0, "het bestand en de export naar .ifcx zijn hetzelfde", verschillen(opgeslagen, export_).slice(0, 4).join(" | "));
 
   // Een leeg project en een project zonder naam.
   const leeg = { versie: 2, naam: "", gegevens: {}, exemplaren: [] };

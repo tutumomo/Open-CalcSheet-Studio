@@ -30,8 +30,11 @@ import { twStormSewer } from "./tw-storm-sewer";
 import { twBridgeSeismic } from "./tw-bridge-seismic";
 import { twWoodMember } from "./tw-wood-member";
 
+import voorgespannenHeipaal from "./voorgespannen-heipaal.cpd?raw";
+
 export const templates: Record<string, string> = {
   "balklaag": balklaag,
+  "voorgespannen-heipaal": voorgespannenHeipaal,
   "ligger": ligger,
   "tweepaalspoer": tweepaalspoer,
   "doorsnede-spanningen": doorsnedeSpanningen,

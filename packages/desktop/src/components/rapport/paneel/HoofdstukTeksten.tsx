@@ -3,6 +3,7 @@ import { inTaal, type Meertalig } from "../../../rapport/meertalig";
 import { ROLLEN } from "../../../rapport/model";
 import type { Knoop } from "../../../rapport/opzet";
 import { vindKnoop, HOOFDSTUKKEN_TW } from "./hulp";
+import BeeldenInvoer from "./BeeldenInvoer";
 import TekstVeld, { Invulvelden } from "./TekstVeld";
 import { Kop, Sectie, Veld, Vink, useRapport } from "./velden";
 
@@ -44,6 +45,7 @@ function KnoopInvoer({ knoop }: { knoop: Knoop }) {
           kop={<Kop id={knoop.id} />}
           placeholder={knoop.optioneel ? t("teksten.optioneelLeeg") : undefined}
         />
+        <BeeldenInvoer id={knoop.id} />
         {knoop.titelNieuwbouw && <KopNieuwbouw knoop={knoop} titelNieuwbouw={knoop.titelNieuwbouw} />}
       </div>
     );

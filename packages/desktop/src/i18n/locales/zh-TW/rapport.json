@@ -106,6 +106,15 @@
     "leeg": "尚無修訂版次：封面上的日期與狀態將保留空白。",
     "rapportstatus": "計算書狀態："
   },
+  "beelden": {
+    "afbeelding": "圖片",
+    "toevoegen": "＋ 圖片",
+    "bijschrift": "圖說",
+    "breedte": "寬度（%）",
+    "verwijder": "移除",
+    "teGroot": "{{naam}} 超過 8 MB，請先縮小圖片。",
+    "geenBeeld": "{{naam}} 不是 PNG 或 JPEG 檔。"
+  },
   "teksten": {
     "intro": "每個部分各有一段文字。「標準內文 ▾」可選擇內建或自訂版本。留空的選用區塊將從計算書中省略。",
     "optioneelLeeg": "留空以省略此部分。",
@@ -229,7 +238,11 @@
     "qlast": "屋頂線載重 q",
     "bijAlfa": "在坡度 α 時",
     "dakhellingInvullen": "—（請輸入屋頂坡度）",
-    "qkDirect": "{{qk}}；緊鄰屋面板下方 {{direct}}"
+    "qkDirect": "{{qk}}；緊鄰屋面板下方 {{direct}}",
+    "zelfInvullen": "—（請輸入數值）",
+    "verplicht": "請輸入數值",
+    "leegIsTabel": "空白＝採用表列值",
+    "eigenWaarde": "自訂值"
   },
   "opbouw": {
     "geen": "此群組尚無構造組合。",
@@ -254,7 +267,28 @@
     "berekend": "計算得出",
     "totaal": "合計",
     "aantalLagen_one": "{{count}} 個構造層",
-    "aantalLagen_other": "{{count}} 個構造層"
+    "aantalLagen_other": "{{count}} 個構造層",
+    "symboolLabel": "表單中使用的符號",
+    "symboolUitleg": "每張表單都能以這個符號取用此區塊的合計，例如 g_v1",
+    "symboolOngeldig": "符號無效：須以字母開頭、至少兩個字元，底線後最多只能有一段（如 g_v1）。",
+    "symboolBestaat": "符號 {{symbool}} 已被另一項載重使用。",
+    "symboolDubbel": "符號 {{symbool}} 出現兩次，表單會採用第一個。請替這個區塊取一個不同的符號。",
+    "klaar": "完成"
+  },
+  "blokken": {
+    "uitleg": "每個區塊是一項載重，含名稱與各層組成。點區塊可編輯、拖曳可移動，＋ 可新增一層。每張表單都能以它的符號（如 g_v1）取用合計，表單中的載重區塊則可從清單選取。",
+    "vloerDak": "樓板或屋頂",
+    "wand": "牆",
+    "gevel": "外牆",
+    "uitBibliotheek": "從資料庫加入",
+    "zoekVloerDak": "搜尋，作為樓板或屋頂…",
+    "zoekWand": "搜尋，作為牆…",
+    "zoekUitleg": "把單位重資料庫中的一列加成新區塊",
+    "rangschik": "重新排列",
+    "rangschikUitleg": "把所有區塊重新整齊地上下排列；各自調整過的位置會被取消",
+    "leeg": "尚無載重。請用上方按鈕新增。",
+    "blokUitleg": "點選可編輯，拖曳可移動",
+    "inBladen": "表單中的符號：{{symbool}}"
   },
   "berekeningen": {
     "intro": "專案中的每張計算表都會有一節摘要與自訂備註。完整的計算輸出置於附錄 A，除非您將其直接納入本章節中。",
@@ -267,6 +301,8 @@
     "staatInHoofdstuk": "完整計算輸出將直接顯示於備註下方。",
     "staatInBijlage": "完整計算輸出置於附錄 {{letter}}。",
     "koppenInInhoud": "內文標題納入目錄",
+    "bijlageParagrafen": "附錄 A 的表單也在本章列為小節",
+    "bijlageParagrafenUitleg": "開啟時，每張計算內容放在附錄 A 的表單在本章都有一個小節，並註明參見附錄。關閉時，這些表單只出現在附錄 A，也不計入本章的編號。",
     "bladenInInhoud": "計算表納入目錄",
     "bladenInInhoudUitleg": "前端目錄將列出每張計算表及其頁碼：歸於本章節或附錄 A 之下。關閉時，計算表僅列於本章節的內部目錄中。"
   },

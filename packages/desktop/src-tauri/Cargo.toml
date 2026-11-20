@@ -1,6 +1,6 @@
 [package]
 name = "open-calcsheet-studio"
-version = "2026.46.2"
+version = "2026.47.2"
 description = "Open CalcSheet Studio - lightweight calculation text app for Eurocode verifications"
 authors = ["OpenAEC Contributors"]
 edition = "2021"
@@ -74,6 +74,11 @@ openaec-core = { git = "https://github.com/OpenAEC-Foundation/openaec-reports", 
 [target.'cfg(windows)'.dependencies]
 webview2-com = "0.38"
 windows = "0.61"
+
+[target.'cfg(target_os = "linux")'.dependencies]
+gtk = "0.18"
+webkit2gtk = "2"
+tempfile = "3"
 
 # Release profile — reduce LTO + raise codegen-units so the linker fits in RAM
 # on dev machines (LLVM OOM otherwise). Trade-off: slightly bigger binary.

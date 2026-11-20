@@ -1,170 +1,215 @@
-/* Projectgegevens: één kolom in het midden van de werkruimte, elke groep als
-   kaart. Maten, kleuren en hoeken uit de Blueprint-tokens, zodat de keuze
-   voor de tekstgrootte (Instellingen › Weergave) hier ook doorwerkt. De tekst
-   is een stap groter dan in de panelen: dit is een formulier om te lezen. */
+/* Projectgegevens: een vel op het canvas (CanvasVlak in CanvasBladWeergave.tsx). Het
+   formulier staat boven het vlak met de eigen elementen. Het vel is licht, net als een
+   canvas-blad, dus de kleuren komen uit de Blueprint-tokens van dat thema. Per regel
+   het label links en het veld rechts; de groepen staan als blokken naast elkaar waar
+   het past. */
 
-.pg-panel {
-  height: 100%;
-  overflow-y: auto;
-  padding: var(--oa-space-xl) var(--oa-space-2xl) 48px;
-  background: var(--theme-content-bg);
-  color: var(--theme-text);
-  font-family: var(--font-body);
+.pg-formulier {
+  margin-bottom: 3mm;
+  font-family: var(--oa-font-body, "Inter", system-ui, sans-serif);
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--oa-text);
+  cursor: default;
 }
 
-.pg-kop,
-.pg-groep,
-.pg-voet {
-  max-width: 680px;
-  margin-left: auto;
-  margin-right: auto;
-}
+/* ── Kop van het vel ─────────────────────────────────────────────── */
 
 .pg-kop {
-  margin-bottom: var(--oa-space-lg);
+  padding-bottom: 2mm;
+  margin-bottom: 4mm;
+  border-bottom: 1.5pt solid var(--pr-accent);
 }
 
 .pg-kop h1 {
-  margin: 0 0 6px;
-  font-family: var(--oa-font-heading);
-  font-size: var(--oa-size-page-heading);
-  font-weight: 500;
-  letter-spacing: var(--oa-letter-spacing-heading);
+  margin: 0 0 1mm;
+  font-family: var(--pr-kop, inherit);
+  font-size: 14pt;
+  font-weight: 700;
 }
 
-.pg-kop p {
+.pg-kop p,
+.pg-eigen p {
   margin: 0;
-  font-size: var(--oa-size-panel-heading);
-  line-height: 1.55;
-  color: var(--theme-text-secondary);
+  font-size: 11.5px;
+  color: var(--oa-text-secondary);
 }
 
-.pg-groep {
-  margin-bottom: var(--oa-space-md);
-  padding: 0 var(--oa-space-lg) 2px;
-  background: var(--theme-bg-lighter);
-  border: 1px solid var(--theme-border);
+/* ── Blokken ─────────────────────────────────────────────────────── */
+
+.pg-naast {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0 3mm;
+  align-items: start;
+}
+
+.pg-vak {
+  min-width: 0;
+  margin-bottom: 3mm;
+  padding: 0 3mm 3mm;
+  border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius-medium);
+  background: var(--oa-panel);
 }
 
-.pg-groep h2 {
-  margin: 0 calc(-1 * var(--oa-space-lg)) var(--oa-space-md);
-  padding: 8px var(--oa-space-lg);
-  border-bottom: 1px solid var(--theme-border);
-  font-family: var(--oa-font-body);
-  font-size: var(--oa-size-label);
+.pg-vak h2 {
+  margin: 0 -3mm 3mm;
+  padding: 1.6mm 3mm;
+  border-bottom: 1px solid var(--oa-border);
+  font-size: 10.5px;
   font-weight: 600;
   letter-spacing: 0.5px;
   text-transform: uppercase;
-  color: var(--theme-accent-tint);
+  color: var(--pr-accent);
 }
 
-.pg-veld {
-  display: block;
-  margin-bottom: var(--oa-space-md);
+/* ── Regels: label links, veld rechts ────────────────────────────── */
+
+.pg-rijen {
+  display: grid;
+  gap: 2.2mm;
 }
 
-.pg-label {
+.pg-rijen.pg-twee {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: 5mm;
+}
+
+.pg-rij {
+  display: grid;
+  grid-template-columns: minmax(0, 36%) minmax(0, 1fr);
+  gap: 2mm;
+  align-items: start;
+}
+
+.pg-rij-label {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  padding-top: 5px;
+}
+
+.pg-rij-tekst {
   display: flex;
   align-items: baseline;
-  gap: 8px;
-  margin-bottom: 4px;
-  font-size: var(--oa-size-panel-heading);
+  gap: 4px;
   font-weight: 500;
 }
 
 .pg-var {
-  margin-left: auto;
   font-family: var(--oa-font-mono);
-  font-size: var(--oa-size-label);
-  font-weight: 400;
-  color: var(--theme-text-secondary);
+  font-size: 10px;
+  color: var(--oa-text-muted, var(--oa-text-secondary));
 }
 
-.pg-veld input,
+/* De toelichting staat achter het i-teken: het formulier blijft kort. */
+.pg-info {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 13px;
+  height: 13px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: Georgia, serif;
+  font-size: 9px;
+  font-style: italic;
+  font-weight: 700;
+  color: var(--oa-text-secondary);
+  cursor: help;
+}
+
+.pg-info:hover {
+  color: var(--oa-accent);
+}
+
+.pg-rij-veld {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.pg-rij-veld input,
+.pg-rij-veld select,
 .pg-veld select {
   width: 100%;
-  height: 32px;
-  padding: 0 10px;
-  font-family: inherit;
-  font-size: var(--oa-size-panel-heading);
-  color: var(--theme-text);
+  height: 28px;
+  padding: 0 8px;
+  font: inherit;
+  color: var(--oa-text);
   background: var(--oa-field);
   border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius-small);
   transition: border-color 0.1s, box-shadow 0.1s;
 }
 
-.pg-veld input:hover,
-.pg-veld select:hover {
+.pg-rij-veld input:hover,
+.pg-rij-veld select:hover {
   border-color: var(--oa-border-strong);
 }
 
-.pg-veld input:focus,
+.pg-rij-veld input:focus,
+.pg-rij-veld select:focus,
 .pg-veld select:focus {
   outline: none;
   border-color: var(--oa-focus);
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--oa-focus) 20%, transparent);
 }
 
-.pg-veld input::placeholder {
+.pg-rij-veld input::placeholder {
   color: var(--oa-text-disabled);
 }
 
-.pg-hint,
 .pg-afgeleid {
-  display: block;
-  margin-top: 4px;
-  font-size: var(--oa-size-body);
-  line-height: 1.5;
-  color: var(--theme-text-secondary);
-}
-
-.pg-afgeleid {
-  color: var(--theme-accent-tint);
   font-family: var(--oa-font-numbers);
+  font-size: 11px;
+  color: var(--pr-accent);
 }
 
-.pg-voet {
-  margin-top: var(--oa-space-xl);
-  font-size: var(--oa-size-body);
-  line-height: 1.6;
-  color: var(--theme-text-secondary);
+.pg-melding {
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--oa-warning);
 }
 
-.pg-voet code {
-  font-family: var(--oa-font-mono);
-  font-size: var(--oa-size-label);
-  background: var(--theme-bg-lighter);
-  border: 1px solid var(--theme-border);
-  padding: 0 5px;
-  border-radius: var(--oa-radius-small);
+/* Onder de regels van een blok: de locatiekiezer, met een lijn erboven. */
+.pg-onder {
+  margin: 3mm -3mm 0;
+  padding: 3mm 3mm 0;
+  border-top: 1px solid var(--oa-border);
 }
 
 .pg-fout {
-  color: var(--theme-danger, #c0392b);
+  color: var(--oa-error);
 }
 
-.pg-veld input[aria-invalid="true"] {
-  border-color: var(--theme-danger, #c0392b);
+.pg-rij-veld input[aria-invalid="true"] {
+  border-color: var(--oa-error);
 }
 
 /* ── Uitklapbaar blok met de Eurocode-velden (台灣版：歐規模組專用) ─────── */
 
 .pg-euro {
-  margin-top: var(--oa-space-xl);
-  border-top: 1px solid var(--theme-border);
-  padding-top: var(--oa-space-md);
+  margin-top: 3mm;
+  border-top: 1px solid var(--oa-border);
+  padding-top: 3mm;
 }
 
 .pg-euro > summary {
   cursor: pointer;
   font-weight: 600;
-  color: var(--theme-text-secondary);
+  color: var(--oa-text-secondary);
   padding: 4px 0;
 }
 
-/* ── Stad/district-keuze voor V10 ────────────────────────────────── */
+.pg-euro > .pg-hint {
+  margin: 2mm 0 3mm;
+}
+
+/* ── Stad/district-keuze voor V10 (台灣版) ───────────────────────── */
 
 .pg-kiezer-rij {
   display: flex;
@@ -177,73 +222,124 @@
   min-width: 0;
 }
 
-/* ── Windgebied-kaart onder het windgebied-veld ───────────────────── */
-
-.pg-windkaart {
-  margin: 0 0 var(--oa-space-md);
-}
+/* ── Windkaart ───────────────────────────────────────────────────── */
 
 .pg-windkaart-toggle {
   display: flex;
   align-items: center;
   gap: 6px;
   width: 100%;
-  height: 30px;
-  padding: 0 10px;
-  margin-bottom: 8px;
+  height: 26px;
+  margin-top: 3mm;
+  padding: 0 8px;
   background: transparent;
-  border: 1px solid var(--theme-border);
+  border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius-small);
-  font-family: inherit;
-  font-size: var(--oa-size-body);
+  font: inherit;
+  font-size: 11.5px;
   text-align: left;
-  color: var(--theme-text-secondary);
+  color: var(--oa-text-secondary);
   cursor: default;
 }
 
 .pg-windkaart-toggle:hover {
-  background: var(--theme-hover);
-  color: var(--theme-text);
+  background: var(--oa-hover);
+  color: var(--oa-text);
+}
+
+.pg-windkaart {
+  padding-top: 3mm;
+}
+
+/* ── Voet en de kop van de eigen elementen ───────────────────────── */
+
+.pg-voet {
+  margin: 1mm 0 0;
+  font-size: 11px;
+  line-height: 1.5;
+  color: var(--oa-text-secondary);
+}
+
+.pg-voet code {
+  font-family: var(--oa-font-mono);
+  font-size: 10.5px;
+  padding: 0 4px;
+  background: var(--oa-panel);
+  border: 1px solid var(--oa-border);
+  border-radius: var(--oa-radius-small);
+}
+
+.pg-eigen {
+  margin-top: 6mm;
+  padding-bottom: 2mm;
+  border-bottom: 1.5pt solid var(--pr-accent);
+}
+
+.pg-eigen h2 {
+  margin: 0 0 1mm;
+  font-family: var(--pr-kop, inherit);
+  font-size: 12pt;
+  font-weight: 700;
 }
 
 /* ─── Eenheden (EenhedenEditor.tsx) ───────────────────────────── */
 
 .pg-eenheden {
-  margin: calc(-1 * var(--oa-space-sm)) 0 var(--oa-space-md);
+  margin-top: 3mm;
 }
 
-/* Bij "Eigen keuze": per grootheid een keuze, twee naast elkaar waar het past. */
+.pg-label {
+  display: block;
+  margin-bottom: 3px;
+  font-weight: 500;
+}
+
+.pg-hint {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--oa-text-secondary);
+}
+
+.pg-veld {
+  display: block;
+}
+
+/* Bij "Eigen keuze": per grootheid een keuze, twee naast elkaar. */
 .pg-eenheden-eigen {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 0 var(--oa-space-md);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 2mm 3mm;
+  margin-bottom: 3mm;
 }
 
 .pg-veld-smal .pg-label {
-  font-size: var(--oa-size-body);
+  font-size: 11px;
   font-weight: 400;
-  color: var(--theme-text-secondary);
+  color: var(--oa-text-secondary);
 }
 
 .pg-eenheden-lijst {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .pg-eenheid-rij {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto minmax(0, 2fr) auto;
   align-items: center;
-  gap: 6px;
+  gap: 5px;
 }
 
 .pg-eenheid-rij input {
-  height: 30px;
-  padding: 0 8px;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px;
   font-family: var(--oa-font-mono);
-  font-size: var(--oa-size-body);
-  color: var(--theme-text);
+  font-size: 11.5px;
+  color: var(--oa-text);
   background: var(--oa-field);
   border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius-small);
@@ -256,12 +352,12 @@
 
 .pg-eenheid-rij button,
 .pg-eenheid-erbij {
-  height: 30px;
-  padding: 0 10px;
+  height: 26px;
+  padding: 0 8px;
   font: inherit;
-  font-size: var(--oa-size-body);
-  color: var(--theme-text);
-  background: var(--theme-bg-lighter);
+  font-size: 11.5px;
+  color: var(--oa-text);
+  background: var(--oa-panel);
   border: 1px solid var(--oa-border);
   border-radius: var(--oa-radius-small);
   cursor: default;
@@ -273,13 +369,13 @@
 
 .pg-eenheid-rij button:hover,
 .pg-eenheid-erbij:hover {
-  background: var(--theme-hover);
+  background: var(--oa-hover);
 }
 
 /* Een eigen eenheid die niet kan (een naam van één letter, een bestaande eenheid, een
    definitie die niet rekent): de melding onder de regel. */
 .pg-eenheid-fout {
   grid-column: 1 / -1;
-  font-size: var(--oa-size-label);
-  color: var(--oa-danger, #b91c1c);
+  font-size: 11px;
+  color: var(--oa-error, #b91c1c);
 }

@@ -669,6 +669,35 @@
   line-height: 1.4 !important;
 }
 
+/* Een lastblok (`@last`): de kop en de tabel in het korps van de tekst, dicht op
+   elkaar. Dat het blok niet afbreekt, regelt de kern zelf (lastBlok.ts). */
+.print-opmaak .print-blad .calc-last {
+  margin: 2px 0 4px !important;
+  font-size: 12.3px !important;
+  line-height: 1.4 !important;
+}
+
+.print-opmaak .print-blad .calc-last-kop {
+  margin: 0 0 1px !important;
+}
+
+.print-opmaak .print-blad .calc-last-tabel {
+  margin: 1px 0 !important;
+  font-size: 1em !important;
+}
+
+/* Alle tekst in een rekenblad is op papier even groot: ook een eigen <p> of lijst in een
+   tekstregel (die buiten .calc-text valt) en de toelichting achter een formule. Een
+   markdown-blad heeft zijn eigen maten (MarkdownBladWeergave.css). */
+.print-opmaak .print-blad .ifc-calc :is(p, li, dd, dt, blockquote):not(.md-papier *) {
+  font-size: 12.3px !important;
+  line-height: 1.4 !important;
+}
+
+.print-opmaak .print-blad .calc-comment {
+  font-size: 1em !important;
+}
+
 /* Koppen houden lucht erbóven — dat markeert de paragraafovergang — maar
    niet eronder: de kop hoort al bij de tekst die volgt. */
 .print-opmaak .print-blad h1,

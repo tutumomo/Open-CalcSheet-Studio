@@ -27,6 +27,7 @@ import {
   type VastgelegdeToets,
 } from "@ifc-calc/core";
 import { projectScope } from "./projectGegevens.ts";
+import { belastingenVoorIfc } from "../rapport/belastingBronnen.ts";
 import type { PdfBijlage } from "./pdfBijlage.ts";
 import { isLosBlad, type SpreadsheetBestand } from "./spreadsheetBlad.ts";
 import type { MarkdownBestand } from "./markdownBlad.ts";
@@ -142,6 +143,7 @@ export function projectIfcx(project: ProjectVoorIfc, bladen?: IfcCalcSheet[]): I
     gegevens: project.gegevens,
     bladen: bladen ?? bladenVoorIfc(project),
     rapport: project.rapport,
+    belastingen: belastingenVoorIfc(project.rapport),
     verborgen: project.verborgen,
   });
 }

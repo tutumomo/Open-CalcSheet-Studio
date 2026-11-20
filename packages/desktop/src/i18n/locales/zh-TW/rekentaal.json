@@ -317,6 +317,8 @@
     "zichtbaarheid": "顯示控制",
     "femBlok": "由 Open FEM Studio 計算的板模型",
     "kernBlok": "Open FEM Studio 的計算工具，輸入可巢狀；結果以數值回傳",
+    "lastBlok": "線載重或集中載重：載重乘以寬度、面積或長度，分為永久（G）與變動（Q）兩部分加總",
+    "lastUitkomst": "載重區塊的結果",
     "markering": "計算語言標記",
     "lus": "迴圈",
     "hoekeenheid": "角度模式",

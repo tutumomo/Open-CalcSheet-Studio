@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（上游同步 v2026.47.2）：納入上游 v2026.47.0～47.2 的報告 PDF 書籤與可點連結、報告圖片與圖說、「附錄 A 的表單也在本章列為小節」開關、載重區塊（`@last`）、canvas 形式的專案資料與自訂專案變數、`sheet_add` 的 canvas `units`、`report_export_pdf`、只在第一次開啟時出現的歡迎面板，以及歐規的預力預鑄樁模組與載重類別 E。預力樁模組與其他上游模組一樣，在目錄與列印上都標示「Eurocode，非台灣規範」。上游改為在說明文字的數值外加上 `calc-waarde`，讓列印套用各語言的小數點，所以繁中報告的黃金檔已重新產生，差異只有這一項。台灣版保留自己的 `--headless`／`eval`／`render` CLI；專案資料頁維持台灣設計基礎與工址在上、歐規欄位收入摺疊區；結構檢核總結卡在表單只放附錄時照樣顯示。dev-build 使用台灣版自己的 identifier `tw.opencalcsheet.studio.dev`。新增的介面文字都已補上繁體中文。
 - 台灣版（計算表編輯器）：長行不再需要橫向捲動，超出視窗寬度時自動換行（CodeMirror `EditorView.lineWrapping`）。
 - 台灣版（版本號）：標題列、狀態列、Backstage「關於」、設定「關於」與意見回饋一律取自 `app_kenmerken` 的 release tag（例 `v2026.46.2-tw.13`），不再有的地方顯示 `2026.46.2`、有的地方顯示 `-tw.N`。
 
@@ -26,6 +27,36 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - 台灣版（OCSS 接入 P2-16 圖號）：結構計算書的設計圖現在可加圖號。報告面板「台灣計算書版面」多一個「圖說加上圖號」開關（`tw.nummering.figuren`，預設關閉）；開啟後，放在檢核章節內的繪圖表在標題欄以「圖 6-1 樑配筋圖」呈現，依章節自動編號，與表號各自獨立計數（表 4-1 之後不會因為插圖而跳號）。圖號寫在圖紙本身的標題欄，不加圖說列，因此整頁出圖的分頁不受影響；置於附錄 A 的圖仍用附錄編號（A.1），因為正文與目錄以附錄編號互相參照。舊報告外觀不變，`report_set`／`report_get` 支援 `tw.nummering.figuren`。工具數不變（60）。
 
 - 台灣版（AI 助理擴充 + 外部 MCP 客戶端）：AI 助理側邊欄支援 **OpenAI (ChatGPT)／OpenRouter 開箱即用的 OAuth 2.0 登入與 Google Gemini／Anthropic／全協定彈性 OAuth PKCE**（同時保留各提供者 API 金鑰）、**自定義第三方／本機大模型**（含自訂 HTTP 標頭）與**抓取可用模型下拉選單**，並新增**外部 MCP 工具伺服器客戶端（stdio／HTTP）**。外部 MCP 支援本機程序 stdio（`initialize` → `tools/list` → `tools/call`，附 `regs`、`OpenCADStudio --mcp`、設計引擎與自訂範本，關閉 App 自動清理子程序）及 Streamable HTTP／JSON-RPC（`Mcp-Session-Id`、SSE 解析、金鑰環保管 Bearer 權杖）；外部工具以 `mcp__<伺服器>__<工具>` 匯入，唯讀工具直接查詢、寫入／出圖工具先經使用者核准。ChatGPT OAuth 支援 localhost PKCE（port 1455 `/auth/callback`）與裝置代碼（Device Code）登入，請求自動改走 Codex Responses API（`chatgpt.com/backend-api/codex/responses`、`chatgpt-account-id` JWT 解析與 Codex SSE／模型清單）；Google Gemini OAuth 預填 `/oauth2callback`、Code Assist 權限與 `cloudcode-pa.googleapis.com/v1internal`（`loadCodeAssist`/`onboardUser` 自動取得專案 ID，並支援面板手動指定 Project ID 及填入自有 Google Cloud Desktop OAuth Client ID／Secret）；Anthropic 提供 API 金鑰及自訂／企業 OAuth 閘道 Bearer 認證（含通用 PKCE `localhost`/`127.0.0.1`、自訂路徑、form/JSON token 交換與 `code#state` 貼上完成）。第三方設定檔支援 OpenRouter、DeepSeek、Groq、xAI、Mistral、智譜 Z.AI、Moonshot、Ollama、LM Studio、magpie 及任意 OpenAI／Anthropic／Gemini 相容端點，並可填寫額外 HTTP 標頭（`Authorization`/`x-api-key` 等敏感標頭受 Rust 端過濾保護）。所有金鑰、OAuth Token、Client Secret 與 MCP Bearer Token 只存於作業系統金鑰環，不寫入 `preferences.json`。工具數不變（60）。
+
+## v2026.47.2 — 2026-11-20
+
+- Op Linux schrijft de rapport-API met WebKitGTK rechtstreeks een PDF. Op een server kan de headless app op een virtueel scherm draaien.
+
+## v2026.47.1 — 2026-11-20
+
+- De voorgespannen paal toont bij transport en hijsen gevulde momenten- en dwarskrachtenlijnen met tekens. Een normaalkrachtenlijn toont de trek in het voorspanstaal en de druk in de betonschacht.
+
+## v2026.47.0 — 2026-11-19
+
+- De betonbibliotheek bevat een conceptmodule voor voorgespannen prefab palen met momentenlijnen, een trektoets en ruimtelijke wapeningsdetails.
+- De API hergebruikt de laatst ingelezen bladtekst bij het opvragen van invoervelden en rekenresultaten.
+- Met `--headless` draait de desktop-app zonder zichtbaar venster voor lokale berekeningen en rapportexport via de API.
+
+- Het welkomstpaneel onderin verschijnt alleen de eerste keer dat je de app opent. Via Help › Aan de slag haal je het terug
+- Rapport als PDF: in een inhoudsopgave is de hele regel een link naar zijn kop (het nummer, de titel en het paginanummer), en een verwijzing in de tekst van het rapport of van een rekenblad, zoals "zie 5.2", "hoofdstuk 4" of "bijlage A.3", springt naar die paragraaf of dat blad. De PDF heeft bladwijzers: de hoofdstukken, paragrafen, bladen en bijlagen uit de inhoudsopgave voorin, met de paragrafen ingeklapt onder hun hoofdstuk
+- Rapport, hoofdstuk Berekeningen: met het vinkje *Bladen in bijlage A ook als paragraaf in dit hoofdstuk* uit staan bladen met hun uitwerking in bijlage A alleen nog in die bijlage. Ze hebben dan geen paragraaf met een verwijzing in het hoofdstuk en tellen niet mee in de nummering; de bladen in het hoofdstuk nummeren door. Standaard staat het aan, zoals het was
+- Op papier is alle tekst in een rekenblad even groot: een toelichting achter een formule en een eigen `<p>` of lijst in een tekstregel hebben dezelfde maat als een gewone tekstregel
+- Rapport: onder de tekst van een paragraaf in hoofdstuk 1 t/m 3 kunnen afbeeldingen staan (PNG of JPEG), elk met een bijschrift en een breedte, bijvoorbeeld een overzichtstekening bij 2.1 Projectomschrijving. Ook aan het begin van hoofdstuk Berekeningen kan een afbeelding staan, zoals het 3D-model van de constructie (`beelden.berekeningen`). In het rapportpaneel voeg je ze toe met *+ Afbeelding*; ze gaan mee in het projectbestand
+- API (MCP en REST): `report_set` met pad `beelden.<paragraaf>` zet de afbeeldingen van een paragraaf, uit een bestand (`path`) of als data-URL (`data`); `report_get` geeft per afbeelding het bijschrift, de breedte en de grootte
+- Het lastblok (`@last`) staat als tabel met een raster en een gekleurde kop: het symbool, b, l, p_rep, G en Q per regel, en eronder de som van G en Q met de eenheid. Een regel zonder omschrijving heeft een witte cel, en de getallen in een kolom staan met hun decimaalteken onder elkaar. Het invulscherm van een lastblok heeft dezelfde tabel: je vult de cellen omschrijving, b, l en p_rep in en zet met een stip of de regel onder G of Q telt
+- Op papier in het Nederlands staan de getallen van een rekenblad met een komma als decimaalteken: in formules, tabellen en tekeningen. De rekentaal en het scherm houden de punt, en lopende tekst blijft zoals hij getypt is
+
+- Rapport, 5.5 Blijvende belastingen als canvas: elke opbouw (vloer, dak, wand of gevel) is een blok op een rastervlak, met zijn naam, zijn lagen en de som. Een klik opent het blok om het te bewerken, met het plusje komt er een laag bij, ook uit de gewichtenbibliotheek, en je sleept een blok naar de plek waar je het wilt hebben. Elk blok en elke belastingklasse uit 5.4 heeft een symbool (`g_v1`, `g_w1`, `q_k1`) dat je kunt wijzigen: onder dat symbool bestaat de belasting in elk rekenblad, en het staat achter de naam in het rapport. Het projectbestand bewaart de blokken met hun symbool en plek, en heeft per belasting een eigen object (`ocss::belasting`)
+- Canvasblad: met *+ Lastblok* maak je een blok dat een lijnlast (kN/m) of puntlast (kN) opbouwt uit de belastingen van hoofdstuk 5. Per regel kies je de belasting uit een lijst en geef je de belastingbreedte, het oppervlak of de lengte; een regel mag ook een eigen waarde zijn. Het blok staat als tabel op het blad en op papier, gescheiden in blijvend en veranderlijk, en het blad rekent verder met `q_L1`, `q_L1,G` en `q_L1,Q`. Wijzigt de opbouw in hoofdstuk 5, dan rekent het blok mee. In de rekentaal is het `@last symbool "naam" lijn … @end`, in elk blad te gebruiken
+- API (MCP en REST): `report_export_pdf` schrijft het hele rapport, met hoofdstukken, bladen en tekeningen, naar een opgegeven PDF-bestand, zonder dialoog. Alleen in de desktop-app op Windows
+- API (MCP en REST): `sheet_add` met `templateId` `canvas` maakt een canvas-blad, met `units` (tekst en plek in mm) om de eenheden meteen te plaatsen
+- Rapport, belastingklassen: categorie E (opslagruimtes) is erbij, en bij elke klasse zijn q_k en Q_k zelf in te vullen. Een leeg veld is de waarde uit de tabel; bij categorie E is er geen tabelwaarde en vul je beide zelf in
+- Een dev-build (`npm run build:dev-exe`) draait naast de geïnstalleerde app: hij heeft een eigen identifier, en daarmee eigen voorkeuren, een eigen token en standaard MCP-poort 3880
 
 ## v2026.46.2 — 2026-11-14
 

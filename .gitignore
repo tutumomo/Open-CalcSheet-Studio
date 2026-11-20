@@ -31,3 +31,6 @@ packages/desktop/src-tauri/jupyter-omgeving/omgeving.*
 packages/desktop/src-tauri/fem-studio/openaec-mcp-server*
 packages/desktop/src-tauri/fem-studio/THIRD-PARTY-NOTICES.txt
 packages/desktop/src-tauri/fem-studio/SOURCE.txt
+
+# Lokale rapportsjablonen, bureauhuisstijl en verificatievoorbeelden
+/lokale-rapportsjablonen/

@@ -162,6 +162,11 @@ wat in het voorbeeld staat, komt op papier.
 
 ## Canvas, graaf, tekenblad, Jupyter en Marimo
 
+- **Een lastblok** op een canvas is een eenheid met alleen een `@last`-blok (docs/rekentaal.md).
+  Die opent als formulier in plaats van als tekst (`LastBlokFormulier.tsx`): de regels kiezen
+  hun belasting uit hoofdstuk 5 van het rapport (`rapport/belastingBronnen.ts`). Het formulier
+  schrijft gewone rekentekst; staat er meer in de eenheid dan het blok, dan opent ze als tekst
+  (`store/lastBlok.ts`).
 - **Canvas** is geen losse soort maar een rekenblad: de rekentekst staat gewoon in
   `source`, met per eenheid een regel `//@eenheid id=e1 x=10 y=15`. De kern rekent van
   boven naar beneden, en `CanvasVellen` zet de eenheden op papier. Ctrl en scrollen zoomt

@@ -12,6 +12,7 @@ import {
   fmt,
   getal,
   klasse,
+  klasseWaarden,
   sneeuwPlatDak,
   windLabel,
   windQp,
@@ -19,7 +20,7 @@ import {
 import { useProjectStore } from "../../../store/projectStore";
 import { getalTekst, verplaatst } from "./hulp";
 import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
-import OpbouwEditor from "./OpbouwEditor";
+import BelastingCanvas from "./BelastingCanvas";
 import RijenTabel, { type Kolom } from "./RijenTabel";
 import TekstVeld from "./TekstVeld";
 import { Afgeleid, Kop, Sectie, Veld, useRapport } from "./velden";
@@ -203,8 +204,7 @@ export default function BelastingenSectie() {
 
       <div className="rapport-knoop">
         <Kop id="blijvend" />
-        <OpbouwEditor groep="vloerenDaken" titel={t("belastingen.vloerenDaken")} />
-        <OpbouwEditor groep="wanden" titel={t("belastingen.wanden")} />
+        <BelastingCanvas />
       </div>
     </Sectie>
   );
@@ -228,6 +228,9 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
   const zet = useProjectStore((s) => s.zetRapportVeld);
   const pad = `belastingen.klassen.${index}`;
   const cat = categorie(regel.categorie);
+  const kw = klasseWaarden(regel);
+  // Een waarde die er niet is (categorie E zonder invoer): een streepje met de vraag om hem in te vullen.
+  const of = (v: number | null | undefined, bron: string, dec: number) => (v === null || v === undefined ? t("belastingen.zelfInvullen") : me(v, bron, dec));
   const ls = getal(regel.lichteScheidingswanden);
   const alfa = getal(regel.dakhelling);
 
@@ -258,6 +261,9 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             ))}
           </optgroup>
         </select>
+        {regel.symbool && (
+          <code className="bc-symbool" title={t("blokken.inBladen", { symbool: regel.symbool })}>{regel.symbool}</code>
+        )}
         <button
           type="button"
           className="rapport-icoon"
@@ -298,18 +304,34 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             placeholder={t("belastingen.leegIsGeen")}
             hint={t("belastingen.lsHint")}
           />
+          <div className="rapport-rij">
+            <Veld
+              label={<>q<sub>k</sub></>}
+              pad={`${pad}.qk`}
+              waarde={regel.qk ?? ""}
+              eenheid="kN/m²"
+              placeholder={cat.qk === null ? t("belastingen.verplicht") : t("belastingen.leegIsTabel")}
+            />
+            <Veld
+              label={<>Q<sub>k</sub></>}
+              pad={`${pad}.Qk`}
+              waarde={regel.Qk ?? ""}
+              eenheid="kN"
+              placeholder={cat.Qk === null ? t("belastingen.verplicht") : t("belastingen.leegIsTabel")}
+            />
+          </div>
           <Afgeleid
             regels={[
               {
                 label: <>q<sub>k</sub></>,
-                waarde: me(cat.qk, "kN/m²", 2),
-                bron: t("algemeen.tabel", { nummer: "NB.1–6.2" }),
+                waarde: of(kw?.qk, "kN/m²", 2),
+                bron: kw?.eigen.qk ? t("belastingen.eigenWaarde") : cat.qk === null ? undefined : t("algemeen.tabel", { nummer: "NB.1–6.2" }),
               },
               {
                 label: <>q<sub>k</sub> + L.S.</>,
-                waarde: me(cat.qk + (Number.isFinite(ls) ? ls : 0), "kN/m²", 2),
+                waarde: kw && kw.qk !== null ? me(kw.qk + (Number.isFinite(ls) ? ls : 0), "kN/m²", 2) : t("belastingen.zelfInvullen"),
               },
-              { label: <>Q<sub>k</sub></>, waarde: me(cat.Qk, "kN", 1) },
+              { label: <>Q<sub>k</sub></>, waarde: of(kw?.Qk, "kN", 1), bron: kw?.eigen.Qk ? t("belastingen.eigenWaarde") : undefined },
               { label: PSI, waarde: psiTekst(cat.psi, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}
           />
@@ -326,7 +348,7 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
             regels={[
               {
                 label: <>q<sub>k</sub> {t("belastingen.platDakKlein")}</>,
-                waarde: me(cat.qk, "kN/m²", 2),
+                waarde: me(cat.qk ?? 0, "kN/m²", 2),
                 bron: t("algemeen.tabel", { nummer: "NB.4–6.10" }),
               },
               {
@@ -335,7 +357,7 @@ function KlasseKaart({ regel, index, aantal, wijzig }: {
               },
               {
                 label: <>Q<sub>k</sub></>,
-                waarde: t("belastingen.qkDirect", { qk: me(cat.Qk, "kN", 1), direct: me(DAK_QK_DIRECT, "kN", 1) }),
+                waarde: t("belastingen.qkDirect", { qk: me(cat.Qk ?? 0, "kN", 1), direct: me(DAK_QK_DIRECT, "kN", 1) }),
               },
               { label: PSI, waarde: psiTekst(cat.psi, taal), bron: t("algemeen.tabel", { nummer: "NB.2–A1.1" }) },
             ]}

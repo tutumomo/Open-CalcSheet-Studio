@@ -17,6 +17,8 @@ import i18next from "i18next";
 import type { EvalOpties } from "@ifc-calc/core";
 import { useProjectStore, type Exemplaar } from "../store/projectStore";
 import { evalOptiesVan } from "../store/projectEenheden";
+import { projectTekstVan } from "../store/projectBlad";
+import type { Belastingen } from "../rapport/model";
 import { projectScope, type ProjectGegevens } from "../store/projectGegevens";
 import { variantInvoer } from "../store/varianten";
 import { rekentaalIncludes, rekentaalImageUrls } from "../templates/rekentaal-includes";
@@ -155,6 +157,9 @@ interface Omgeving {
   gegevens: ProjectGegevens;
   exemplaren: readonly Exemplaar[];
   taal: string;
+  /** Hoofdstuk 5 van het rapport: de belastingen die elk blad kent. */
+  belastingen: Belastingen;
+  rapportTaal: string;
 }
 
 /**
@@ -163,7 +168,8 @@ interface Omgeving {
  * nieuw antwoord alleen de kolom opnieuw die het gebruikt.
  */
 function verzoekVoor(ex: Exemplaar, waarden: Record<string, string>, omg: Omgeving, toets: string): VariantVerzoek {
-  const basis = evalOptiesVan(omg.gegevens);
+  const project = projectTekstVan(omg.gegevens, omg.belastingen, omg.rapportTaal);
+  const basis = { ...evalOptiesVan(omg.gegevens), ...(project ? { project } : {}) };
   const scope = projectScope(omg.gegevens);
   const verwijzingen = verwezenBladen(ex.source, waarden, omg.exemplaren);
   const hoek = hoekmodusNu();
@@ -200,12 +206,14 @@ export interface VariantenUitkomst {
 export function useVariantUitkomsten(ex: Exemplaar): VariantenUitkomst {
   const gegevens = useProjectStore((s) => s.gegevens);
   const exemplaren = useProjectStore((s) => s.exemplaren);
+  const belastingen = useProjectStore((s) => s.rapport.belastingen);
+  const rapportTaal = useProjectStore((s) => s.rapport.taal);
   const toetsV = useToetsVersie();
   const taal = i18next.language ?? "";
   const stil = useDebouncedValue(ex, 250);
   const vorige = useRef(new Map<string, VariantAntwoord>());
   const verzoeken = useMemo(() => {
-    const omg = { gegevens, exemplaren, taal };
+    const omg = { gegevens, exemplaren, taal, belastingen, rapportTaal };
     const vs = stil.varianten;
     // Alleen bij een blad met @toets: per kolom de antwoorden die zijn vorige uitkomst gebruikte.
     const antwoorden = HEEFT_FEM_BLOK.test(stil.source) ? toetsingenNu() : {};
@@ -216,7 +224,7 @@ export function useVariantUitkomsten(ex: Exemplaar): VariantenUitkomst {
     ];
     // toetsV: een nieuw antwoord van FEM Studio; welke kolom opnieuw rekent, beslist toetsDeel.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [stil, gegevens, exemplaren, taal, toetsV]);
+  }, [stil, gegevens, exemplaren, taal, toetsV, belastingen, rapportTaal]);
   useEffect(() => {
     if (stil.source.trim()) vraagVoorTabel(stil.id, verzoeken.map((x) => x.v));
   }, [verzoeken, stil]);
@@ -252,7 +260,8 @@ export async function rekenEenmalig(exId: string, waarden: Record<string, string
     const { exemplaren, gegevens } = useProjectStore.getState();
     const ex = exemplaren.find((e) => e.id === exId);
     if (!ex) return null;
-    const omg = { gegevens, exemplaren, taal: i18next.language ?? "" };
+    const { belastingen, taal: rapportTaal } = useProjectStore.getState().rapport;
+    const omg = { gegevens, exemplaren, taal: i18next.language ?? "", belastingen, rapportTaal };
     // Eén verzoek per ronde: na een antwoord van FEM Studio een nieuwe ronde.
     const a = await vraagEen(verzoekVoor(ex, waarden, omg, `t${toetsVersie()}`), ex.id);
     if (!a.uitkomst?.verzoeken.length) return a.uitkomst;

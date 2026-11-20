@@ -106,6 +106,15 @@
     "leeg": "Nog geen revisies: het voorblad laat datum en status dan leeg.",
     "rapportstatus": "Rapportstatus:"
   },
+  "beelden": {
+    "afbeelding": "Afbeelding",
+    "toevoegen": "+ Afbeelding",
+    "bijschrift": "Bijschrift",
+    "breedte": "Breedte (%)",
+    "verwijder": "Verwijder",
+    "teGroot": "{{naam}} is groter dan 8 MB; verklein de afbeelding eerst.",
+    "geenBeeld": "{{naam}} is geen PNG of JPEG."
+  },
   "teksten": {
     "intro": "Per onderdeel een tekst. Standaardtekst ▾ kiest een meegeleverde of eigen variant. Een optioneel blok dat leeg blijft, valt weg uit het rapport.",
     "optioneelLeeg": "Leeg laten: dan valt dit onderdeel weg.",
@@ -191,7 +200,7 @@
     "vorigeNaam": "Deze tekst noemt de vorige naam van het programma ({{naam}}). Standaardtekst ▾ heeft de tekst met de huidige naam, Open CalcSheet Studio."
   },
   "belastingen": {
-    "intro": "Grijze waarden volgen uit de projectgegevens en de norm. De opbouwen in 5.5 staan alleen in het rapport; ze werken (nog) niet door in de rekenbladen.",
+    "intro": "Grijze waarden volgen uit de projectgegevens en de norm. De belastingklassen in 5.4 en de blokken in 5.5 hebben een symbool: daaronder bestaat hun waarde in elk rekenblad.",
     "platDak": "Plat dak",
     "platDakKlein": "plat dak",
     "sneeuwHint": "Tekst onder de sneeuwbelasting.",
@@ -229,7 +238,11 @@
     "qlast": "q-last",
     "bijAlfa": "bij α",
     "dakhellingInvullen": "— (vul de dakhelling in)",
-    "qkDirect": "{{qk}}; direct onder het dakbeschot {{direct}}"
+    "qkDirect": "{{qk}}; direct onder het dakbeschot {{direct}}",
+    "zelfInvullen": "— (vul zelf in)",
+    "verplicht": "zelf invullen",
+    "leegIsTabel": "leeg = tabel",
+    "eigenWaarde": "eigen waarde"
   },
   "opbouw": {
     "geen": "Nog geen opbouwen in deze groep.",
@@ -254,7 +267,28 @@
     "berekend": "berekend",
     "totaal": "Totaal",
     "aantalLagen_one": "{{count}} laag",
-    "aantalLagen_other": "{{count}} lagen"
+    "aantalLagen_other": "{{count}} lagen",
+    "symboolLabel": "Symbool in de rekenbladen",
+    "symboolUitleg": "Onder dit symbool bestaat de som van dit blok in elk rekenblad, bijvoorbeeld g_v1",
+    "symboolOngeldig": "Geen geldig symbool: begin met een letter, minstens twee tekens, hooguit één deel achter een liggend streepje (g_v1).",
+    "symboolBestaat": "Het symbool {{symbool}} is al van een andere belasting.",
+    "symboolDubbel": "Het symbool {{symbool}} staat er twee keer: de rekenbladen gebruiken de eerste. Geef dit blok een eigen symbool.",
+    "klaar": "Klaar"
+  },
+  "blokken": {
+    "uitleg": "Elk blok is een belasting met een naam en lagen. Klik op een blok om het te bewerken, sleep het om het te verplaatsen, het plusje zet er een laag bij. Onder zijn symbool (zoals g_v1) bestaat de som in elk rekenblad, en een lastblok in een blad kiest het uit een lijst.",
+    "vloerDak": "Vloer of dak",
+    "wand": "Wand",
+    "gevel": "Gevel",
+    "uitBibliotheek": "Uit bibliotheek",
+    "zoekVloerDak": "Zoeken, als vloer of dak…",
+    "zoekWand": "Zoeken, als wand…",
+    "zoekUitleg": "een regel uit de gewichtenbibliotheek als nieuw blok",
+    "rangschik": "Rangschikken",
+    "rangschikUitleg": "Zet alle blokken weer netjes onder elkaar; de eigen plekken vervallen",
+    "leeg": "Nog geen belastingen. Voeg er een toe met de knoppen hierboven.",
+    "blokUitleg": "Klik om te bewerken, sleep om te verplaatsen",
+    "inBladen": "In de rekenbladen: {{symbool}}"
   },
   "berekeningen": {
     "intro": "Elk rekenblad van het project krijgt een paragraaf met een samenvatting en je eigen toelichting. De volledige uitwerking staat in bijlage A, tenzij je hem in het hoofdstuk zelf opneemt.",
@@ -267,6 +301,8 @@
     "staatInHoofdstuk": "De volledige uitwerking staat direct onder de toelichting.",
     "staatInBijlage": "De volledige uitwerking staat in bijlage {{letter}}.",
     "koppenInInhoud": "Koppen uit de tekst in de inhoudsopgave",
+    "bijlageParagrafen": "Bladen in bijlage A ook als paragraaf in dit hoofdstuk",
+    "bijlageParagrafenUitleg": "Elk blad met zijn uitwerking in bijlage A heeft dan een paragraaf in dit hoofdstuk, met de verwijzing naar de bijlage. Staat dit uit, dan staan die bladen alleen in bijlage A en tellen ze niet mee in de nummering van dit hoofdstuk.",
     "bladenInInhoud": "Bladen in de inhoudsopgave",
     "bladenInInhoudUitleg": "De inhoudsopgave voorin noemt dan ook elk blad met zijn pagina: onder dit hoofdstuk of onder bijlage A. Staat dit uit, dan staan de bladen alleen in de inhoudsopgave van dit hoofdstuk."
   },

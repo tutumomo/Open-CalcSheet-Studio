@@ -223,6 +223,13 @@ export interface McpOmgeving {
      * tekeningen). Werpt `McpFout("NOT_AVAILABLE")` als de build hem niet heeft.
      */
     pdfViaEngine(ids: string[], pad: string): Promise<number>;
+    /**
+     * Het hele rapport (voorblad, hoofdstukken, bladen) als PDF naar `pad`, zonder
+     * dialoog: dezelfde weg als de knop Rapport (PDF). Geeft het aantal bytes. Werpt
+     * `McpFout("NOT_AVAILABLE")` als deze app dat niet kan (browser, of een platform
+     * zonder die opdracht), en `McpFout("INTERNAL")` als het schrijven mislukt.
+     */
+    rapportPdf(pad: string): Promise<number>;
   };
   /**
    * Een Jupyter- of Marimo-blad laten draaien (sheet_run): het blad gaat open, alle

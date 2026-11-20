@@ -430,6 +430,50 @@ export interface KernNode {
   scherm?: boolean;
 }
 
+/**
+ * Een regel van een `@last`-blok (lastBlok.ts): een belasting maal haar factoren, zoals
+ * hij in het blad staat.
+ */
+export interface LastRegel {
+  /** Blijvend (G, zonder voorvoegsel of met `G:`) of veranderlijk (`Q:`). */
+  soort: 'G' | 'Q';
+  /** De bron: een belasting als `g_v3`, of een uitdrukking als `25 kN/m^3*0.3 m*0.5 m`. */
+  bron: string;
+  /** De factoren: een belastingbreedte, oppervlak, lengte of getal. */
+  factoren: string[];
+  /** De tekst tussen aanhalingstekens aan het eind van de regel. */
+  omschrijving?: string;
+}
+
+/**
+ * Een `@last`-blok als structuur, zonder de rekenkern: wat `leesLastBlok` uit de tekst
+ * leest en `schrijfLastBlok` weer als tekst schrijft (lastBlok.ts).
+ */
+export interface LastBlok {
+  /** De naam van de uitkomst, zoals hij in het blad staat: `q_L1`, `F_1`, `Gk`. */
+  symbool: string;
+  /** De naam tussen aanhalingstekens in de kop; leeg als hij ontbreekt. */
+  naam: string;
+  /** `lijn`: een kracht per lengte (kN/m); `punt`: een kracht (kN). */
+  soort: 'lijn' | 'punt';
+  regels: LastRegel[];
+  /** Wat er niet klopt; regels tellen vanaf 1, lege regels en commentaar niet mee. */
+  fouten: string[];
+}
+
+/**
+ * Een `@last symbool "naam" lijn|punt … @end`-blok: een lijnlast of puntlast als som van
+ * belastingen maal hun factoren, gescheiden in blijvend en veranderlijk (lastBlok.ts).
+ */
+export interface LastNode extends LastBlok {
+  type: 'last';
+  /** Per regel ook de bron en de factoren als uitdrukkingen voor de rekenkern. */
+  regels: (LastRegel & { expr: string[] })[];
+  hidden?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type AstNode =
   | HeadingNode
   | TextNode
@@ -453,7 +497,8 @@ export type AstNode =
   | EenheidDefNode
   | ToetsNode
   | FemNode
-  | KernNode;
+  | KernNode
+  | LastNode;
 
 export interface EvaluatedHeading {
   type: 'heading';
@@ -469,6 +514,8 @@ export interface EvaluatedText {
   html?: boolean;
   /** Zie TextNode.inline. */
   inline?: boolean;
+  /** De plekken in `text` (van, tot) waar een uitgerekend getal is ingevuld (`'naam'`). */
+  waarden?: Array<[number, number]>;
   /** Alleen op het scherm, niet op papier (`#pre`). */
   scherm?: boolean;
   /** Een begrensde lus die niet klaar kwam (RepeatNode.max). */
@@ -1024,6 +1071,49 @@ export interface EvaluatedKern {
   scherm?: boolean;
 }
 
+/** Een regel van een doorgerekend `@last`-blok. */
+export interface LastRij {
+  soort: 'G' | 'Q';
+  /** De tekst uit de regel, of de naam van de belasting in het project; ontbreekt als er geen is. */
+  omschrijving?: string;
+  /** De bron zoals hij in het blad staat. */
+  bron: string;
+  /** De naam in de rekenkern, als de bron één kale naam is (`g_v3`). */
+  variabele?: string;
+  /** De bron en de factoren zoals het blad ze toont: het getal en de eenheid van de kern (`kN / m^2`). */
+  delen: { getal: string; eenheid: string }[];
+  /** De bijdrage als getal in kN/m of kN, onafgerond. */
+  waarde: number;
+  /** De bijdrage zoals hij in de tabel staat, in `eenheid` van het blok. */
+  bijdrage: string;
+}
+
+/** Een doorgerekend `@last`-blok. */
+export interface EvaluatedLast {
+  type: 'last';
+  /** De naam van de uitkomst zoals hij in het blad staat; leeg bij een ongeldige kop. */
+  symbool: string;
+  naam: string;
+  soort: 'lijn' | 'punt';
+  /** `klaar`: de uitkomsten staan in de scope; `fout`: de reden staat in `melding` en er is geen uitkomst. */
+  status: 'klaar' | 'fout';
+  melding?: string;
+  /** De eenheid van de kolommen en de som, in de schrijfwijze van de kern: `kN / m`, `kN` of die van het eenhedenstelsel. */
+  eenheid: string;
+  rijen: LastRij[];
+  /**
+   * De uitkomsten: per deel de naam in de rekentaal (`q_L1,G`), de naam in de scope
+   * (`q_L1_G`), het getal in kN/m of kN en de tekst in `eenheid`. Alleen bij `klaar`.
+   */
+  uitkomsten?: Record<'som' | 'G' | 'Q', { naam: string; scope: string; waarde: number; tekst: string }>;
+  /** `nl` of `en`: de vaste woorden. */
+  taal: string;
+  /** Achter `#hide`: rekent mee, staat niet op het blad. */
+  verborgen?: boolean;
+  /** Alleen op het scherm, niet op papier (`#pre`). */
+  scherm?: boolean;
+}
+
 export type EvaluatedNode =
   | EvaluatedEenheidDef
   | EvaluatedHeading
@@ -1044,4 +1134,5 @@ export type EvaluatedNode =
   | EvaluatedGefUpload
   | EvaluatedToets
   | EvaluatedFem
-  | EvaluatedKern;
+  | EvaluatedKern
+  | EvaluatedLast;

@@ -188,7 +188,8 @@ camera schuin
     meld(heeft(/regel 8: #loop zonder #for/), "een losse #loop");
     meld(ev?.scene.elementen.length === 1 && ev.scene.elementen[0].soort === "balk",
       "de goede regel staat er nog: één balk getekend", JSON.stringify(ev?.scene.elementen.map((e) => e.soort)));
-    const tekst = uit.html.replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<[^>]+>/g, " ");
+    // De tekst zoals de lezer hem ziet: een ingevuld getal staat in een eigen <span>.
+    const tekst = uit.html.replace(/<svg[\s\S]*?<\/svg>/g, "").replace(/<[^>]+>/g, " ").replace(/\s+/g, " ");
     meld((uit.html.match(/<p class="calc-3d-melding">/g) ?? []).length === m.length && m.length >= 7,
       "elke melding staat in de uitwerking (calc-3d-melding)");
     meld(/onbekend element &quot;balkk&quot;|onbekend element "balkk"/.test(uit.html), "de melding noemt de regel in de uitwerking");

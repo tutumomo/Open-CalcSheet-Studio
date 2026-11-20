@@ -5,7 +5,7 @@
 //! drukt dan de pagina af zoals de printdialoog dat doet: dezelfde `@media print`,
 //! dezelfde vellen, maar met vaste instellingen en naar een bestand.
 //!
-//! Alleen op Windows. Op de andere platformen zegt `rapport_pdf_beschikbaar` nee en
+//! Beschikbaar op Windows en Linux. Op de andere platformen zegt `rapport_pdf_beschikbaar` nee en
 //! blijft de frontend bij `window.print()`; die doet dat ook als het schrijven mislukt.
 //! De fouten hier zijn technisch en onvertaald: de leesbare zin eromheen komt uit de
 //! vertalingen van de frontend.
@@ -13,16 +13,20 @@
 /// Kan deze build het rapport zelf wegschrijven?
 #[tauri::command]
 pub fn rapport_pdf_beschikbaar() -> bool {
-    cfg!(windows)
+    cfg!(any(windows, target_os = "linux"))
 }
 
 /// Schrijf de pagina van `venster` als PDF naar `pad`. Geeft het aantal bytes terug.
 ///
 /// Asynchroon, en dat moet: `with_webview` draait op de hoofdthread en WebView2
 /// meldt zich daar ook terug. Een synchrone opdracht zou die thread vasthouden.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "linux"))]
 #[tauri::command]
-pub async fn rapport_pdf_schrijven(venster: tauri::WebviewWindow, pad: String) -> Result<u64, String> {
+pub async fn rapport_pdf_schrijven(
+    venster: tauri::WebviewWindow,
+    pad: String,
+    koppen: Option<Vec<crate::bladwijzers::Kop>>,
+) -> Result<u64, String> {
     let doel = std::path::Path::new(&pad);
     if !doel.is_absolute() {
         return Err(format!("not an absolute path: {pad}"));
@@ -32,33 +36,69 @@ pub async fn rapport_pdf_schrijven(venster: tauri::WebviewWindow, pad: String) -
     }
 
     let (antwoord, mut uitkomst) = tauri::async_runtime::channel::<Result<(), String>>(1);
+    #[cfg(windows)]
     let bestand = pad.clone();
+    // De bestandsprinter schrijft eerst naast het doel. Een afgebroken export
+    // laat een eerder rapport intact; persist vervangt het na de PDF-controle.
+    #[cfg(target_os = "linux")]
+    let tijdelijk = tempfile::Builder::new().suffix(".pdf")
+        .tempfile_in(doel.parent().ok_or("missing parent directory")?)
+        .map_err(|e| e.to_string())?;
+    #[cfg(target_os = "linux")]
+    let uri = url::Url::from_file_path(tijdelijk.path()).map_err(|_| "invalid PDF path")?;
     venster
         .with_webview(move |webview| {
-            let terug = antwoord.clone();
-            let klaar = move |r| {
-                let _ = terug.try_send(r);
-            };
-            // SAFETY: deze closure draait op de hoofdthread, de thread van de webview.
-            if let Err(fout) = unsafe { webview2::print_to_pdf(&webview, &bestand, klaar) } {
-                let _ = antwoord.try_send(Err(fout.to_string()));
+            #[cfg(target_os = "linux")]
+            print_linux(&webview.inner(), uri.as_str(), antwoord);
+            #[cfg(windows)]
+            {
+                let terug = antwoord.clone();
+                let klaar = move |r| {
+                    let _ = terug.try_send(r);
+                };
+                // SAFETY: deze closure draait op de hoofdthread, de thread van de webview.
+                if let Err(fout) = unsafe { webview2::print_to_pdf(&webview, &bestand, klaar) } {
+                    let _ = antwoord.try_send(Err(fout.to_string()));
+                }
             }
         })
         .map_err(|e| e.to_string())?;
 
     // Zonder antwoord is de afhandeling weggegooid: de webview is er niet meer.
     uitkomst.recv().await.ok_or("no answer from the webview")??;
-    controleer_pdf(doel)
+    #[cfg(target_os = "linux")]
+    {
+        controleer_pdf(tijdelijk.path())?;
+        tijdelijk.persist(doel).map_err(|e| e.error.to_string())?;
+    }
+    let grootte = controleer_pdf(doel)?;
+    Ok(zet_bladwijzers(doel, koppen.as_deref().unwrap_or(&[])).unwrap_or(grootte))
 }
 
-#[cfg(not(windows))]
+/// Zet de bladwijzers achter de PDF (`bladwijzers.rs`). Lukt dat niet, dan blijft de PDF
+/// zoals hij is: een rapport zonder bladwijzers is nog steeds het rapport.
+#[cfg(any(windows, target_os = "linux"))]
+fn zet_bladwijzers(pad: &std::path::Path, koppen: &[crate::bladwijzers::Kop]) -> Option<u64> {
+    use std::io::Write;
+    if koppen.is_empty() {
+        return None;
+    }
+    let pdf = std::fs::read(pad).ok()?;
+    let erbij = crate::bladwijzers::aanvulling(&pdf, koppen)?;
+    let mut bestand = std::fs::OpenOptions::new().append(true).open(pad).ok()?;
+    bestand.write_all(&erbij).ok()?;
+    Some((pdf.len() + erbij.len()) as u64)
+}
+
+#[cfg(not(any(windows, target_os = "linux")))]
 #[tauri::command]
-pub async fn rapport_pdf_schrijven(pad: String) -> Result<u64, String> {
-    Err(format!("{pad}: only available on Windows"))
+pub async fn rapport_pdf_schrijven(pad: String, koppen: Option<Vec<crate::bladwijzers::Kop>>) -> Result<u64, String> {
+    let _ = koppen;
+    Err(format!("{pad}: only available on Windows and Linux"))
 }
 
 /// Staat er echt een PDF? Een afdruk zonder inhoud mag niet als gelukt gelden.
-#[cfg(windows)]
+#[cfg(any(windows, target_os = "linux"))]
 fn controleer_pdf(pad: &std::path::Path) -> Result<u64, String> {
     use std::io::Read;
     let mut begin = [0u8; 5];
@@ -68,6 +108,37 @@ fn controleer_pdf(pad: &std::path::Path) -> Result<u64, String> {
         return Err(format!("{} is not a PDF", pad.display()));
     }
     bestand.metadata().map(|m| m.len()).map_err(|e| format!("{}: {e}", pad.display()))
+}
+
+#[cfg(target_os = "linux")]
+fn print_linux(
+    view: &webkit2gtk::WebView,
+    uri: &str,
+    antwoord: tauri::async_runtime::Sender<Result<(), String>>,
+) {
+    use webkit2gtk::PrintOperationExt;
+
+    let instellingen = gtk::PrintSettings::new();
+    instellingen.set_printer(&webkit2gtk::glib::dgettext(Some("gtk30"), "Print to File"));
+    instellingen.set("output-file-format", Some("pdf"));
+    instellingen.set("output-uri", Some(uri));
+    let pagina = gtk::PageSetup::new();
+    pagina.set_paper_size(&gtk::PaperSize::new(Some("iso_a4")));
+    pagina.set_top_margin(0.0, gtk::Unit::Mm);
+    pagina.set_bottom_margin(0.0, gtk::Unit::Mm);
+    pagina.set_left_margin(0.0, gtk::Unit::Mm);
+    pagina.set_right_margin(0.0, gtk::Unit::Mm);
+
+    let taak = webkit2gtk::PrintOperation::new(view);
+    taak.set_print_settings(&instellingen);
+    taak.set_page_setup(&pagina);
+    let fout = std::rc::Rc::new(std::cell::RefCell::new(None));
+    let bij_fout = fout.clone();
+    taak.connect_failed(move |_, e| *bij_fout.borrow_mut() = Some(e.to_string()));
+    taak.connect_finished(move |_| {
+        let _ = antwoord.try_send(fout.borrow_mut().take().map_or(Ok(()), Err));
+    });
+    taak.print();
 }
 
 #[cfg(windows)]

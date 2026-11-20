@@ -886,3 +886,24 @@ p.rapport-hint {
   border: 1px solid var(--theme-border, #8884);
   border-radius: 2px;
 }
+
+/* Afbeeldingen onder de tekst van een paragraaf (BeeldenInvoer.tsx). */
+.rapport-beelden {
+  margin: 4px 0 8px;
+}
+
+.rapport-beeld-rij {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin: 4px 0;
+}
+
+.rapport-beeld-bijschrift {
+  flex: 1;
+  min-width: 0;
+}
+
+.rapport-beeld-breedte {
+  width: 84px;
+}

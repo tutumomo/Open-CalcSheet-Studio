@@ -322,6 +322,8 @@
     "drieDBlok": "3D view",
     "femBlok": "plate model, calculated by Open FEM Studio",
     "kernBlok": "calculation tool of Open FEM Studio with nested input; the result comes back as numbers",
+    "lastBlok": "line load or point load: loads times a width, area or length, summed as permanent (G) and variable (Q)",
+    "lastUitkomst": "result of a load block",
     "iframeBlok": "external page",
     "jsBlok": "JavaScript",
     "keuzelijst": "dropdown block",

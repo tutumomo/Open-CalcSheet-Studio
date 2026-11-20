@@ -339,6 +339,11 @@ jobs:
         working-directory: packages/desktop
         run: npm run tauri -- build
 
+      - name: Controleer headless rapportexport uit het geïnstalleerde pakket
+        run: |
+          sudo apt-get install -y xvfb xauth dbus-x11 poppler-utils ./packages/desktop/src-tauri/target/release/bundle/deb/*.deb
+          dbus-run-session -- xvfb-run -a python3 scripts/proef-rapport-linux.py
+
       - name: Verzamel de pakketten
         run: |
           set -euo pipefail

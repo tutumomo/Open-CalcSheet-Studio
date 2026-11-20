@@ -115,6 +115,53 @@ plaat van verschillende dikten, met veren, lijnsteunen en combinaties, rekent he
   blad als `calc`, pas na bevestiging, afgeschermd en zonder netwerk. Een draaibaar model kan
   met `calc.wereld3d()`, een knop met `addEventListener` (geen `onclick=`)
 
+## Een lijnlast of puntlast uit belastingen: `@last`
+
+Een blad rekent de last op een ligger of kolom uit door belastingen te vermenigvuldigen
+met een belastingbreedte, oppervlak of lengte en ze op te tellen, gescheiden in blijvend
+(G) en veranderlijk (Q). De belastingen uit hoofdstuk 5 van het rapport bestaan in elk
+blad onder hun symbool (`g_v3 = 7.75 kN/m^2`); een regel mag ook een eigen uitdrukking
+zijn.
+
+```text
+@last q_L1 "Ligger L1, as 2" lijn
+  g_v3; 3.6 m
+  g_w1; 1
+  Q: q_k1; 3.6 m; "vloer, categorie A"
+  25 kN/m^3*0.3 m*0.5 m
+@end
+q_Ed = 1.2*q_L1,G + 1.5*q_L1,Q
+```
+
+- **De kop:** `@last symbool "naam" lijn` of `… punt`. De naam en de soort mogen weg;
+  zonder soort is het een lijnlast. `lijn` geeft een kracht per lengte (kN/m), `punt` een
+  kracht (kN).
+- **Een regel:** `[G:|Q:] bron; factor; …; "omschrijving"`. De bron en elke factor zijn
+  uitdrukkingen met eenheden; hun product is de bijdrage van de regel. Zonder voorvoegsel
+  is een regel blijvend, met `Q:` veranderlijk. Een laatste deel tussen aanhalingstekens
+  is de omschrijving. Zonder omschrijving staat bij een belasting uit het project haar
+  naam uit hoofdstuk 5 (`EvalOpties.project.namen`). Lege regels en regels met `//` tellen
+  niet; `#if` en `#for` werken in dit blok niet. Een waarde uit een ander blad mag:
+  `#2.R_A; 1`.
+- **De uitkomst:** `q_L1` is de som, `q_L1,G` het blijvende en `q_L1,Q` het veranderlijke
+  deel. Een symbool zonder liggend streepje krijgt `_G` en `_Q` (`Gk_G`, `Gk_Q`). Beide
+  delen bestaan altijd, ook als ze 0 zijn.
+- **Controle:** het product van elke regel moet een kracht per lengte zijn (lijn) of een
+  kracht (punt). Klopt dat niet, is een naam onbekend of rekent een regel niet, dan staat
+  het blok als NIET GEREKEND met het regelnummer en de reden, en bestaan de uitkomsten
+  niet.
+- **Op het blad:** een tabel met een raster en een gekleurde kop. In de kop staat het
+  symbool, daarna de kolommen b, l, p_rep, G en Q. Per regel: de omschrijving, de eerste
+  maat (b), de tweede (l; bij een lijnlast zonder tweede maat een 1), de belasting (p_rep)
+  en de bijdrage in de kolom G of Q. Een kolom zet zijn eenheid in de kop als elke cel
+  dezelfde heeft; anders staat de eenheid bij de cel. Een regel zonder omschrijving die
+  geen belasting uit het project is, heeft een witte cel. Getallen in een kolom staan met
+  hun decimaalteken onder elkaar. Onder de tabel staat de som: Σ, G, Q
+  en de eenheid. De tabel staat ook op papier en in het eenhedenstelsel.
+- **Waar:** `packages/core/src/lastBlok.ts`; `leesLastBlok` en `schrijfLastBlok` lezen en
+  schrijven het blok als structuur, zonder te rekenen. De controle:
+  `scripts/check-last-blok.mjs`.
+
 ## Een plaatmodel: `@fem`
 
 Een blad bouwt een plaatmodel op en laat het door Open FEM Studio rekenen

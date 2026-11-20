@@ -29,6 +29,7 @@ mod kenmerken;
 mod mcp_bridge;
 // Externe MCP-client (stdio/HTTP) voor de AI-zijbalk (P2-15).
 mod mcp_client;
+mod bladwijzers;
 mod rapport_pdf;
 
 #[cfg(feature = "rapportengine")]
@@ -88,6 +89,16 @@ fn engine_preview_pdf(report: serde_json::Value) -> Result<String, String> {
     let path = dir.join(format!("preview-{}.pdf", ts));
     std::fs::write(&path, &bytes).map_err(|e| format!("Failed to write preview PDF: {}", e))?;
     Ok(path.to_string_lossy().into_owned())
+}
+
+/// In een headless sessie blijft de WebView actief voor rekenen en PDF-export.
+#[tauri::command]
+fn toon_werkvenster(window: tauri::WebviewWindow) -> Result<bool, String> {
+    let zichtbaar = !std::env::args_os().any(|arg| arg == "--headless");
+    if zichtbaar {
+        window.show().map_err(|err| err.to_string())?;
+    }
+    Ok(zichtbaar)
 }
 
 /// Het projectbestand waarmee de app is gestart. Een dubbelklik in de
@@ -264,6 +275,7 @@ pub fn run() {
             app_kenmerken,
             cli_opdracht,
             cli_klaar,
+            toon_werkvenster,
             rapport_pdf::rapport_pdf_beschikbaar,
             rapport_pdf::rapport_pdf_schrijven,
             mcp_bridge::mcp_bridge_start,

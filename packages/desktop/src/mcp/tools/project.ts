@@ -9,6 +9,7 @@ import { LEZEN, NIEUW, WEG, WIJZIGEN, alsTekst, fout, objectSchema, ok, tekstOfG
 import { lijstVan } from "./bladen.ts";
 import { base64Bytes } from "../../store/pdfBijlage.ts";
 import { kenmerken } from "../kenmerken.ts";
+import { isBeeldData } from "../../rapport/model.ts";
 
 // ── Projectgegevens ─────────────────────────────────────────────────────────
 
@@ -46,6 +47,10 @@ function zonderBeelden(x: unknown): unknown {
   if (typeof o.jpeg === "string" && typeof o.id === "string") {
     return { id: o.id, zoom: o.zoom, bytes: base64Bytes(o.jpeg) };
   }
+  // Een afbeelding bij een paragraaf (rapport.beelden): de grootte in plaats van de data-URL.
+  if (isBeeldData(o.data) && typeof o.bijschrift === "string") {
+    return { bijschrift: o.bijschrift, breedte: o.breedte, bytes: base64Bytes(o.data.slice(o.data.indexOf(",") + 1)) };
+  }
   return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, zonderBeelden(v)]));
 }
 
@@ -68,6 +73,51 @@ function vulBeeldenAan(pad: string, waarde: unknown, huidig: unknown): unknown {
     return Object.fromEntries(Object.entries(o).map(([k, v]) => [k, aanvullen(v)]));
   };
   return aanvullen(waarde);
+}
+
+const BEELD_SOORT: Record<string, string> = { png: "image/png", jpg: "image/jpeg", jpeg: "image/jpeg" };
+
+/**
+ * Een waarde voor het pad `beelden` (of eronder): een afbeelding met `path` in plaats van
+ * `data` wordt van schijf gelezen (PNG of JPEG). Een afbeelding zonder beide, zoals
+ * report_get hem geeft (met `bytes`), houdt de afbeelding die nu op die plek staat. Geeft
+ * een melding terug als een bestand niet te lezen is of geen PNG of JPEG is.
+ */
+async function leesBeelden(pad: string, waarde: unknown, ctx: McpContext): Promise<{ waarde: unknown } | { melding: string }> {
+  if (pad !== "beelden" && !pad.startsWith("beelden.")) return { waarde };
+  const rapport = ctx.omgeving.stand().rapport;
+  let melding = "";
+  const lees = async (x: unknown, plek: string): Promise<unknown> => {
+    if (Array.isArray(x)) return Promise.all(x.map((el, i) => lees(el, `${plek}.${i}`)));
+    if (x === null || typeof x !== "object") return x;
+    const o = x as Record<string, unknown>;
+    const isBeeld = "bijschrift" in o || "breedte" in o || "path" in o || "data" in o;
+    if (!isBeeld) return Object.fromEntries(await Promise.all(Object.entries(o).map(async ([k, v]) => [k, await lees(v, `${plek}.${k}`)])));
+    if (typeof o.data === "string") return o;
+    if (typeof o.path === "string") {
+      const soort = BEELD_SOORT[o.path.split(".").pop()?.toLowerCase() ?? ""];
+      if (!soort) {
+        melding ||= `"${o.path}" is not a PNG or JPEG file.`;
+        return o;
+      }
+      if (!ctx.omgeving.bestanden.beschikbaar()) {
+        melding ||= "Reading a file needs the desktop app; pass data (a data URL) instead of path.";
+        return o;
+      }
+      try {
+        const { path: _pad, ...rest } = o;
+        return { ...rest, data: `data:${soort};base64,${await ctx.omgeving.bestanden.leesBase64(o.path)}` };
+      } catch (e) {
+        melding ||= `Could not read "${o.path}": ${e instanceof Error ? e.message : String(e)}`;
+        return o;
+      }
+    }
+    const bestaand = opPad(rapport, plek);
+    const data = bestaand.gevonden ? (bestaand.waarde as { data?: unknown } | null)?.data : undefined;
+    return typeof data === "string" ? { ...o, data } : o;
+  };
+  const uit = await lees(waarde, pad);
+  return melding ? { melding } : { waarde: uit };
 }
 
 const EXTENSIE = ".ifccalculation";
@@ -428,7 +478,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     kind: "mutate",
     description:
       "Set report fields by dot path (see report_get), e.g. {path: 'belastingen.wind.gebouwhoogte', value: '12'}. Text and checkbox fields take a string or boolean. Setting 'taal' ('en', 'nl') switches the report language: built-in texts switch along, text typed by the user stays. " +
-      "A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Pass values {path: value} for several. The parent of each path must exist.",
+      "A list or object value replaces that part (e.g. append a revision with path 'revisies.2'); the app then completes it to a valid report. Images under the text of a paragraph: path 'beelden.<paragraph id>' (e.g. 'beelden.projectomschrijving', or 'beelden.berekeningen' for the start of the Calculations chapter) with a list of {path: 'C:/.../plan.png', bijschrift: 'caption', breedte: 20-100 (% of the text width)}; PNG or JPEG, or pass data (a data URL) instead of path. An empty list removes them. Pass values {path: value} for several. The parent of each path must exist.",
     inputSchema: objectSchema({
       path: { type: "string", minLength: 1, description: "Dot path into the report." },
       value: { description: "New value: string, boolean, number, list or object." },
@@ -436,7 +486,7 @@ export const PROJECTTOOLS: McpToolDef[] = [
     }),
     annotations: WIJZIGEN,
     rest: [{ method: "PATCH", path: "/report" }],
-    handler: (args, ctx) => {
+    handler: async (args, ctx) => {
       const gevraagd: [string, unknown][] = [];
       if (typeof args.path === "string") {
         if (!("value" in args)) return fout("VALIDATION", "Pass value together with path.");
@@ -448,9 +498,18 @@ export const PROJECTTOOLS: McpToolDef[] = [
       for (const [pad] of gevraagd) {
         if (!ouderBestaat(rapport, pad)) return fout("NOT_FOUND", `The report has no place for "${pad}" (its parent does not exist).`);
       }
+      // Eerst alle afbeeldingen lezen: mislukt er een, dan verandert er niets.
+      for (let i = 0; i < gevraagd.length; i++) {
+        const [pad, waarde] = gevraagd[i];
+        if (waarde === null || typeof waarde !== "object") continue;
+        const gelezen = await leesBeelden(pad, waarde, ctx);
+        if ("melding" in gelezen) return fout("VALIDATION", gelezen.melding);
+        gevraagd[i] = [pad, gelezen.waarde];
+      }
       for (const [pad, waarde] of gevraagd) {
         if (typeof waarde === "string" || typeof waarde === "boolean") ctx.omgeving.acties.zetRapportVeld(pad, waarde);
-        else if (typeof waarde === "number") ctx.omgeving.acties.zetRapportVeld(pad, String(waarde));
+        // De breedte van een afbeelding is een getal: als deel zetten, dan blijft hij binnen zijn grenzen.
+        else if (typeof waarde === "number" && !pad.startsWith("beelden.")) ctx.omgeving.acties.zetRapportVeld(pad, String(waarde));
         else ctx.omgeving.acties.zetRapportDeel(pad, vulBeeldenAan(pad, waarde, ctx.omgeving.stand().rapport));
       }
       const na = ctx.omgeving.stand().rapport;

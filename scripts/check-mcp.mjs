@@ -992,5 +992,90 @@ console.log("Sessies:");
   meld(sessies.size() === 2 && !sessies.has(eerste), "boven het maximum verdwijnt de oudste sessie");
 }
 
+console.log("Afbeeldingen bij een paragraaf:");
+{
+  const PNG = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR4nGNgYGBgAAAABQABh6FO1AAAAABJRU5ErkJggg==";
+  app.schijf.set("C:/proef/situatie.png", Buffer.from(PNG, "base64").toString("latin1"));
+  const gezet = await roep("report_set", { path: "beelden.projectomschrijving", value: [{ path: "C:/proef/situatie.png", bijschrift: "Situatie", breedte: 60 }] });
+  const beeld = app.s.rapport.beelden?.projectomschrijving?.[0];
+  meld(!gezet.isError && beeld?.data === `data:image/png;base64,${PNG}` && beeld.bijschrift === "Situatie" && beeld.breedte === 60, "report_set: een PNG van schijf, met bijschrift en breedte", JSON.stringify(gezet.data).slice(0, 200));
+  const antwoord = gezet.data.set?.["beelden.projectomschrijving"]?.[0];
+  meld(antwoord && antwoord.bytes > 0 && antwoord.data === undefined && antwoord.bijschrift === "Situatie", "het antwoord geeft de grootte, niet de data", JSON.stringify(antwoord));
+  const gelezen = await roep("report_get", { path: "beelden.projectomschrijving" });
+  await roep("report_set", { path: "beelden.projectomschrijving", value: gelezen.data.value.map((b) => ({ ...b, bijschrift: "Overzicht" })) });
+  const na = app.s.rapport.beelden.projectomschrijving[0];
+  meld(na.bijschrift === "Overzicht" && na.data === beeld.data, "wat report_get gaf terugzetten houdt de afbeelding");
+  await roep("report_set", { path: "beelden.projectomschrijving.0.breedte", value: 5 });
+  await roep("report_set", { path: "beelden.projectomschrijving.0.bijschrift", value: "Vogelvlucht" });
+  const los = app.s.rapport.beelden.projectomschrijving[0];
+  meld(los.bijschrift === "Vogelvlucht" && los.breedte === 20, "een los veld van een afbeelding zetten; de breedte blijft een getal binnen zijn grenzen", JSON.stringify({ ...los, data: "" }));
+  const fout1 = await roep("report_set", { path: "beelden.projectomschrijving", value: [{ path: "C:/proef/tekening.pdf", bijschrift: "x" }] });
+  const fout2 = await roep("report_set", { path: "beelden.projectomschrijving", value: [{ path: "C:/proef/weg.png", bijschrift: "x" }] });
+  meld(fout1.data.code === "VALIDATION" && fout2.data.code === "VALIDATION" && app.s.rapport.beelden.projectomschrijving.length === 1, "geen PNG of JPEG, of een bestand dat er niet is: een melding en niets verandert", `${fout1.data.code} ${fout2.data.code}`);
+  await roep("report_set", { path: "beelden.projectomschrijving", value: [] });
+  meld(app.s.rapport.beelden.projectomschrijving === undefined, "een lege lijst haalt de afbeeldingen weg");
+}
+
+console.log("\nHet rapport als PDF naar een pad");
+{
+  const voor = app.afdrukken.length;
+  const goed = await roep("report_export_pdf", { path: "C:/werk/2321-CB-21" });
+  meld(!goed.isError && goed.data.path === "C:/werk/2321-CB-21.pdf" && goed.data.bytes === 12345 && app.rapportPdfs.at(-1) === "C:/werk/2321-CB-21.pdf",
+    "report_export_pdf schrijft het rapport naar het pad, met .pdf erachter", goed.tekst);
+  meld(app.afdrukken.length === voor, "er gaat geen printdialoog open");
+  const relatief = await roep("report_export_pdf", { path: "rapport.pdf" });
+  meld(relatief.isError && /absolute/i.test(relatief.tekst ?? ""), "een relatief pad is een fout", relatief.tekst);
+  app.app.rapportPdfFout = { code: "NOT_AVAILABLE", melding: "This platform cannot write the report PDF." };
+  const niet = await roep("report_export_pdf", { path: "C:/werk/x.pdf" });
+  meld(niet.isError && /NOT_AVAILABLE/.test(niet.tekst ?? "") && app.afdrukken.length === voor, "kan de app het niet, dan NOT_AVAILABLE en geen printdialoog", niet.tekst);
+  app.app.rapportPdfFout = null;
+}
+
+console.log("\nEen canvas-blad via de API");
+{
+  const { leesEenheden } = await import("../packages/desktop/src/store/canvasBlad.ts");
+  const c = await roep("sheet_add", { templateId: "canvas", name: "Lastafdracht", units: [
+    { x: 62, y: 18, text: "b = a*3" },
+    { x: 10, y: 15, text: "a = 2 m" },
+  ] });
+  const blad = app.s.exemplaren.find((e) => e.id === c.data?.id);
+  meld(!c.isError && blad?.templateId === "canvas" && blad.naam === "Lastafdracht", "sheet_add met templateId canvas maakt een canvas-blad", c.tekst);
+  const eenheden = blad ? leesEenheden(blad.source) : [];
+  gelijk(eenheden.map((e) => [e.x, e.y, e.tekst]), [[10, 15, "a = 2 m"], [60, 20, "b = a*3"]], "de eenheden staan op het raster van 5 mm, in de volgorde van doorrekenen");
+  gelijk(c.data?.units?.map((u) => u.id), eenheden.map((e) => e.id), "het antwoord noemt de eenheden met hun id");
+  const r = await roep("sheet_evaluate", { id: c.data?.id });
+  const b = r.data?.numbers?.b;
+  meld(!r.isError && Math.abs((typeof b === "object" && b !== null ? b.value : b) - 6) < 1e-9, "het canvas rekent door: b = 6 m", JSON.stringify(r.data?.numbers));
+  const leeg = await roep("sheet_add", { templateId: "canvas" });
+  meld(!leeg.isError && app.s.exemplaren.find((e) => e.id === leeg.data?.id)?.source === "", "zonder eenheden: een leeg canvas");
+  const fout1 = await roep("sheet_add", { units: [{ x: 0, y: 0, text: "a = 1" }] });
+  meld(fout1.isError, "units zonder templateId canvas is een fout");
+  const fout2 = await roep("sheet_add", { templateId: "canvas", source: "a = 1", units: [{ x: 0, y: 0, text: "a = 1" }] });
+  meld(fout2.isError, "source en units samen is een fout");
+  const bron = await roep("sheet_add", { templateId: "canvas", source: "//@eenheid id=e1 x=10 y=15\nq = 5 kN/m" });
+  meld(!bron.isError && leesEenheden(app.s.exemplaren.find((e) => e.id === bron.data?.id)?.source ?? "").length === 1, "een canvas mag ook met rekentekst met merktekens");
+}
+
+console.log("\nEen dev-build naast de geïnstalleerde app");
+{
+  const K = await import("../packages/desktop/src/mcp/koppeling.ts");
+  const { readFileSync } = await import("node:fs");
+  const lees = (pad) => JSON.parse(readFileSync(new URL(pad, import.meta.url), "utf8"));
+  try {
+    meld(K.standaardPoort("studio.openstructuralcalculation.app") === MCP_STANDAARD_POORT && K.standaardPoort(undefined) === MCP_STANDAARD_POORT,
+      "de geïnstalleerde app (en een onbekende identifier) houdt de standaardpoort");
+    meld(K.standaardPoort(K.DEV_IDENTIFIER) === MCP_STANDAARD_POORT + 1, "een dev-build krijgt standaard de poort erna", String(K.standaardPoort(K.DEV_IDENTIFIER)));
+    const dev = lees("../packages/desktop/src-tauri/tauri.dev.conf.json");
+    const gewoon = lees("../packages/desktop/src-tauri/tauri.conf.json");
+    meld(dev.identifier === K.DEV_IDENTIFIER && dev.identifier !== gewoon.identifier && !("app" in dev),
+      "tauri.dev.conf.json zet alleen een eigen identifier (eigen voorkeuren en token); de vensterinstellingen blijven");
+    const scripts = lees("../packages/desktop/package.json").scripts ?? {};
+    meld(/--debug/.test(scripts["build:dev-exe"] ?? "") && /tauri\.dev\.conf\.json/.test(scripts["build:dev-exe"] ?? ""),
+      "npm run build:dev-exe bouwt de dev-build met die instelling", scripts["build:dev-exe"]);
+  } catch (e) {
+    meld(false, `dev-build: ${e.message}`);
+  }
+}
+
 console.log(`\n${aantal - fouten} van ${aantal} controles goed.`);
 process.exit(fouten === 0 ? 0 : 1);

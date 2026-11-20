@@ -9,6 +9,7 @@ import { metToetsingen } from "../../../rekenen/toetsCache";
 import { staatInHoofdstuk } from "../../../rapport/opzet";
 import { leesResultaat, samenvatting, type Resultaat } from "../../calc/bladResultaat";
 import { bladSoortVan, bladVoorOpzet } from "../../calc/bladSoorten";
+import BeeldenInvoer from "./BeeldenInvoer";
 import { GroeiVeld, Sectie, SubkopMelding, useOpzetStand, useRapport, Vink } from "./velden";
 
 interface Uitkomst {
@@ -65,12 +66,21 @@ export default function BerekeningenSectie() {
       intro={t("berekeningen.intro")}
     >
       {exemplaren.length === 0 && <p className="rapport-hint">{t("berekeningen.geenBladen")}</p>}
+      {exemplaren.length > 0 && <BeeldenInvoer id="berekeningen" />}
       {exemplaren.length > 0 && (
         <Vink
           label={t("berekeningen.bladenInInhoud")}
           pad="opmaak.bladenInInhoud"
           aan={rapport.opmaak.bladenInInhoud}
           hint={t("berekeningen.bladenInInhoudUitleg")}
+        />
+      )}
+      {exemplaren.length > 0 && (
+        <Vink
+          label={t("berekeningen.bijlageParagrafen")}
+          pad="opmaak.bijlageParagrafen"
+          aan={rapport.opmaak.bijlageParagrafen !== false}
+          hint={t("berekeningen.bijlageParagrafenUitleg")}
         />
       )}
       {exemplaren.map((ex) => {

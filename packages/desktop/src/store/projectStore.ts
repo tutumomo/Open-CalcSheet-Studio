@@ -1,11 +1,13 @@
 import { create } from "zustand";
-import { zetProjectEenheden, type ElementRef, type VastgelegdeToets } from "@ifc-calc/core";
+import { zetProjectEenheden, zetProjectTekst, type ElementRef, type VastgelegdeToets } from "@ifc-calc/core";
 import { wisSessie, zetVastgelegd } from "../rekenen/toetsCache";
 import { ruweEigenEenheden } from "./projectEenheden";
+import { projectTekstVan } from "./projectBlad";
 import { getSetting, setSetting } from "../store";
 import { legeGegevens, startWaarden, type ProjectGegevens } from "./projectGegevens";
 import i18next, { LANGUAGES } from "../i18n/config";
 import { leesTaal, normaliseerRapport, standaardRapport, type Rapport } from "../rapport/model";
+import { metSymbolen } from "../rapport/belastingBronnen";
 import { leesPad } from "../rapport/pad";
 import { datumTekst } from "../rapport/revisies";
 import { standaardTeksten } from "../rapport/standaardteksten";
@@ -890,10 +892,13 @@ export const useProjectStore = create<ProjectState>((zet, get) => {
 
   werkRapportBij: (fn) =>
     set((s) => {
-      const rapport = fn(s.rapport);
+      const nieuw = fn(s.rapport);
       // Hetzelfde object terug betekent: niets veranderd. Dan ook geen lege
       // stap in de geschiedenis en geen "niet opgeslagen".
-      if (rapport === s.rapport) return s;
+      if (nieuw === s.rapport) return s;
+      // Een nieuwe opbouw of belastingklasse krijgt hier zijn symbool voor de rekenbladen.
+      const belastingen = metSymbolen(nieuw.belastingen);
+      const rapport = belastingen === nieuw.belastingen ? nieuw : { ...nieuw, belastingen };
       return { ...metGeschiedenis(s, null), rapport, dirty: true };
     }),
 
@@ -1030,6 +1035,22 @@ function volgProjectEenheden(g: ProjectGegevens) {
 }
 volgProjectEenheden(useProjectStore.getState().gegevens);
 useProjectStore.subscribe((s) => volgProjectEenheden(s.gegevens));
+
+/*
+ * Net zo de projecttekst: de belastingen uit hoofdstuk 5 van het rapport (`g_v1`, `q_k1`)
+ * en de eigen elementen van de projectgegevens. Hij rekent vóór elk blad, ook in de
+ * uitdraai, het rapport en de IFCX-export. Alleen opnieuw als een van zijn bronnen een
+ * ander object is; de worker krijgt de tekst per verzoek mee (rekenen/doorrekening.ts).
+ */
+let vorigeProjectBronnen: readonly unknown[] = [];
+function volgProjectTekst(s: Pick<ProjectState, "gegevens" | "rapport">) {
+  const nu = [s.gegevens.projectblad, s.gegevens.projectblad_waarden, s.rapport.belastingen, s.rapport.taal];
+  if (nu.every((b, i) => b === vorigeProjectBronnen[i])) return;
+  vorigeProjectBronnen = nu;
+  zetProjectTekst(projectTekstVan(s.gegevens, s.rapport.belastingen, s.rapport.taal) ?? null);
+}
+volgProjectTekst(useProjectStore.getState());
+useProjectStore.subscribe(volgProjectTekst);
 
 // De vastgelegde antwoorden van FEM Studio, voor elk blad en elk rekenpad (rekenen/toetsCache.ts).
 zetVastgelegd(useProjectStore.getState().exemplaren.map((e) => e.toetsingen));

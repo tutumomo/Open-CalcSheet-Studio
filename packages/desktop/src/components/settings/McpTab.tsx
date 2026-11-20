@@ -12,7 +12,6 @@ import {
   zetMcpPoort,
 } from "../../mcp/brug";
 import {
-  MCP_STANDAARD_POORT,
   claudeCodeCommando,
   clientConfiguratie,
   curlVoorbeeld,
@@ -140,7 +139,7 @@ export default function McpTab() {
           </span>
         </div>
         <p className="settings-description mcp-uitleg">
-          {poortGeldig ? t("mcp.poortUitleg", { poort: MCP_STANDAARD_POORT }) : t("mcp.poortOngeldig")}
+          {poortGeldig ? t("mcp.poortUitleg", { poort: s.standaard }) : t("mcp.poortOngeldig")}
         </p>
 
         <div className="settings-row">

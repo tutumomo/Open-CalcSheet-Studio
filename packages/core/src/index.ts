@@ -1,5 +1,5 @@
 export { parse, type ParseOptions } from './parser.js';
-export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, type EvalOpties } from './evaluator.js';
+export { evaluate, evaluateMetScope, extractScope, setAngleMode, zetProjectEenheden, projectEenheidFouten, zetProjectTekst, type EvalOpties } from './evaluator.js';
 export { geldigeEenheidNaam, naarSI, vasteEenheid, gebrokenExponent } from './eenheden.js';
 export type { EenheidWaarde } from './eenheden.js';
 export { verwijzingNaam, vervangVerwijzingen, leesVerwijzing, verwijzingenIn, verwijzingVanNaam, verwijzingenInMelding } from './verwijzing.js';
@@ -8,12 +8,14 @@ export { rekenUitdrukking, uitkomstTekst } from './evaluator.js';
 export { analyseerRekenblok, rekenRekenblok, rekenWaarde, type RekenblokAnalyse, type RekenblokUitkomst } from './rekenblok.js';
 export type { SelectValues, AngleMode, Scope } from './evaluator.js';
 export { render, defaultStyles, type RenderOpties } from './renderer.js';
+export { metDecimaalKomma, taalMetKomma } from './decimaalteken.js';
 export {
   TOETS_START_RE, leesToetsBlok, naarSchema, canoniek, toetsHash, leesAntwoord, bouwToets, renderToets,
   eenheidVanVeld, toetsToolToegestaan, TOETS_UITGESLOTEN, schemaHash, alsAntwoord, leesVastgelegdeToetsingen, type ToetsRekenaar,
 } from './toetsBlok.js';
 export { FEM_START_RE, FEM_TOOL, leesFemBlok, bouwFem, renderFem, femVerzoekArgumenten, type FemRekenaar } from './femBlok.js';
 export { KERN_START_RE, leesKernBlok, bouwKern, renderKern, naarKernSchema, kernAanroepen, kernVerzoekBewaard, type KernRekenaar } from './kernBlok.js';
+export { LAST_START_RE, leesLastKop, leesLastBlok, schrijfLastBlok, lastNamen, bouwLast, renderLast, type LastKop, type LastRekenaar } from './lastBlok.js';
 export {
   maakFemNet, femRekenmodel, femArgumenten, femBewaar, femParen, femSteunknopen, femSomLast, FEM_MAX_KNOPEN,
   type FemInvoer, type FemNet, type FemPlaat, type FemVeer, type FemLijn, type FemLast, type FemGeval,
@@ -79,6 +81,7 @@ export {
   leesProjectIfcx,
   platteKnopen,
   type IfcxGelezenBlad,
+  type IfcxBelasting,
   type IfcxGelezenProject,
   type IfcxProjectInvoer,
 } from './ifcx/document.js';

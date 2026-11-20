@@ -6,6 +6,7 @@ import {
   dakQk,
   getal,
   klasse,
+  klasseWaarden,
   PSI_WIND,
   sneeuwPlatDak,
   windLabel,
@@ -145,20 +146,22 @@ export function Wind({ w }: { w: RapportWeergave }) {
  */
 function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; w: RapportWeergave }) {
   const cat = categorie(bk.categorie);
+  // Een ingevulde q_k of Q_k gaat voor de tabel; zonder waarde blijft de cel leeg.
+  const kw = klasseWaarden(bk);
   const { t, f, n, fe, ne } = w;
   const algemeen = t("afdruk.belastingen.algemeen");
   const dakPlat = t("afdruk.belastingen.dakPlat");
   const rijen: ReactNode[] = [
     <>
       <Cel k={1} n={2} o>{t("afdruk.belastingen.klasse")}</Cel>
-      <Cel k={3} n={3} o klasse="rpa-invoer">{cat ? inTaal(cat.label, w.taal) : bk.categorie}</Cel>
+      <Cel k={3} n={3} o klasse="rpa-invoer">{cat ? inTaal(cat.label, w.taal) : bk.categorie}<Symbool s={bk.symbool} w={w} /></Cel>
     </>,
   ];
   if (!cat || cat.soort === "vloer") {
     rijen.push(
       <>
         <Cel k={1} n={2} o>{algemeen} q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{cat ? fe(cat.qk, "kN/m2", 2) : ""}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{kw && kw.qk !== null ? fe(kw.qk, "kN/m2", 2) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
     );
@@ -172,7 +175,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
         </>,
         <>
           <Cel k={1} n={2} o>{algemeen} q<sub>k</sub>+{t("afdruk.belastingen.ls")}</Cel>
-          <Cel k={3} o>{cat ? fe(cat.qk + ls, "kN/m2", 2) : ""}</Cel>
+          <Cel k={3} o>{kw && kw.qk !== null ? fe(kw.qk + ls, "kN/m2", 2) : ""}</Cel>
           <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
         </>,
       );
@@ -180,7 +183,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
     rijen.push(
       <>
         <Cel k={1} n={2} o>{algemeen} Q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{cat ? fe(cat.Qk, "kN", 2) : ""}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{kw && kw.Qk !== null ? fe(kw.Qk, "kN", 2) : ""}</Cel>
         <Cel k={4} o><Eenheid e="kN" /></Cel>
       </>,
     );
@@ -189,12 +192,12 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
     rijen.push(
       <>
         <Cel k={1} n={2} o>{dakPlat} q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{fe(cat.qk, "kN/m2", 1)}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{fe(cat.qk ?? 0, "kN/m2", 1)}</Cel>
         <Cel k={4} o><Eenheid e="kN/m2" /></Cel>
       </>,
       <>
         <Cel k={1} n={2} o>{dakPlat} Q<sub>k</sub></Cel>
-        <Cel k={3} o klasse="rpa-invoer">{fe(cat.Qk, "kN", 1)}</Cel>
+        <Cel k={3} o klasse="rpa-invoer">{fe(cat.Qk ?? 0, "kN", 1)}</Cel>
         <Cel k={4} o><Eenheid e="kN" /></Cel>
       </>,
       <>
@@ -226,7 +229,7 @@ function KlasseRijen({ bk, eerste, w }: { bk: Belastingklasse; eerste: boolean; 
               <Cel k={9} o>{f(cat.psi[i], 1)}</Cel>
             </>
           )}
-          {i === 0 && eerste && <span className="rpa-boven rpa-norm">6.3.1.2 NEN-EN 1991-1-1</span>}
+          {i === 0 && eerste && <span className="rpa-boven rpa-norm">{cat?.norm ?? "6.3.1.2 NEN-EN 1991-1-1"}</span>}
         </Rij>
       ))}
     </>
@@ -256,7 +259,7 @@ function VlakTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "vlak" }>; 
   return (
     <>
       <Rij klasse="rpa-vet" houd>
-        <Cel k={1} n={2} b o l klasse="rpa-kop-licht">{opbouw.naam}</Cel>
+        <Cel k={1} n={2} b o l klasse="rpa-kop-licht">{opbouw.naam}<Symbool s={opbouw.symbool} w={w} /></Cel>
         <Cel k={3} b o klasse="rpa-kop-licht">d<Eenheid e="m" /></Cel>
         <Cel k={4} b o klasse="rpa-kop-licht">ρ<Eenheid e="kN/m3" /></Cel>
         <Cel k={5} n={2} b o r klasse="rpa-kop-licht">p<sub>rep</sub></Cel>
@@ -294,7 +297,7 @@ function GevelTabel({ opbouw, w }: { opbouw: Extract<Opbouw, { soort: "gevel" }>
   return (
     <>
       <Rij klasse="rpa-vet" houd>
-        <Cel k={1} b o l klasse="rpa-kop-licht">{opbouw.naam}</Cel>
+        <Cel k={1} b o l klasse="rpa-kop-licht">{opbouw.naam}<Symbool s={opbouw.symbool} w={w} /></Cel>
         <Cel k={2} b o klasse="rpa-kop-licht">p<sub>rep</sub>{w.eenheden.doel("kN/m2") && <Eenheid e="kN/m2" />}</Cel>
         <Cel k={3} b o klasse="rpa-kop-licht">h<Eenheid e="m" /></Cel>
         <Cel k={4} b o klasse="rpa-kop-licht">{w.t("afdruk.belastingen.vulling")}</Cel>
@@ -347,4 +350,13 @@ export function Groep({ titel, opbouwen, direct, inspringen, w }: {
       {inspringen ? <Vlak klasse="rpa-in">{tabellen}</Vlak> : tabellen}
     </>
   );
+}
+
+/**
+ * Het symbool waaronder een belasting in de rekenbladen bestaat, klein achter de naam.
+ * Alleen als een blad het gebruikt: zo vindt de lezer van hoofdstuk 6 de belasting hier
+ * terug, en verandert een rapport zonder zulke bladen niet.
+ */
+function Symbool({ s, w }: { s?: string; w: RapportWeergave }) {
+  return s && w.symbolen.has(s) ? <span className="rpa-symbool">{s}</span> : null;
 }

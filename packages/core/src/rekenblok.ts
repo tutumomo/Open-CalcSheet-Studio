@@ -232,7 +232,7 @@ export interface RekenblokAnalyse {
 
 const NIET_IN_BLOK: Partial<Record<AstNode['type'], string>> = {
   js: '@js', iframe: '@iframe', ifcx: '@ifcx', '3d': '@3d', svg: '@svg', plot: '$Plot', image: '@image',
-  select: '@select', 'gef-upload': '@gef',
+  select: '@select', 'gef-upload': '@gef', last: '@last',
 };
 
 interface Gelezen {

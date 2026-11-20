@@ -1,0 +1,744 @@
+"Voorgespannen prefab betonpaal
+'Vierkante paal · C45/55 · XC4 · Y1860 · centrische voorspanning
+# Paalspecificatie
+@select profiel "Schacht en strengen"
+  220 × 220 mm · 4 × Ø9.3 = 1
+  250 × 250 mm · 5 × Ø9.3 = 2
+  250 × 250 mm · 4 × Ø9.3 = 3
+  290 × 290 mm · 6 × Ø9.3 = 4
+  290 × 290 mm · 5 × Ø9.3 = 5
+  290 × 290 mm · 5 × Ø12.5 · kop 4 Ø12 = 6
+@end
+L_in = ?{0}*(m)', paallengte (0 gebruikt de profiellengte)'
+#hide
+#if profiel ≡ 1
+b = 220 mm
+n_p = 4
+L_ref = 18.5 m
+F_str = 65 kN
+φ = 1.5953
+ε_cs = 0.00021
+r_rel = 0.0318
+e_tr = 0 m
+M_Rd = 26.04 kN*m
+#end if
+#if profiel ≡ 2
+b = 250 mm
+n_p = 5
+L_ref = 21.5 m
+F_str = 71 kN
+φ = 1.5392
+ε_cs = 0.00019
+r_rel = 0.0417
+e_tr = 0.75 m
+M_Rd = 37.62 kN*m
+#end if
+#if profiel ≡ 3
+b = 250 mm
+n_p = 4
+L_ref = 19 m
+F_str = 71 kN
+φ = 1.5392
+ε_cs = 0.00019
+r_rel = 0.0424
+e_tr = 0 m
+M_Rd = 31.55 kN*m
+#end if
+#if profiel ≡ 4
+b = 290 mm
+n_p = 6
+L_ref = 21.5 m
+F_str = 71 kN
+φ = 1.4751
+ε_cs = 0.00016
+r_rel = 0.0421
+e_tr = 0.75 m
+M_Rd = 53.98 kN*m
+#end if
+#if profiel ≡ 5
+b = 290 mm
+n_p = 5
+L_ref = 18.5 m
+F_str = 71 kN
+φ = 1.4751
+ε_cs = 0.00016
+r_rel = 0.0426
+e_tr = 0 m
+M_Rd = 46.64 kN*m
+#end if
+#if profiel ≡ 6
+b = 290 mm
+n_p = 5
+L_ref = 26 m
+F_str = 125 kN
+φ = 1.4751
+ε_cs = 0.00016
+r_rel = 0.0386
+e_tr = 0.75 m
+M_Rd = 73.82 kN*m
+#end if
+#show
+L = if(L_in ≡ 0 m; L_ref; L_in)
+#if L > 0 m
+# Doorsnede en materiaal
+A_c = b^2 - 529 mm^2', bruto oppervlak met vier afgeschuinde hoeken'
+O_c = 4*b - 27 mm
+A_p = n_p*if(profiel ≡ 6; 93; 52)*mm^2
+A_n = A_c - A_p
+W_x = b^3/6
+h_0 = 2*A_c/O_c
+f_ck = 45 N/mm^2
+f_cki = 25 N/mm^2
+E_c = 36283 N/mm^2
+E_ci = 31476 N/mm^2
+E_p = 195000 N/mm^2
+# Voorspanning en verliezen
+F_mal = n_p*F_str
+σ_max = F_mal/A_p
+Δ_el = E_p*F_mal/(A_n*E_ci)
+σ_init = σ_max - Δ_el
+σ_ci = -σ_init*A_p/A_n
+ε_cc = -φ*σ_ci/E_c
+Δ_rel = r_rel*σ_init
+Δ_lang = (ε_cs*E_p + 0.8*Δ_rel - (E_p/E_c)*φ*σ_ci)/(1 + E_p/E_c*A_p/A_n*(1+0.8*φ))
+σ_werk = σ_init - Δ_lang
+P_eff = σ_werk*A_p
+σ_cw = -P_eff/A_n
+# Transport en hijsen
+q_g = A_c*24 kN/m^3
+a_h = 0.207*L
+a_t = a_h - e_tr
+#if min(a_t; L/2-a_h-e_tr) > 0 m
+M_stat_t = q_g*a_t^2/2
+M_tr = 1.6*M_stat_t
+M_stat_h = q_g*a_h^2/2
+M_h = 1.2*M_stat_h
+M_Rk = W_x*(4.94 N/mm^2 - σ_cw)
+η_tr = M_tr/M_Rk
+η_h = M_h/M_Rk
+'Benutting voor transport en hijsen op basis van de karakteristieke momentgrens. Een waarde boven 1 overschrijdt deze grens.
+# Centrische druk en buigweerstand
+N_Rd = (f_ck/1.5)*A_n - (σ_werk - 0.00175*E_p)*A_p
+'Bij 1,75 ‰ betonrek wijkt de berekende centrische drukweerstand licht af van het eindpunt in de profieltabellen. Dit verschil is nog in onderzoek.
+M_ref = M_Rd', UGT-schachtmoment bij N = 0 uit de profielberekening'
+# Momentenlijn langs de paal
+'Vrije uiteinden, gelijkmatig eigengewicht. Positief is veldbuiging. Bij transport op schommels draagt elk van de vier contactpunten een kwart van het dynamisch gewicht. Het referentiemoment M_tr hierboven betreft het buitenste steunpunt.
+#hide
+x_l = a_t/(1 m)
+x_r = (a_h + e_tr)/(1 m)
+l_m = L/(1 m)
+q_m = q_g/(1 kN/m)
+pos(x) = max(x; 0)
+m_h(x) = 1.2*q_m*(-x^2/2 + l_m/2*(pos(x-a_h/(1 m))+pos(x-l_m+a_h/(1 m))))
+m_t(x) = 1.6*q_m*(-x^2/2 + l_m/4*(pos(x-x_l)+pos(x-x_r)+pos(x-l_m+x_r)+pos(x-l_m+x_l)))
+#show
+M_veld_h = m_h(l_m/2)*kN*m
+M_veld_t = m_t(l_m/2)*kN*m
+M_lijn_t = max(abs(m_t(x_l));abs(m_t(x_r));abs(m_t(l_m/2));abs(m_t(min(x_r;max(x_l;l_m/4)))))*kN*m
+η_lijn_t = M_lijn_t/M_Rk
+#hide
+s_x(x) = 30 + 540*x/l_m
+#show
+#for fase = 1 : 2
+#if fase ≡ 1
+# Transport · momenten en dwarskrachten
+#else
+# Hijsen · momenten en dwarskrachten
+#end if
+#hide
+f_dyn = if(fase ≡ 1; 1.6; 1.2)
+e_contact = if(fase ≡ 1; e_tr/(1 m); 0)
+a_links = 0.207*l_m-e_contact
+a_rechts = 0.207*l_m+e_contact
+x_p(j) = if(j ≡ 0; 0; if(j ≡ 1; a_links; if(j ≡ 2; a_rechts; if(j ≡ 3; l_m-a_rechts; if(j ≡ 4; l_m-a_links; l_m)))))
+m_f(x) = if(fase ≡ 1; m_t(x); m_h(x))
+q_f = f_dyn*q_m
+r_f = q_f*l_m/4
+v_f(x;j) = j*r_f-q_f*x
+m_s = max(abs(m_f(a_links));abs(m_f(a_rechts));abs(m_f(l_m/2));abs(m_f(min(a_rechts;max(a_links;l_m/4)))))
+v_s = max(abs(v_f(a_links;0));abs(v_f(a_links;1));abs(v_f(a_rechts;1));abs(v_f(a_rechts;2)))
+y_m(v) = 88+44*v/m_s
+y_v(v) = 238-40*v/v_s
+#show
+'<svg class="dxf" viewBox="0 0 600 322" style="width:100%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<text x="30" y="18">M [kNm] · positieve veldmomenten onder de as</text>
+'<text x="30" y="178">V [kN] · positief boven de as</text>
+#for j = 0 : 4
+#hide
+x_a = x_p(j)
+x_b = x_p(j+1)
+v_a = v_f(x_a;j)
+v_b = v_f(x_b;j)
+#show
+#if x_b > x_a
+'<path d="M's_x(x_a)' 88 L's_x(x_a)' 'y_m(m_f(x_a))' Q's_x((x_a+x_b)/2)' 'y_m(m_f(x_a)+v_a*(x_b-x_a)/2)' 's_x(x_b)' 'y_m(m_f(x_b))' L's_x(x_b)' 88 Z" fill="#d4e4f3"/>
+'<path d="M's_x(x_a)' 'y_m(m_f(x_a))' Q's_x((x_a+x_b)/2)' 'y_m(m_f(x_a)+v_a*(x_b-x_a)/2)' 's_x(x_b)' 'y_m(m_f(x_b))'" fill="none" stroke="#25597c" stroke-width="1.8"/>
+'<path d="M's_x(x_a)' 238 L's_x(x_a)' 'y_v(v_a)' L's_x(x_b)' 'y_v(v_b)' L's_x(x_b)' 238 Z" fill="#d2eae3"/>
+'<path d="M's_x(x_a)' 'y_v(v_a)' L's_x(x_b)' 'y_v(v_b)'" stroke="#1f6754" fill="none" stroke-width="1.8"/>
+#end if
+#if j < 4
+'<line x1="'s_x(x_b)'" x2="'s_x(x_b)'" y1="'y_v(v_b)'" y2="'y_v(v_b+r_f)'" stroke="#1f6754" stroke-width="1.8"/>
+#end if
+#loop
+'<path d="M30 88 H570 M30 238 H570" stroke="#495766" fill="none"/>
+#for j = 0 : 2
+#hide
+x_merk = if(j ≡ 0; a_links; if(j ≡ 1; l_m/2; l_m-a_links))
+#show
+'<text x="'s_x(x_merk)'" y="'y_m(m_f(x_merk)/2)+4'" text-anchor="middle" fill="#153b5a">'if(j ≡ 1; "+"; "−")'</text>
+#loop
+'<text x="30" y="151">Buitenste steunpunt 'round(m_f(a_links)*100)/100' kNm · middenveld +'round(m_f(l_m/2)*100)/100' kNm</text>
+'<text x="'s_x(a_rechts+(l_m/2-a_rechts)/4)'" y="228" text-anchor="middle">+</text>
+'<text x="'s_x(l_m-a_rechts-(l_m/2-a_rechts)/4)'" y="252" text-anchor="middle">−</text>
+'<text x="30" y="300">V maximaal ±'round(v_s*100)/100' kN</text>
+'<text x="570" y="300" text-anchor="end">x = 0 … 'l_m' m</text>
+'</svg>
+#loop
+# Normaalkracht door voorspanning
+'N is positief bij trek. Na de voorspanverliezen trekken de strengen aan het beton. In een vrij opgelegde paal zonder uitwendige axiale belasting zijn de trek in het staal en de druk in het beton in evenwicht.
+N_staal = P_eff
+N_beton = -P_eff
+N_som = N_staal + N_beton
+'De lijn toont het schachtdeel met volledig overgedragen voorspanning. Het verloop in de overdrachtszones bij kop en voet vraagt de overdrachtslengte van de strengen.
+'<svg class="dxf" viewBox="0 0 600 145" style="width:100%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<rect x="30" y="22" width="540" height="42" fill="#d4e4f3"/>
+'<rect x="30" y="64" width="540" height="42" fill="#f5dfd4"/>
+'<path d="M30 22 H570" fill="none" stroke="#25597c" stroke-width="2"/>
+'<path d="M30 106 H570" fill="none" stroke="#98522f" stroke-width="2"/>
+'<path d="M30 64 H570" fill="none" stroke="#394755" stroke-dasharray="5 3"/>
+'<text x="42" y="46">+ 'round(N_staal/(1 kN)*10)/10' kN · strengen</text>
+'<text x="42" y="90">− 'round(-N_beton/(1 kN)*10)/10' kN · beton</text>
+'<text x="570" y="137" text-anchor="end">Ontwikkelde schacht · gezamenlijke resultante 0 kN</text>
+'</svg>
+# Trekpaal · constructieve UGT-toets
+'Trek positief invoeren. De krachten en momenten gelden in deze toets voor alle drie zones. De module interpoleert lineair op de trektak van de UGT-profieltabellen voor buiging om de x-as. De geotechnische uittrekweerstand vereist afzonderlijke grondgegevens.
+T_Ed = ?{0}*(kN)', ontwerpwaarde centrische trek'
+M_Ed = ?{0}*(kN*m)', bijkomend moment om x'
+#if T_Ed ≥ 0 kN
+#hide
+t_req = T_Ed/(1 kN)
+#if profiel ≡ 1
+T_kop = 67 kN
+M_kop = (if(t_req ≤ 9; 5.4 + (4.6 - 5.4)*(t_req - 0)/9; if(t_req ≤ 17; 4.6 + (3.9 - 4.6)*(t_req - 9)/8; if(t_req ≤ 25; 3.9 + (3.1 - 3.9)*(t_req - 17)/8; if(t_req ≤ 34; 3.1 + (2.4 - 3.1)*(t_req - 25)/9; if(t_req ≤ 42; 2.4 + (1.6 - 2.4)*(t_req - 34)/8; if(t_req ≤ 51; 1.6 + (1.1 - 1.6)*(t_req - 42)/9; if(t_req ≤ 59; 1.1 + (0.5 - 1.1)*(t_req - 51)/8; if(t_req ≤ 67; 0.5 + (0.0 - 0.5)*(t_req - 59)/8; 0)))))))))*kN*m
+T_over = 316 kN
+M_over = (if(t_req ≤ 40; 26.0 + (23.3 - 26.0)*(t_req - 0)/40; if(t_req ≤ 79; 23.3 + (20.5 - 23.3)*(t_req - 40)/39; if(t_req ≤ 119; 20.5 + (17.6 - 20.5)*(t_req - 79)/40; if(t_req ≤ 158; 17.6 + (14.7 - 17.6)*(t_req - 119)/39; if(t_req ≤ 198; 14.7 + (11.5 - 14.7)*(t_req - 158)/40; if(t_req ≤ 237; 11.5 + (7.9 - 11.5)*(t_req - 198)/39; if(t_req ≤ 276; 7.9 + (3.9 - 7.9)*(t_req - 237)/39; if(t_req ≤ 316; 3.9 + (0.0 - 3.9)*(t_req - 276)/40; 0)))))))))*kN*m
+T_schacht = 316 kN
+M_schacht = (if(t_req ≤ 40; 26.0 + (23.3 - 26.0)*(t_req - 0)/40; if(t_req ≤ 79; 23.3 + (20.5 - 23.3)*(t_req - 40)/39; if(t_req ≤ 119; 20.5 + (17.6 - 20.5)*(t_req - 79)/40; if(t_req ≤ 158; 17.6 + (14.7 - 17.6)*(t_req - 119)/39; if(t_req ≤ 198; 14.7 + (11.5 - 14.7)*(t_req - 158)/40; if(t_req ≤ 237; 11.5 + (7.9 - 11.5)*(t_req - 198)/39; if(t_req ≤ 276; 7.9 + (3.9 - 7.9)*(t_req - 237)/39; if(t_req ≤ 316; 3.9 + (0.0 - 3.9)*(t_req - 276)/40; 0)))))))))*kN*m
+#end if
+#if profiel ≡ 2
+T_kop = 84 kN
+M_kop = (if(t_req ≤ 11; 7.2 + (6.1 - 7.2)*(t_req - 0)/11; if(t_req ≤ 21; 6.1 + (5.1 - 6.1)*(t_req - 11)/10; if(t_req ≤ 32; 5.1 + (4.0 - 5.1)*(t_req - 21)/11; if(t_req ≤ 42; 4.0 + (3.0 - 4.0)*(t_req - 32)/10; if(t_req ≤ 53; 3.0 + (2.0 - 3.0)*(t_req - 42)/11; if(t_req ≤ 63; 2.0 + (1.3 - 2.0)*(t_req - 53)/10; if(t_req ≤ 74; 1.3 + (0.6 - 1.3)*(t_req - 63)/11; if(t_req ≤ 84; 0.6 + (0.0 - 0.6)*(t_req - 74)/10; 0)))))))))*kN*m
+T_over = 394 kN
+M_over = (if(t_req ≤ 50; 37.6 + (33.7 - 37.6)*(t_req - 0)/50; if(t_req ≤ 99; 33.7 + (29.6 - 33.7)*(t_req - 50)/49; if(t_req ≤ 148; 29.6 + (25.4 - 29.6)*(t_req - 99)/49; if(t_req ≤ 198; 25.4 + (21.1 - 25.4)*(t_req - 148)/50; if(t_req ≤ 247; 21.1 + (16.5 - 21.1)*(t_req - 198)/49; if(t_req ≤ 295; 16.5 + (11.3 - 16.5)*(t_req - 247)/48; if(t_req ≤ 345; 11.3 + (5.5 - 11.3)*(t_req - 295)/50; if(t_req ≤ 394; 5.5 + (0.0 - 5.5)*(t_req - 345)/49; 0)))))))))*kN*m
+T_schacht = 394 kN
+M_schacht = (if(t_req ≤ 50; 37.6 + (33.7 - 37.6)*(t_req - 0)/50; if(t_req ≤ 99; 33.7 + (29.6 - 33.7)*(t_req - 50)/49; if(t_req ≤ 148; 29.6 + (25.4 - 29.6)*(t_req - 99)/49; if(t_req ≤ 198; 25.4 + (21.1 - 25.4)*(t_req - 148)/50; if(t_req ≤ 247; 21.1 + (16.5 - 21.1)*(t_req - 198)/49; if(t_req ≤ 295; 16.5 + (11.3 - 16.5)*(t_req - 247)/48; if(t_req ≤ 345; 11.3 + (5.5 - 11.3)*(t_req - 295)/50; if(t_req ≤ 394; 5.5 + (0.0 - 5.5)*(t_req - 345)/49; 0)))))))))*kN*m
+#end if
+#if profiel ≡ 3
+T_kop = 67 kN
+M_kop = (if(t_req ≤ 9; 6.3 + (5.5 - 6.3)*(t_req - 0)/9; if(t_req ≤ 17; 5.5 + (4.6 - 5.5)*(t_req - 9)/8; if(t_req ≤ 26; 4.6 + (3.7 - 4.6)*(t_req - 17)/9; if(t_req ≤ 34; 3.7 + (2.8 - 3.7)*(t_req - 26)/8; if(t_req ≤ 42; 2.8 + (2.0 - 2.8)*(t_req - 34)/8; if(t_req ≤ 51; 2.0 + (1.3 - 2.0)*(t_req - 42)/9; if(t_req ≤ 59; 1.3 + (0.6 - 1.3)*(t_req - 51)/8; if(t_req ≤ 67; 0.6 + (0.0 - 0.6)*(t_req - 59)/8; 0)))))))))*kN*m
+T_over = 316 kN
+M_over = (if(t_req ≤ 40; 31.6 + (28.2 - 31.6)*(t_req - 0)/40; if(t_req ≤ 79; 28.2 + (24.8 - 28.2)*(t_req - 40)/39; if(t_req ≤ 119; 24.8 + (21.3 - 24.8)*(t_req - 79)/40; if(t_req ≤ 158; 21.3 + (17.6 - 21.3)*(t_req - 119)/39; if(t_req ≤ 197; 17.6 + (13.6 - 17.6)*(t_req - 158)/39; if(t_req ≤ 237; 13.6 + (9.1 - 13.6)*(t_req - 197)/40; if(t_req ≤ 276; 9.1 + (4.5 - 9.1)*(t_req - 237)/39; if(t_req ≤ 316; 4.5 + (0.0 - 4.5)*(t_req - 276)/40; 0)))))))))*kN*m
+T_schacht = 316 kN
+M_schacht = (if(t_req ≤ 40; 31.6 + (28.2 - 31.6)*(t_req - 0)/40; if(t_req ≤ 79; 28.2 + (24.8 - 28.2)*(t_req - 40)/39; if(t_req ≤ 119; 24.8 + (21.3 - 24.8)*(t_req - 79)/40; if(t_req ≤ 158; 21.3 + (17.6 - 21.3)*(t_req - 119)/39; if(t_req ≤ 197; 17.6 + (13.6 - 17.6)*(t_req - 158)/39; if(t_req ≤ 237; 13.6 + (9.1 - 13.6)*(t_req - 197)/40; if(t_req ≤ 276; 9.1 + (4.5 - 9.1)*(t_req - 237)/39; if(t_req ≤ 316; 4.5 + (0.0 - 4.5)*(t_req - 276)/40; 0)))))))))*kN*m
+#end if
+#if profiel ≡ 4
+T_kop = 100 kN
+M_kop = (if(t_req ≤ 13; 9.5 + (8.1 - 9.5)*(t_req - 0)/13; if(t_req ≤ 25; 8.1 + (6.6 - 8.1)*(t_req - 13)/12; if(t_req ≤ 38; 6.6 + (5.2 - 6.6)*(t_req - 25)/13; if(t_req ≤ 51; 5.2 + (3.7 - 5.2)*(t_req - 38)/13; if(t_req ≤ 63; 3.7 + (2.5 - 3.7)*(t_req - 51)/12; if(t_req ≤ 76; 2.5 + (1.6 - 2.5)*(t_req - 63)/13; if(t_req ≤ 88; 1.6 + (0.8 - 1.6)*(t_req - 76)/12; if(t_req ≤ 100; 0.8 + (0.0 - 0.8)*(t_req - 88)/12; 0)))))))))*kN*m
+T_over = 473 kN
+M_over = (if(t_req ≤ 60; 54.0 + (48.3 - 54.0)*(t_req - 0)/60; if(t_req ≤ 119; 48.3 + (42.4 - 48.3)*(t_req - 60)/59; if(t_req ≤ 178; 42.4 + (36.2 - 42.4)*(t_req - 119)/59; if(t_req ≤ 237; 36.2 + (29.9 - 36.2)*(t_req - 178)/59; if(t_req ≤ 296; 29.9 + (23.2 - 29.9)*(t_req - 237)/59; if(t_req ≤ 355; 23.2 + (15.6 - 23.2)*(t_req - 296)/59; if(t_req ≤ 414; 15.6 + (7.6 - 15.6)*(t_req - 355)/59; if(t_req ≤ 473; 7.6 + (0.0 - 7.6)*(t_req - 414)/59; 0)))))))))*kN*m
+T_schacht = 473 kN
+M_schacht = (if(t_req ≤ 60; 54.0 + (48.3 - 54.0)*(t_req - 0)/60; if(t_req ≤ 119; 48.3 + (42.4 - 48.3)*(t_req - 60)/59; if(t_req ≤ 178; 42.4 + (36.2 - 42.4)*(t_req - 119)/59; if(t_req ≤ 237; 36.2 + (29.9 - 36.2)*(t_req - 178)/59; if(t_req ≤ 296; 29.9 + (23.2 - 29.9)*(t_req - 237)/59; if(t_req ≤ 355; 23.2 + (15.6 - 23.2)*(t_req - 296)/59; if(t_req ≤ 414; 15.6 + (7.6 - 15.6)*(t_req - 355)/59; if(t_req ≤ 473; 7.6 + (0.0 - 7.6)*(t_req - 414)/59; 0)))))))))*kN*m
+#end if
+#if profiel ≡ 5
+T_kop = 84 kN
+M_kop = (if(t_req ≤ 11; 8.6 + (7.4 - 8.6)*(t_req - 0)/11; if(t_req ≤ 21; 7.4 + (6.1 - 7.4)*(t_req - 11)/10; if(t_req ≤ 32; 6.1 + (4.8 - 6.1)*(t_req - 21)/11; if(t_req ≤ 42; 4.8 + (3.5 - 4.8)*(t_req - 32)/10; if(t_req ≤ 53; 3.5 + (2.4 - 3.5)*(t_req - 42)/11; if(t_req ≤ 63; 2.4 + (1.6 - 2.4)*(t_req - 53)/10; if(t_req ≤ 74; 1.6 + (0.8 - 1.6)*(t_req - 63)/11; if(t_req ≤ 84; 0.8 + (0.0 - 0.8)*(t_req - 74)/10; 0)))))))))*kN*m
+T_over = 394 kN
+M_over = (if(t_req ≤ 50; 46.6 + (41.6 - 46.6)*(t_req - 0)/50; if(t_req ≤ 99; 41.6 + (36.5 - 41.6)*(t_req - 50)/49; if(t_req ≤ 148; 36.5 + (31.2 - 36.5)*(t_req - 99)/49; if(t_req ≤ 197; 31.2 + (25.8 - 31.2)*(t_req - 148)/49; if(t_req ≤ 246; 25.8 + (19.7 - 25.8)*(t_req - 197)/49; if(t_req ≤ 296; 19.7 + (13.2 - 19.7)*(t_req - 246)/50; if(t_req ≤ 346; 13.2 + (6.4 - 13.2)*(t_req - 296)/50; if(t_req ≤ 394; 6.4 + (0.0 - 6.4)*(t_req - 346)/48; 0)))))))))*kN*m
+T_schacht = 394 kN
+M_schacht = (if(t_req ≤ 50; 46.6 + (41.6 - 46.6)*(t_req - 0)/50; if(t_req ≤ 99; 41.6 + (36.5 - 41.6)*(t_req - 50)/49; if(t_req ≤ 148; 36.5 + (31.2 - 36.5)*(t_req - 99)/49; if(t_req ≤ 197; 31.2 + (25.8 - 31.2)*(t_req - 148)/49; if(t_req ≤ 246; 25.8 + (19.7 - 25.8)*(t_req - 197)/49; if(t_req ≤ 296; 19.7 + (13.2 - 19.7)*(t_req - 246)/50; if(t_req ≤ 346; 13.2 + (6.4 - 13.2)*(t_req - 296)/50; if(t_req ≤ 394; 6.4 + (0.0 - 6.4)*(t_req - 346)/48; 0)))))))))*kN*m
+#end if
+#if profiel ≡ 6
+T_kop = 222 kN
+M_kop = (if(t_req ≤ 28; 20.8 + (17.9 - 20.8)*(t_req - 0)/28; if(t_req ≤ 56; 17.9 + (14.9 - 17.9)*(t_req - 28)/28; if(t_req ≤ 84; 14.9 + (11.9 - 14.9)*(t_req - 56)/28; if(t_req ≤ 111; 11.9 + (8.9 - 11.9)*(t_req - 84)/27; if(t_req ≤ 139; 8.9 + (6.3 - 8.9)*(t_req - 111)/28; if(t_req ≤ 167; 6.3 + (4.2 - 6.3)*(t_req - 139)/28; if(t_req ≤ 195; 4.2 + (2.1 - 4.2)*(t_req - 167)/28; if(t_req ≤ 222; 2.1 + (0.0 - 2.1)*(t_req - 195)/27; 0)))))))))*kN*m
+T_over = 902 kN
+M_over = (if(t_req ≤ 113; 90.1 + (81.2 - 90.1)*(t_req - 0)/113; if(t_req ≤ 226; 81.2 + (71.5 - 81.2)*(t_req - 113)/113; if(t_req ≤ 339; 71.5 + (61.2 - 71.5)*(t_req - 226)/113; if(t_req ≤ 452; 61.2 + (50.6 - 61.2)*(t_req - 339)/113; if(t_req ≤ 564; 50.6 + (39.7 - 50.6)*(t_req - 452)/112; if(t_req ≤ 677; 39.7 + (28.6 - 39.7)*(t_req - 564)/113; if(t_req ≤ 790; 28.6 + (14.7 - 28.6)*(t_req - 677)/113; if(t_req ≤ 902; 14.7 + (0.0 - 14.7)*(t_req - 790)/112; 0)))))))))*kN*m
+T_schacht = 706 kN
+M_schacht = (if(t_req ≤ 89; 73.8 + (66.7 - 73.8)*(t_req - 0)/89; if(t_req ≤ 177; 66.7 + (58.8 - 66.7)*(t_req - 89)/88; if(t_req ≤ 265; 58.8 + (50.4 - 58.8)*(t_req - 177)/88; if(t_req ≤ 353; 50.4 + (41.6 - 50.4)*(t_req - 265)/88; if(t_req ≤ 441; 41.6 + (32.6 - 41.6)*(t_req - 353)/88; if(t_req ≤ 529; 32.6 + (22.9 - 32.6)*(t_req - 441)/88; if(t_req ≤ 618; 22.9 + (11.4 - 22.9)*(t_req - 529)/89; if(t_req ≤ 706; 11.4 + (0.0 - 11.4)*(t_req - 618)/88; 0)))))))))*kN*m
+#end if
+#show
+T_Rd = min(T_kop; T_over; T_schacht)
+M_toel = min(M_kop; M_over; M_schacht)
+η_trek = T_Ed/T_Rd
+#if T_Ed > T_Rd
+'Trekweerstand overschreden.
+#else
+#if abs(M_Ed) > M_toel
+'Momentweerstand bij deze trekbelasting overschreden.
+#else
+'Belastingpunt ligt binnen de constructieve UGT-profielgrenzen.
+#end if
+#end if
+'Projectie van de trekbelasting op de UGT-grens van de aansluiting. Buiten het diagram blijft de numerieke toets hierboven bepalend.
+#hide
+t_span = max(T_Ed; T_kop)/(1 kN)
+#show
+#if profiel ≡ 1
+#hide
+m_span = max(abs(M_Ed)/(1 kN*m); 5.4)
+#show
+'<svg class="dxf" viewBox="0 0 450 184" style="width:75%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<path d="M44 20 v120 h360" stroke="#475569" fill="none"/>
+'<text x="8" y="16">M [kNm]</text><text x="349" y="175">Trek [kN]</text>
+'<polyline points="'44+350*67/t_span','140-108*0.0/m_span' '44+350*59/t_span','140-108*0.5/m_span' '44+350*51/t_span','140-108*1.1/m_span' '44+350*42/t_span','140-108*1.6/m_span' '44+350*34/t_span','140-108*2.4/m_span' '44+350*25/t_span','140-108*3.1/m_span' '44+350*17/t_span','140-108*3.9/m_span' '44+350*9/t_span','140-108*4.6/m_span' '44+350*0/t_span','140-108*5.4/m_span'" fill="none" stroke="#245b80" stroke-width="2"/>
+'<circle cx="'44+350*t_req/t_span'" cy="'140-108*abs(M_Ed)/(1 kN*m)/m_span'" r="4" fill="#ab3e18"/>
+'<text x="46" y="161">0</text><text x="394" y="158" text-anchor="end">'round(t_span)'</text><text x="41" y="34" text-anchor="end">'round(10*m_span)/10'</text>
+'</svg>
+#end if
+#if profiel ≡ 2
+#hide
+m_span = max(abs(M_Ed)/(1 kN*m); 7.2)
+#show
+'<svg class="dxf" viewBox="0 0 450 184" style="width:75%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<path d="M44 20 v120 h360" stroke="#475569" fill="none"/>
+'<text x="8" y="16">M [kNm]</text><text x="349" y="175">Trek [kN]</text>
+'<polyline points="'44+350*84/t_span','140-108*0.0/m_span' '44+350*74/t_span','140-108*0.6/m_span' '44+350*63/t_span','140-108*1.3/m_span' '44+350*53/t_span','140-108*2.0/m_span' '44+350*42/t_span','140-108*3.0/m_span' '44+350*32/t_span','140-108*4.0/m_span' '44+350*21/t_span','140-108*5.1/m_span' '44+350*11/t_span','140-108*6.1/m_span' '44+350*0/t_span','140-108*7.2/m_span'" fill="none" stroke="#245b80" stroke-width="2"/>
+'<circle cx="'44+350*t_req/t_span'" cy="'140-108*abs(M_Ed)/(1 kN*m)/m_span'" r="4" fill="#ab3e18"/>
+'<text x="46" y="161">0</text><text x="394" y="158" text-anchor="end">'round(t_span)'</text><text x="41" y="34" text-anchor="end">'round(10*m_span)/10'</text>
+'</svg>
+#end if
+#if profiel ≡ 3
+#hide
+m_span = max(abs(M_Ed)/(1 kN*m); 6.3)
+#show
+'<svg class="dxf" viewBox="0 0 450 184" style="width:75%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<path d="M44 20 v120 h360" stroke="#475569" fill="none"/>
+'<text x="8" y="16">M [kNm]</text><text x="349" y="175">Trek [kN]</text>
+'<polyline points="'44+350*67/t_span','140-108*0.0/m_span' '44+350*59/t_span','140-108*0.6/m_span' '44+350*51/t_span','140-108*1.3/m_span' '44+350*42/t_span','140-108*2.0/m_span' '44+350*34/t_span','140-108*2.8/m_span' '44+350*26/t_span','140-108*3.7/m_span' '44+350*17/t_span','140-108*4.6/m_span' '44+350*9/t_span','140-108*5.5/m_span' '44+350*0/t_span','140-108*6.3/m_span'" fill="none" stroke="#245b80" stroke-width="2"/>
+'<circle cx="'44+350*t_req/t_span'" cy="'140-108*abs(M_Ed)/(1 kN*m)/m_span'" r="4" fill="#ab3e18"/>
+'<text x="46" y="161">0</text><text x="394" y="158" text-anchor="end">'round(t_span)'</text><text x="41" y="34" text-anchor="end">'round(10*m_span)/10'</text>
+'</svg>
+#end if
+#if profiel ≡ 4
+#hide
+m_span = max(abs(M_Ed)/(1 kN*m); 9.5)
+#show
+'<svg class="dxf" viewBox="0 0 450 184" style="width:75%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<path d="M44 20 v120 h360" stroke="#475569" fill="none"/>
+'<text x="8" y="16">M [kNm]</text><text x="349" y="175">Trek [kN]</text>
+'<polyline points="'44+350*100/t_span','140-108*0.0/m_span' '44+350*88/t_span','140-108*0.8/m_span' '44+350*76/t_span','140-108*1.6/m_span' '44+350*63/t_span','140-108*2.5/m_span' '44+350*51/t_span','140-108*3.7/m_span' '44+350*38/t_span','140-108*5.2/m_span' '44+350*25/t_span','140-108*6.6/m_span' '44+350*13/t_span','140-108*8.1/m_span' '44+350*0/t_span','140-108*9.5/m_span'" fill="none" stroke="#245b80" stroke-width="2"/>
+'<circle cx="'44+350*t_req/t_span'" cy="'140-108*abs(M_Ed)/(1 kN*m)/m_span'" r="4" fill="#ab3e18"/>
+'<text x="46" y="161">0</text><text x="394" y="158" text-anchor="end">'round(t_span)'</text><text x="41" y="34" text-anchor="end">'round(10*m_span)/10'</text>
+'</svg>
+#end if
+#if profiel ≡ 5
+#hide
+m_span = max(abs(M_Ed)/(1 kN*m); 8.6)
+#show
+'<svg class="dxf" viewBox="0 0 450 184" style="width:75%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<path d="M44 20 v120 h360" stroke="#475569" fill="none"/>
+'<text x="8" y="16">M [kNm]</text><text x="349" y="175">Trek [kN]</text>
+'<polyline points="'44+350*84/t_span','140-108*0.0/m_span' '44+350*74/t_span','140-108*0.8/m_span' '44+350*63/t_span','140-108*1.6/m_span' '44+350*53/t_span','140-108*2.4/m_span' '44+350*42/t_span','140-108*3.5/m_span' '44+350*32/t_span','140-108*4.8/m_span' '44+350*21/t_span','140-108*6.1/m_span' '44+350*11/t_span','140-108*7.4/m_span' '44+350*0/t_span','140-108*8.6/m_span'" fill="none" stroke="#245b80" stroke-width="2"/>
+'<circle cx="'44+350*t_req/t_span'" cy="'140-108*abs(M_Ed)/(1 kN*m)/m_span'" r="4" fill="#ab3e18"/>
+'<text x="46" y="161">0</text><text x="394" y="158" text-anchor="end">'round(t_span)'</text><text x="41" y="34" text-anchor="end">'round(10*m_span)/10'</text>
+'</svg>
+#end if
+#if profiel ≡ 6
+#hide
+m_span = max(abs(M_Ed)/(1 kN*m); 20.8)
+#show
+'<svg class="dxf" viewBox="0 0 450 184" style="width:75%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<path d="M44 20 v120 h360" stroke="#475569" fill="none"/>
+'<text x="8" y="16">M [kNm]</text><text x="349" y="175">Trek [kN]</text>
+'<polyline points="'44+350*222/t_span','140-108*0.0/m_span' '44+350*195/t_span','140-108*2.1/m_span' '44+350*167/t_span','140-108*4.2/m_span' '44+350*139/t_span','140-108*6.3/m_span' '44+350*111/t_span','140-108*8.9/m_span' '44+350*84/t_span','140-108*11.9/m_span' '44+350*56/t_span','140-108*14.9/m_span' '44+350*28/t_span','140-108*17.9/m_span' '44+350*0/t_span','140-108*20.8/m_span'" fill="none" stroke="#245b80" stroke-width="2"/>
+'<circle cx="'44+350*t_req/t_span'" cy="'140-108*abs(M_Ed)/(1 kN*m)/m_span'" r="4" fill="#ab3e18"/>
+'<text x="46" y="161">0</text><text x="394" y="158" text-anchor="end">'round(t_span)'</text><text x="41" y="34" text-anchor="end">'round(10*m_span)/10'</text>
+'</svg>
+#end if
+#else
+'Gebruik voor de trektoets een trekbelasting van nul of hoger.
+#end if
+# Wapening en hijspunten
+#hide
+d_as = if(b ≡ 290 mm; 46; 45)
+s_b = 0.40*b/(1 mm)
+z_as = 0.40*d_as
+dia_p = if(profiel ≡ 6; 12.5; 9.3)
+l_kop = if(L < 15 m; 480; 980)
+s_l = min(20; 510/l_m)
+x_voet = 30+s_l*l_m
+h_zij = b/(1 mm)*0.15
+#show
+'<svg class="dxf" viewBox="0 0 590 325" style="width:100%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<text x="24" y="18">Langsaanzicht · lengteschaal verkort</text>
+'<rect x="30" y="29" width="'s_l*l_m'" height="'h_zij'" fill="none" stroke="#374758"/>
+#for i = 0 : 1
+'<line x1="30" x2="'x_voet'" y1="'29+0.15*d_as+i*(h_zij-0.3*d_as)'" y2="'29+0.15*d_as+i*(h_zij-0.3*d_as)'" stroke="#245b80"/>
+#loop
+#for i = 0 : floor((l_kop-30)/50)
+'<line x1="'30+(0.03+0.05*i)*s_l'" x2="'30+(0.055+0.05*i)*s_l'" y1="34" y2="'24+h_zij'" stroke="#768697"/>
+#loop
+#for i = 0 : 9
+'<line x1="'x_voet-(0.03+0.05*i)*s_l'" x2="'x_voet-(0.055+0.05*i)*s_l'" y1="34" y2="'24+h_zij'" stroke="#768697"/>
+#loop
+#if profiel ≡ 6
+#for i = 0 : 1
+'<line x1="30" x2="'30+2.4*s_l'" y1="'38+i*(h_zij-18)'" y2="'38+i*(h_zij-18)'" stroke="#ab3e18" stroke-width="2.1"/>
+#loop
+'<text x="24" y="104" fill="#ab3e18">Kopwapening B500 · 4 Ø12 · staaflengte 2400 mm · asmaat 60 mm</text>
+#end if
+'<text x="24" y="88">Kop Ø5-50 over 'l_kop' mm · voet 9 × 50 over 480 mm · twee eindwikkelingen</text>
+'<text x="28" y="135">A–A · kop</text>
+'<path d="M33 147 h's_b-10' l5 5 v's_b-10' l-5 5 h'-s_b+10' l-5 -5 v'10-s_b' Z" fill="none" stroke="#34485a"/>
+'<circle cx="'28+z_as'" cy="'147+z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'28+z_as'" cy="'147+s_b-z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'28+s_b-z_as'" cy="'147+z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'28+s_b-z_as'" cy="'147+s_b-z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+#if n_p ≡ 5
+'<circle cx="'28+s_b/2'" cy="'147+s_b/2'" r="'dia_p*0.2'" fill="#245b80"/>
+#end if
+#if n_p ≡ 6
+'<circle cx="'28+z_as'" cy="'147+s_b/2'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'28+s_b-z_as'" cy="'147+s_b/2'" r="'dia_p*0.2'" fill="#245b80"/>
+#end if
+#if profiel ≡ 6
+'<circle cx="'28+24'" cy="'147+24'" r="2.4" fill="#ab3e18"/>
+'<circle cx="'28+24'" cy="'147+s_b-24'" r="2.4" fill="#ab3e18"/>
+'<circle cx="'28+s_b-24'" cy="'147+24'" r="2.4" fill="#ab3e18"/>
+'<circle cx="'28+s_b-24'" cy="'147+s_b-24'" r="2.4" fill="#ab3e18"/>
+#end if
+'<text x="186" y="135">B–B · voet</text>
+'<path d="M191 147 h's_b-10' l5 5 v's_b-10' l-5 5 h'-s_b+10' l-5 -5 v'10-s_b' Z" fill="none" stroke="#34485a"/>
+'<circle cx="'186+z_as'" cy="'147+z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'186+z_as'" cy="'147+s_b-z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'186+s_b-z_as'" cy="'147+z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'186+s_b-z_as'" cy="'147+s_b-z_as'" r="'dia_p*0.2'" fill="#245b80"/>
+#if n_p ≡ 5
+'<circle cx="'186+s_b/2'" cy="'147+s_b/2'" r="'dia_p*0.2'" fill="#245b80"/>
+#end if
+#if n_p ≡ 6
+'<circle cx="'186+z_as'" cy="'147+s_b/2'" r="'dia_p*0.2'" fill="#245b80"/>
+'<circle cx="'186+s_b-z_as'" cy="'147+s_b/2'" r="'dia_p*0.2'" fill="#245b80"/>
+#end if
+'<text x="342" y="155">Schacht 'b/(1 mm)' × 'b/(1 mm)' mm</text>
+'<text x="342" y="181">'n_p' strengen Ø'dia_p' · asmaat 'd_as' mm</text>
+'<text x="342" y="207">Paallengte 'l_m' m</text>
+'<text x="342" y="233">Hijsafstand 'round(100*a_h/(1 m))/100' m</text>
+'<text x="24" y="287">Transport · oplegmiddens op 'round(100*a_h/(1 m))/100' m uit de uiteinden</text>
+'<text x="24" y="308">Afstand contactpunt tot oplegmidden 'e_tr/(1 m)' m</text>
+'</svg>
+'<svg class="dxf" viewBox="0 0 590 90" style="width:100%;font-size:12px" xmlns="http://www.w3.org/2000/svg">
+'<text x="24" y="15">Transport</text><text x="319" y="15">Hijsen met twee takels</text>
+'<path d="M24 43 h240 v5 h-240 Z M319 56 l240 -14 v5 l-240 14 Z" fill="none" stroke="#34485a"/>
+#for i = 0 : 1
+#hide
+p_a = 24 + 240*if(i ≡ 0; 0.207; 0.793)
+p_e = 240*e_tr/L
+#show
+'<path d="M'p_a-p_e' 48 l-4 6 h8 Z" fill="#596b79"/>
+#if e_tr > 0 m
+'<path d="M'p_a+p_e' 48 l-4 6 h8 Z M'p_a-p_e-4' 56 h'2*p_e+8'" fill="#596b79" stroke="#596b79"/>
+#end if
+'<path d="M'p_a+295' '53-i*8' v-22" stroke="#34485a"/>
+#loop
+'</svg>
+# Ruimtelijk aanzicht
+'Blauw is voorspanstaal, rood is kopwapening. De lengteas is tienmaal verkort om de doorsnede leesbaar te houden.
+#hide
+l_beeld = L/(1 mm)/10
+b_beeld = b/(1 mm)
+#show
+@3d
+camera iso
+hoogte 300
+raster uit
+assen uit
+staaf 0 0 0 {{b_beeld}} 0 0 grijs
+staaf {{b_beeld}} 0 0 {{b_beeld}} {{b_beeld}} 0 grijs
+staaf {{b_beeld}} {{b_beeld}} 0 0 {{b_beeld}} 0 grijs
+staaf 0 {{b_beeld}} 0 0 0 0 grijs
+staaf 0 0 {{l_beeld}} {{b_beeld}} 0 {{l_beeld}} grijs
+staaf {{b_beeld}} 0 {{l_beeld}} {{b_beeld}} {{b_beeld}} {{l_beeld}} grijs
+staaf {{b_beeld}} {{b_beeld}} {{l_beeld}} 0 {{b_beeld}} {{l_beeld}} grijs
+staaf 0 {{b_beeld}} {{l_beeld}} 0 0 {{l_beeld}} grijs
+staaf 0 0 0 0 0 {{l_beeld}} grijs
+staaf 0 {{b_beeld}} 0 0 {{b_beeld}} {{l_beeld}} grijs
+staaf {{b_beeld}} 0 0 {{b_beeld}} 0 {{l_beeld}} grijs
+staaf {{b_beeld}} {{b_beeld}} 0 {{b_beeld}} {{b_beeld}} {{l_beeld}} grijs
+buis {{d_as}} {{d_as}} 0 {{d_as}} {{d_as}} {{l_beeld}} {{dia_p}} blauw
+buis {{d_as}} {{b_beeld-d_as}} 0 {{d_as}} {{b_beeld-d_as}} {{l_beeld}} {{dia_p}} blauw
+buis {{b_beeld-d_as}} {{d_as}} 0 {{b_beeld-d_as}} {{d_as}} {{l_beeld}} {{dia_p}} blauw
+buis {{b_beeld-d_as}} {{b_beeld-d_as}} 0 {{b_beeld-d_as}} {{b_beeld-d_as}} {{l_beeld}} {{dia_p}} blauw
+#if n_p ≡ 5
+buis {{b_beeld/2}} {{b_beeld/2}} 0 {{b_beeld/2}} {{b_beeld/2}} {{l_beeld}} {{dia_p}} blauw
+#end if
+#if n_p ≡ 6
+buis {{d_as}} {{b_beeld/2}} 0 {{d_as}} {{b_beeld/2}} {{l_beeld}} {{dia_p}} blauw
+buis {{b_beeld-d_as}} {{b_beeld/2}} 0 {{b_beeld-d_as}} {{b_beeld/2}} {{l_beeld}} {{dia_p}} blauw
+#end if
+#if profiel ≡ 6
+buis 60 60 0 60 60 240 12 rood
+buis 60 {{b_beeld-60}} 0 60 {{b_beeld-60}} 240 12 rood
+buis {{b_beeld-60}} 60 0 {{b_beeld-60}} 60 240 12 rood
+buis {{b_beeld-60}} {{b_beeld-60}} 0 {{b_beeld-60}} {{b_beeld-60}} 240 12 rood
+#end if
+@end
+# Interactie normaalkracht en moment
+'Profielwaarden voor buiging om de x-as, C30/37 fundering, steklengte 350 mm, kopwapening volgens gekozen profiel. Druk positief. Per zone horen N en M in dezelfde kolomgroep bij elkaar.
+#if profiel ≡ 1
+# Uiterste grenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-67</td><td>0.0</td><td>-316</td><td>0.0</td><td>-316</td><td>0.0</td></tr>
+'<tr><td>-59</td><td>0.5</td><td>-276</td><td>3.9</td><td>-276</td><td>3.9</td></tr>
+'<tr><td>-51</td><td>1.1</td><td>-237</td><td>7.9</td><td>-237</td><td>7.9</td></tr>
+'<tr><td>-42</td><td>1.6</td><td>-198</td><td>11.5</td><td>-198</td><td>11.5</td></tr>
+'<tr><td>-34</td><td>2.4</td><td>-158</td><td>14.7</td><td>-158</td><td>14.7</td></tr>
+'<tr><td>-25</td><td>3.1</td><td>-119</td><td>17.6</td><td>-119</td><td>17.6</td></tr>
+'<tr><td>-17</td><td>3.9</td><td>-79</td><td>20.5</td><td>-79</td><td>20.5</td></tr>
+'<tr><td>-9</td><td>4.6</td><td>-40</td><td>23.3</td><td>-40</td><td>23.3</td></tr>
+'<tr><td>-0</td><td>5.4</td><td>-0</td><td>26.0</td><td>-0</td><td>26.0</td></tr>
+'<tr><td>144</td><td>16.8</td><td>159</td><td>35.3</td><td>159</td><td>35.3</td></tr>
+'<tr><td>289</td><td>26.3</td><td>319</td><td>41.2</td><td>319</td><td>41.2</td></tr>
+'<tr><td>434</td><td>31.8</td><td>479</td><td>42.0</td><td>479</td><td>42.0</td></tr>
+'<tr><td>578</td><td>31.1</td><td>639</td><td>39.6</td><td>639</td><td>39.6</td></tr>
+'<tr><td>722</td><td>27.8</td><td>799</td><td>34.0</td><td>799</td><td>34.0</td></tr>
+'<tr><td>867</td><td>21.1</td><td>959</td><td>24.5</td><td>959</td><td>24.5</td></tr>
+'<tr><td>1012</td><td>10.6</td><td>1119</td><td>12.9</td><td>1119</td><td>12.9</td></tr>
+'<tr><td>1156</td><td>0.0</td><td>1279</td><td>0.0</td><td>1279</td><td>0.0</td></tr>
+'</tbody></table>
+# Bruikbaarheidsgrenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-52</td><td>0.0</td><td>-246</td><td>0.0</td><td>-246</td><td>0.0</td></tr>
+'<tr><td>-45</td><td>0.4</td><td>-216</td><td>2.8</td><td>-216</td><td>2.8</td></tr>
+'<tr><td>-39</td><td>0.8</td><td>-185</td><td>5.5</td><td>-185</td><td>5.5</td></tr>
+'<tr><td>-32</td><td>1.2</td><td>-154</td><td>8.1</td><td>-154</td><td>8.1</td></tr>
+'<tr><td>-26</td><td>1.9</td><td>-123</td><td>10.6</td><td>-123</td><td>10.6</td></tr>
+'<tr><td>-19</td><td>2.5</td><td>-92</td><td>12.9</td><td>-92</td><td>12.9</td></tr>
+'<tr><td>-13</td><td>3.1</td><td>-62</td><td>15.3</td><td>-62</td><td>15.3</td></tr>
+'<tr><td>-6</td><td>3.8</td><td>-31</td><td>17.5</td><td>-31</td><td>17.5</td></tr>
+'<tr><td>0</td><td>4.4</td><td>0</td><td>19.7</td><td>0</td><td>19.7</td></tr>
+'<tr><td>216</td><td>22.7</td><td>244</td><td>36.0</td><td>244</td><td>36.0</td></tr>
+'<tr><td>433</td><td>32.1</td><td>488</td><td>43.8</td><td>488</td><td>43.8</td></tr>
+'<tr><td>649</td><td>35.0</td><td>733</td><td>42.7</td><td>733</td><td>42.7</td></tr>
+'<tr><td>866</td><td>30.9</td><td>977</td><td>34.9</td><td>977</td><td>34.9</td></tr>
+'<tr><td>1082</td><td>23.2</td><td>1221</td><td>26.2</td><td>1221</td><td>26.2</td></tr>
+'<tr><td>1299</td><td>15.4</td><td>1465</td><td>17.5</td><td>1465</td><td>17.5</td></tr>
+'<tr><td>1515</td><td>7.7</td><td>1709</td><td>8.8</td><td>1709</td><td>8.8</td></tr>
+'<tr><td>1732</td><td>0.0</td><td>1953</td><td>0.0</td><td>1953</td><td>0.0</td></tr>
+'</tbody></table>
+#end if
+#if profiel ≡ 2
+# Uiterste grenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-84</td><td>0.0</td><td>-394</td><td>0.0</td><td>-394</td><td>0.0</td></tr>
+'<tr><td>-74</td><td>0.6</td><td>-345</td><td>5.5</td><td>-345</td><td>5.5</td></tr>
+'<tr><td>-63</td><td>1.3</td><td>-295</td><td>11.3</td><td>-295</td><td>11.3</td></tr>
+'<tr><td>-53</td><td>2.0</td><td>-247</td><td>16.5</td><td>-247</td><td>16.5</td></tr>
+'<tr><td>-42</td><td>3.0</td><td>-198</td><td>21.1</td><td>-198</td><td>21.1</td></tr>
+'<tr><td>-32</td><td>4.0</td><td>-148</td><td>25.4</td><td>-148</td><td>25.4</td></tr>
+'<tr><td>-21</td><td>5.1</td><td>-99</td><td>29.6</td><td>-99</td><td>29.6</td></tr>
+'<tr><td>-11</td><td>6.1</td><td>-50</td><td>33.7</td><td>-50</td><td>33.7</td></tr>
+'<tr><td>-0</td><td>7.2</td><td>-0</td><td>37.6</td><td>-0</td><td>37.6</td></tr>
+'<tr><td>183</td><td>23.3</td><td>204</td><td>50.9</td><td>204</td><td>50.9</td></tr>
+'<tr><td>367</td><td>36.8</td><td>408</td><td>58.8</td><td>408</td><td>58.8</td></tr>
+'<tr><td>550</td><td>45.1</td><td>613</td><td>61.0</td><td>613</td><td>61.0</td></tr>
+'<tr><td>733</td><td>45.0</td><td>817</td><td>57.5</td><td>817</td><td>57.5</td></tr>
+'<tr><td>917</td><td>40.1</td><td>1021</td><td>49.3</td><td>1021</td><td>49.3</td></tr>
+'<tr><td>1100</td><td>30.4</td><td>1226</td><td>35.4</td><td>1226</td><td>35.4</td></tr>
+'<tr><td>1283</td><td>15.2</td><td>1430</td><td>18.5</td><td>1430</td><td>18.5</td></tr>
+'<tr><td>1467</td><td>0.0</td><td>1634</td><td>0.0</td><td>1634</td><td>0.0</td></tr>
+'</tbody></table>
+# Bruikbaarheidsgrenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-65</td><td>0.0</td><td>-335</td><td>0.0</td><td>-335</td><td>0.0</td></tr>
+'<tr><td>-56</td><td>0.5</td><td>-293</td><td>4.2</td><td>-293</td><td>4.2</td></tr>
+'<tr><td>-48</td><td>1.0</td><td>-251</td><td>8.4</td><td>-251</td><td>8.4</td></tr>
+'<tr><td>-40</td><td>1.5</td><td>-209</td><td>12.3</td><td>-209</td><td>12.3</td></tr>
+'<tr><td>-32</td><td>2.4</td><td>-168</td><td>16.0</td><td>-168</td><td>16.0</td></tr>
+'<tr><td>-24</td><td>3.3</td><td>-126</td><td>19.7</td><td>-126</td><td>19.7</td></tr>
+'<tr><td>-16</td><td>4.1</td><td>-84</td><td>23.2</td><td>-84</td><td>23.2</td></tr>
+'<tr><td>-8</td><td>5.0</td><td>-42</td><td>26.6</td><td>-42</td><td>26.6</td></tr>
+'<tr><td>0</td><td>5.9</td><td>0</td><td>29.9</td><td>0</td><td>29.9</td></tr>
+'<tr><td>275</td><td>32.1</td><td>314</td><td>53.2</td><td>314</td><td>53.2</td></tr>
+'<tr><td>550</td><td>46.3</td><td>628</td><td>64.7</td><td>628</td><td>64.7</td></tr>
+'<tr><td>825</td><td>50.8</td><td>942</td><td>62.8</td><td>942</td><td>62.8</td></tr>
+'<tr><td>1100</td><td>44.8</td><td>1255</td><td>51.2</td><td>1255</td><td>51.2</td></tr>
+'<tr><td>1375</td><td>33.6</td><td>1569</td><td>38.4</td><td>1569</td><td>38.4</td></tr>
+'<tr><td>1650</td><td>22.4</td><td>1883</td><td>25.7</td><td>1883</td><td>25.7</td></tr>
+'<tr><td>1925</td><td>11.2</td><td>2197</td><td>12.9</td><td>2197</td><td>12.9</td></tr>
+'<tr><td>2199</td><td>0.0</td><td>2511</td><td>0.0</td><td>2511</td><td>0.0</td></tr>
+'</tbody></table>
+#end if
+#if profiel ≡ 3
+# Uiterste grenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-67</td><td>0.0</td><td>-316</td><td>0.0</td><td>-316</td><td>0.0</td></tr>
+'<tr><td>-59</td><td>0.6</td><td>-276</td><td>4.5</td><td>-276</td><td>4.5</td></tr>
+'<tr><td>-51</td><td>1.3</td><td>-237</td><td>9.1</td><td>-237</td><td>9.1</td></tr>
+'<tr><td>-42</td><td>2.0</td><td>-197</td><td>13.6</td><td>-197</td><td>13.6</td></tr>
+'<tr><td>-34</td><td>2.8</td><td>-158</td><td>17.6</td><td>-158</td><td>17.6</td></tr>
+'<tr><td>-26</td><td>3.7</td><td>-119</td><td>21.3</td><td>-119</td><td>21.3</td></tr>
+'<tr><td>-17</td><td>4.6</td><td>-79</td><td>24.8</td><td>-79</td><td>24.8</td></tr>
+'<tr><td>-9</td><td>5.5</td><td>-40</td><td>28.2</td><td>-40</td><td>28.2</td></tr>
+'<tr><td>-0</td><td>6.3</td><td>-0</td><td>31.6</td><td>-0</td><td>31.6</td></tr>
+'<tr><td>183</td><td>23.0</td><td>209</td><td>46.9</td><td>209</td><td>46.9</td></tr>
+'<tr><td>367</td><td>36.7</td><td>419</td><td>57.1</td><td>419</td><td>57.1</td></tr>
+'<tr><td>550</td><td>45.1</td><td>629</td><td>61.2</td><td>629</td><td>61.2</td></tr>
+'<tr><td>734</td><td>45.0</td><td>839</td><td>58.2</td><td>839</td><td>58.2</td></tr>
+'<tr><td>917</td><td>40.1</td><td>1048</td><td>50.2</td><td>1048</td><td>50.2</td></tr>
+'<tr><td>1101</td><td>30.4</td><td>1258</td><td>36.3</td><td>1258</td><td>36.3</td></tr>
+'<tr><td>1284</td><td>15.2</td><td>1468</td><td>19.0</td><td>1468</td><td>19.0</td></tr>
+'<tr><td>1468</td><td>0.0</td><td>1678</td><td>0.0</td><td>1678</td><td>0.0</td></tr>
+'</tbody></table>
+# Bruikbaarheidsgrenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-52</td><td>0.0</td><td>-271</td><td>0.0</td><td>-271</td><td>0.0</td></tr>
+'<tr><td>-45</td><td>0.5</td><td>-237</td><td>3.6</td><td>-237</td><td>3.6</td></tr>
+'<tr><td>-39</td><td>1.0</td><td>-203</td><td>7.0</td><td>-203</td><td>7.0</td></tr>
+'<tr><td>-32</td><td>1.5</td><td>-169</td><td>10.3</td><td>-169</td><td>10.3</td></tr>
+'<tr><td>-26</td><td>2.2</td><td>-135</td><td>13.4</td><td>-135</td><td>13.4</td></tr>
+'<tr><td>-19</td><td>3.0</td><td>-102</td><td>16.4</td><td>-102</td><td>16.4</td></tr>
+'<tr><td>-13</td><td>3.7</td><td>-68</td><td>19.4</td><td>-68</td><td>19.4</td></tr>
+'<tr><td>-6</td><td>4.4</td><td>-34</td><td>22.2</td><td>-34</td><td>22.2</td></tr>
+'<tr><td>0</td><td>5.1</td><td>0</td><td>25.0</td><td>0</td><td>25.0</td></tr>
+'<tr><td>275</td><td>31.7</td><td>320</td><td>49.4</td><td>320</td><td>49.4</td></tr>
+'<tr><td>550</td><td>46.3</td><td>641</td><td>64.1</td><td>641</td><td>64.1</td></tr>
+'<tr><td>825</td><td>50.8</td><td>961</td><td>63.6</td><td>961</td><td>63.6</td></tr>
+'<tr><td>1100</td><td>44.8</td><td>1282</td><td>52.4</td><td>1282</td><td>52.4</td></tr>
+'<tr><td>1375</td><td>33.6</td><td>1602</td><td>39.3</td><td>1602</td><td>39.3</td></tr>
+'<tr><td>1650</td><td>22.4</td><td>1923</td><td>26.2</td><td>1923</td><td>26.2</td></tr>
+'<tr><td>1925</td><td>11.2</td><td>2243</td><td>13.2</td><td>2243</td><td>13.2</td></tr>
+'<tr><td>2199</td><td>0.0</td><td>2564</td><td>0.0</td><td>2564</td><td>0.0</td></tr>
+'</tbody></table>
+#end if
+#if profiel ≡ 4
+# Uiterste grenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-100</td><td>0.0</td><td>-473</td><td>0.0</td><td>-473</td><td>0.0</td></tr>
+'<tr><td>-88</td><td>0.8</td><td>-414</td><td>7.6</td><td>-414</td><td>7.6</td></tr>
+'<tr><td>-76</td><td>1.6</td><td>-355</td><td>15.6</td><td>-355</td><td>15.6</td></tr>
+'<tr><td>-63</td><td>2.5</td><td>-296</td><td>23.2</td><td>-296</td><td>23.2</td></tr>
+'<tr><td>-51</td><td>3.7</td><td>-237</td><td>29.9</td><td>-237</td><td>29.9</td></tr>
+'<tr><td>-38</td><td>5.2</td><td>-178</td><td>36.2</td><td>-178</td><td>36.2</td></tr>
+'<tr><td>-25</td><td>6.6</td><td>-119</td><td>42.4</td><td>-119</td><td>42.4</td></tr>
+'<tr><td>-13</td><td>8.1</td><td>-60</td><td>48.3</td><td>-60</td><td>48.3</td></tr>
+'<tr><td>-0</td><td>9.5</td><td>-0</td><td>54.0</td><td>-0</td><td>54.0</td></tr>
+'<tr><td>243</td><td>34.1</td><td>279</td><td>76.3</td><td>279</td><td>76.3</td></tr>
+'<tr><td>485</td><td>54.7</td><td>557</td><td>89.2</td><td>557</td><td>89.2</td></tr>
+'<tr><td>726</td><td>67.8</td><td>836</td><td>94.1</td><td>836</td><td>94.1</td></tr>
+'<tr><td>968</td><td>69.0</td><td>1115</td><td>89.4</td><td>1115</td><td>89.4</td></tr>
+'<tr><td>1211</td><td>61.6</td><td>1394</td><td>77.2</td><td>1394</td><td>77.2</td></tr>
+'<tr><td>1453</td><td>46.7</td><td>1673</td><td>55.7</td><td>1673</td><td>55.7</td></tr>
+'<tr><td>1695</td><td>23.3</td><td>1952</td><td>28.8</td><td>1952</td><td>28.8</td></tr>
+'<tr><td>1937</td><td>0.0</td><td>2231</td><td>0.0</td><td>2231</td><td>0.0</td></tr>
+'</tbody></table>
+# Bruikbaarheidsgrenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-78</td><td>0.0</td><td>-406</td><td>0.0</td><td>-406</td><td>0.0</td></tr>
+'<tr><td>-68</td><td>0.6</td><td>-355</td><td>5.8</td><td>-355</td><td>5.8</td></tr>
+'<tr><td>-58</td><td>1.2</td><td>-305</td><td>11.7</td><td>-305</td><td>11.7</td></tr>
+'<tr><td>-49</td><td>1.9</td><td>-254</td><td>17.3</td><td>-254</td><td>17.3</td></tr>
+'<tr><td>-39</td><td>2.9</td><td>-203</td><td>22.6</td><td>-203</td><td>22.6</td></tr>
+'<tr><td>-29</td><td>4.2</td><td>-152</td><td>27.7</td><td>-152</td><td>27.7</td></tr>
+'<tr><td>-19</td><td>5.4</td><td>-102</td><td>32.7</td><td>-102</td><td>32.7</td></tr>
+'<tr><td>-10</td><td>6.7</td><td>-51</td><td>37.5</td><td>-51</td><td>37.5</td></tr>
+'<tr><td>0</td><td>7.9</td><td>0</td><td>42.2</td><td>0</td><td>42.2</td></tr>
+'<tr><td>363</td><td>48.0</td><td>428</td><td>79.1</td><td>428</td><td>79.1</td></tr>
+'<tr><td>727</td><td>71.0</td><td>856</td><td>100.9</td><td>856</td><td>100.9</td></tr>
+'<tr><td>1090</td><td>78.2</td><td>1284</td><td>99.1</td><td>1284</td><td>99.1</td></tr>
+'<tr><td>1453</td><td>69.1</td><td>1712</td><td>81.4</td><td>1712</td><td>81.4</td></tr>
+'<tr><td>1817</td><td>51.8</td><td>2140</td><td>61.1</td><td>2140</td><td>61.1</td></tr>
+'<tr><td>2180</td><td>34.6</td><td>2568</td><td>40.7</td><td>2568</td><td>40.7</td></tr>
+'<tr><td>2543</td><td>17.3</td><td>2995</td><td>20.4</td><td>2995</td><td>20.4</td></tr>
+'<tr><td>2907</td><td>0.0</td><td>3423</td><td>0.0</td><td>3423</td><td>0.0</td></tr>
+'</tbody></table>
+#end if
+#if profiel ≡ 5
+# Uiterste grenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-84</td><td>0.0</td><td>-394</td><td>0.0</td><td>-394</td><td>0.0</td></tr>
+'<tr><td>-74</td><td>0.8</td><td>-346</td><td>6.4</td><td>-346</td><td>6.4</td></tr>
+'<tr><td>-63</td><td>1.6</td><td>-296</td><td>13.2</td><td>-296</td><td>13.2</td></tr>
+'<tr><td>-53</td><td>2.4</td><td>-246</td><td>19.7</td><td>-246</td><td>19.7</td></tr>
+'<tr><td>-42</td><td>3.5</td><td>-197</td><td>25.8</td><td>-197</td><td>25.8</td></tr>
+'<tr><td>-32</td><td>4.8</td><td>-148</td><td>31.2</td><td>-148</td><td>31.2</td></tr>
+'<tr><td>-21</td><td>6.1</td><td>-99</td><td>36.5</td><td>-99</td><td>36.5</td></tr>
+'<tr><td>-11</td><td>7.4</td><td>-50</td><td>41.6</td><td>-50</td><td>41.6</td></tr>
+'<tr><td>-0</td><td>8.6</td><td>-0</td><td>46.6</td><td>-0</td><td>46.6</td></tr>
+'<tr><td>242</td><td>33.6</td><td>284</td><td>71.4</td><td>284</td><td>71.4</td></tr>
+'<tr><td>485</td><td>54.6</td><td>568</td><td>87.2</td><td>568</td><td>87.2</td></tr>
+'<tr><td>727</td><td>67.8</td><td>853</td><td>93.8</td><td>853</td><td>93.8</td></tr>
+'<tr><td>969</td><td>69.0</td><td>1138</td><td>90.2</td><td>1138</td><td>90.2</td></tr>
+'<tr><td>1212</td><td>61.6</td><td>1422</td><td>78.3</td><td>1422</td><td>78.3</td></tr>
+'<tr><td>1454</td><td>46.7</td><td>1707</td><td>56.8</td><td>1707</td><td>56.8</td></tr>
+'<tr><td>1696</td><td>23.4</td><td>1991</td><td>29.3</td><td>1991</td><td>29.3</td></tr>
+'<tr><td>1938</td><td>0.0</td><td>2276</td><td>0.0</td><td>2276</td><td>0.0</td></tr>
+'</tbody></table>
+# Bruikbaarheidsgrenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-65</td><td>0.0</td><td>-341</td><td>0.0</td><td>-341</td><td>0.0</td></tr>
+'<tr><td>-57</td><td>0.6</td><td>-298</td><td>5.1</td><td>-298</td><td>5.1</td></tr>
+'<tr><td>-49</td><td>1.2</td><td>-256</td><td>10.1</td><td>-256</td><td>10.1</td></tr>
+'<tr><td>-40</td><td>1.9</td><td>-213</td><td>14.9</td><td>-213</td><td>14.9</td></tr>
+'<tr><td>-32</td><td>2.8</td><td>-171</td><td>19.5</td><td>-171</td><td>19.5</td></tr>
+'<tr><td>-24</td><td>3.9</td><td>-128</td><td>23.9</td><td>-128</td><td>23.9</td></tr>
+'<tr><td>-16</td><td>4.9</td><td>-85</td><td>28.2</td><td>-85</td><td>28.2</td></tr>
+'<tr><td>-8</td><td>6.0</td><td>-43</td><td>32.4</td><td>-43</td><td>32.4</td></tr>
+'<tr><td>0</td><td>7.0</td><td>0</td><td>36.4</td><td>0</td><td>36.4</td></tr>
+'<tr><td>363</td><td>47.6</td><td>435</td><td>74.6</td><td>435</td><td>74.6</td></tr>
+'<tr><td>727</td><td>71.0</td><td>869</td><td>100.0</td><td>869</td><td>100.0</td></tr>
+'<tr><td>1090</td><td>78.2</td><td>1304</td><td>100.0</td><td>1304</td><td>100.0</td></tr>
+'<tr><td>1453</td><td>69.1</td><td>1738</td><td>82.8</td><td>1738</td><td>82.8</td></tr>
+'<tr><td>1817</td><td>51.8</td><td>2173</td><td>62.1</td><td>2173</td><td>62.1</td></tr>
+'<tr><td>2180</td><td>34.6</td><td>2608</td><td>41.4</td><td>2608</td><td>41.4</td></tr>
+'<tr><td>2543</td><td>17.3</td><td>3042</td><td>20.8</td><td>3042</td><td>20.8</td></tr>
+'<tr><td>2907</td><td>0.0</td><td>3477</td><td>0.0</td><td>3477</td><td>0.0</td></tr>
+'</tbody></table>
+#end if
+#if profiel ≡ 6
+# Uiterste grenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-222</td><td>-0.0</td><td>-902</td><td>-0.0</td><td>-706</td><td>-0.0</td></tr>
+'<tr><td>-195</td><td>2.1</td><td>-790</td><td>14.7</td><td>-618</td><td>11.4</td></tr>
+'<tr><td>-167</td><td>4.2</td><td>-677</td><td>28.6</td><td>-529</td><td>22.9</td></tr>
+'<tr><td>-139</td><td>6.3</td><td>-564</td><td>39.7</td><td>-441</td><td>32.6</td></tr>
+'<tr><td>-111</td><td>8.9</td><td>-452</td><td>50.6</td><td>-353</td><td>41.6</td></tr>
+'<tr><td>-84</td><td>11.9</td><td>-339</td><td>61.2</td><td>-265</td><td>50.4</td></tr>
+'<tr><td>-56</td><td>14.9</td><td>-226</td><td>71.5</td><td>-177</td><td>58.8</td></tr>
+'<tr><td>-28</td><td>17.9</td><td>-113</td><td>81.2</td><td>-89</td><td>66.7</td></tr>
+'<tr><td>-0</td><td>20.8</td><td>-0</td><td>90.1</td><td>-0</td><td>73.8</td></tr>
+'<tr><td>240</td><td>42.8</td><td>282</td><td>106.7</td><td>264</td><td>90.0</td></tr>
+'<tr><td>481</td><td>61.7</td><td>564</td><td>112.1</td><td>528</td><td>98.5</td></tr>
+'<tr><td>722</td><td>73.0</td><td>847</td><td>108.2</td><td>792</td><td>97.8</td></tr>
+'<tr><td>961</td><td>70.7</td><td>1129</td><td>98.9</td><td>1056</td><td>90.4</td></tr>
+'<tr><td>1202</td><td>61.1</td><td>1411</td><td>83.9</td><td>1320</td><td>76.5</td></tr>
+'<tr><td>1442</td><td>46.3</td><td>1693</td><td>61.0</td><td>1585</td><td>54.4</td></tr>
+'<tr><td>1683</td><td>23.2</td><td>1976</td><td>33.9</td><td>1849</td><td>28.9</td></tr>
+'<tr><td>1923</td><td>-0.0</td><td>2258</td><td>-0.0</td><td>2113</td><td>-0.0</td></tr>
+'</tbody></table>
+# Bruikbaarheidsgrenstoestand
+'<table><thead><tr><th colspan="2">Aansluiting fundering</th><th colspan="2">Overgang</th><th colspan="2">Paalschacht</th></tr><tr><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th><th>N [kN]</th><th>M [kNm]</th></tr></thead><tbody>
+'<tr><td>-219</td><td>0.0</td><td>-877</td><td>0.0</td><td>-584</td><td>0.0</td></tr>
+'<tr><td>-191</td><td>2.1</td><td>-767</td><td>9.8</td><td>-511</td><td>8.4</td></tr>
+'<tr><td>-164</td><td>4.2</td><td>-657</td><td>18.0</td><td>-438</td><td>16.6</td></tr>
+'<tr><td>-137</td><td>6.3</td><td>-548</td><td>30.2</td><td>-365</td><td>24.2</td></tr>
+'<tr><td>-109</td><td>9.2</td><td>-438</td><td>42.0</td><td>-292</td><td>31.5</td></tr>
+'<tr><td>-82</td><td>12.5</td><td>-329</td><td>53.5</td><td>-219</td><td>38.5</td></tr>
+'<tr><td>-55</td><td>15.7</td><td>-219</td><td>64.6</td><td>-146</td><td>45.3</td></tr>
+'<tr><td>-27</td><td>18.8</td><td>-110</td><td>75.4</td><td>-73</td><td>51.9</td></tr>
+'<tr><td>0</td><td>21.9</td><td>0</td><td>86.0</td><td>0</td><td>58.3</td></tr>
+'<tr><td>363</td><td>59.5</td><td>429</td><td>102.3</td><td>410</td><td>92.3</td></tr>
+'<tr><td>727</td><td>75.3</td><td>858</td><td>108.8</td><td>820</td><td>103.3</td></tr>
+'<tr><td>1090</td><td>78.6</td><td>1287</td><td>101.8</td><td>1230</td><td>97.0</td></tr>
+'<tr><td>1453</td><td>69.1</td><td>1717</td><td>82.3</td><td>1640</td><td>78.2</td></tr>
+'<tr><td>1817</td><td>51.8</td><td>2146</td><td>61.8</td><td>2050</td><td>58.7</td></tr>
+'<tr><td>2180</td><td>34.6</td><td>2575</td><td>41.3</td><td>2460</td><td>39.2</td></tr>
+'<tr><td>2543</td><td>17.3</td><td>3004</td><td>20.7</td><td>2870</td><td>19.7</td></tr>
+'<tr><td>2907</td><td>0.0</td><td>3433</td><td>0.0</td><td>3280</td><td>0.0</td></tr>
+'</tbody></table>
+#end if
+#else
+'Ongeldige lengte voor deze transportoplegging.
+#end if
+#else
+'De paallengte moet positief zijn.
+#end if

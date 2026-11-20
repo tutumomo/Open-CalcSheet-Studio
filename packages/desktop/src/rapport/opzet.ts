@@ -158,7 +158,11 @@ export interface Rapportknoop extends Omit<Knoop, "titel" | "titelNieuwbouw" | "
   nummer: string;
   nieuwePagina: boolean;
   kinderen: Rapportknoop[];
-  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; figuur?: boolean };
+  /**
+   * `zonderParagraaf`: het blad staat alleen in bijlage A (opmaak.bijlageParagrafen uit).
+   * De knoop blijft bestaan, zodat de bijlage hem vindt, maar het hoofdstuk toont hem niet.
+   */
+  blad?: { id: string; naam: string; bijlage: string; koppen?: readonly Inhoudskop[]; figuur?: boolean; zonderParagraaf?: true };
 }
 
 /** Waar de uitwerking van een blad staat. */
@@ -258,22 +262,30 @@ function nieuwePaginaVoor(id: string, standaard: boolean | undefined, r: Rapport
  * uitwerking in het hoofdstuk zelf krijgt bijlage "".
  */
 function bladKnopen(nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop[] {
+  const zonderBijlage = r.opmaak.bijlageParagrafen === false;
   let inBijlage = 0;
-  return bladen.map((b, i): Rapportknoop => ({
-    id: b.id,
-    titel: b.naam,
-    niveau: 2,
-    nummer: `${nummer}.${i + 1}`,
-    nieuwePagina: nieuwePaginaVoor(b.id, false, r),
-    kinderen: [],
-    blad: {
+  let paragraaf = 0;
+  return bladen.map((b): Rapportknoop => {
+    const inHoofdstuk = staatInHoofdstuk(r, b);
+    // Zonder paragraaf telt het blad niet mee: de bladen in het hoofdstuk lopen door.
+    const zonderParagraaf = zonderBijlage && !inHoofdstuk;
+    return {
       id: b.id,
-      naam: b.naam,
-      bijlage: staatInHoofdstuk(r, b) ? "" : `A.${++inBijlage}`,
-      ...(b.koppen?.length ? { koppen: b.koppen } : {}),
-      ...(b.figuur ? { figuur: true } : {}),
-    },
-  }));
+      titel: b.naam,
+      niveau: 2,
+      nummer: zonderParagraaf ? "" : `${nummer}.${++paragraaf}`,
+      nieuwePagina: nieuwePaginaVoor(b.id, false, r),
+      kinderen: [],
+      blad: {
+        id: b.id,
+        naam: b.naam,
+        bijlage: inHoofdstuk ? "" : `A.${++inBijlage}`,
+        ...(b.koppen?.length ? { koppen: b.koppen } : {}),
+        ...(b.figuur ? { figuur: true } : {}),
+        ...(zonderParagraaf ? { zonderParagraaf: true as const } : {}),
+      },
+    };
+  });
 }
 
 function bouwKnoop(k: Knoop, nummer: string, r: Rapport, bladen: Blad[]): Rapportknoop {

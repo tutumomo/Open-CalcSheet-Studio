@@ -16,6 +16,7 @@ import {
   START_NOTEBOOK, WERKMAP_MAX_BYTES, type WerkmapBestand,
 } from "../../store/jupyterBlad.ts";
 import { isMarimoBlad, bladnaamVoorMarimo, isMarimoCode, marimoCellen, marimoStartCode, MARIMO_MAX_TEKENS } from "../../store/marimoBlad.ts";
+import { CANVAS_BLAD, klemOpVel, leesEenheden, opRaster, schrijfEenheden } from "../../store/canvasBlad.ts";
 import { codeVan } from "../../components/ribbon/formules.ts";
 import { alleFormules } from "../../store/library.ts";
 import {
@@ -278,14 +279,24 @@ export const BLADTOOLS: McpToolDef[] = [
     kind: "mutate",
     description:
       "Add a sheet to the project and open it. kind picks the sort: 'calculation' (default), 'markdown', 'graph', 'drawing', 'spreadsheet', 'jupyter' or 'marimo'; a PDF has its own tool (sheet_add_pdf). " +
-      "For a calculation sheet pass templateId (from modules_list), or omit it to add an empty sheet with your own calculation text in source. " +
+      "For a calculation sheet pass templateId (from modules_list), templateId \"canvas\" for a canvas sheet (formulas as free-standing units, see units), or omit it to add an empty sheet with your own calculation text in source. " +
       "For the other sorts pass their content: text (markdown), code (marimo), graph (graph), drawing/paper/orientation (drawing), path or base64 (spreadsheet XLSX, jupyter work folder ZIP). " +
-      "Without content a sensible empty sheet is made (an empty Markdown text, a start notebook, an empty graph or A3 drawing, an empty workbook). name sets the sheet name.",
+      "Without content a sensible empty sheet is made (an empty Markdown text, a start notebook, an empty graph or A3 drawing, an empty workbook). name sets the sheet name (default: the module name with a number).",
     inputSchema: objectSchema({
       kind: { type: "string", enum: [...SOORTEN], description: "Sort of sheet. Default 'calculation'." },
       templateId: { type: "string", minLength: 1, description: "Module to insert (calculation only; see modules_list). Omit for an empty sheet." },
       name: { type: "string", minLength: 1, description: "Name of the new sheet." },
-      source: { type: "string", description: "Calculation text of an empty calculation sheet. Not allowed together with templateId." },
+      source: { type: "string", description: "Calculation text of an empty calculation sheet. Not allowed together with templateId, except with templateId \"canvas\"." },
+      units: {
+        type: "array",
+        description:
+          "Only with templateId \"canvas\": the units to place on the canvas sheet. Each unit is a piece of calculation text at a position in millimetres from the top-left corner of the sheet (snapped to a 5 mm grid). Units are calculated by position: top to bottom, then left to right; a variable exists for everything placed lower.",
+        items: objectSchema({
+          x: { type: "number", description: "Millimetres from the left edge." },
+          y: { type: "number", description: "Millimetres from the top; a new page starts every 245 mm (the first after 220 mm)." },
+          text: { type: "string", minLength: 1, description: "Calculation text of this unit." },
+        }, ["x", "y", "text"]),
+      },
       text: { type: "string", description: "Markdown text (kind=markdown)." },
       code: { type: "string", description: "Marimo notebook code, a .py file (kind=marimo). Default: a start notebook." },
       graph: { type: "object", description: "Graph {versie, nodes, verbindingen} (kind=graph). Default: an empty graph." },
@@ -306,6 +317,9 @@ export const BLADTOOLS: McpToolDef[] = [
       }
       if (soort !== "calculation" && args.source !== undefined) {
         return fout("VALIDATION", "source only applies to a calculation sheet; pass the content of this sort instead (text, code, graph, drawing, path/base64).");
+      }
+      if (soort !== "calculation" && args.units !== undefined) {
+        return fout("VALIDATION", 'units only applies to a calculation sheet with templateId "canvas".');
       }
 
       if (soort === "markdown") {
@@ -435,7 +449,20 @@ export const BLADTOOLS: McpToolDef[] = [
       let bron: string;
       let basis: string;
       let tid: string;
-      if (templateId !== null && templateId !== LEEG_BLAD) {
+      const eenheden = Array.isArray(args.units) ? (args.units as { x: number; y: number; text: string }[]) : null;
+      if (eenheden && templateId !== CANVAS_BLAD) return fout("VALIDATION", 'units is only allowed with templateId "canvas".');
+      if (templateId === CANVAS_BLAD) {
+        // Een canvas-blad: gewone rekentekst met per eenheid een merkteken voor de plek (store/canvasBlad.ts).
+        if (eenheden && typeof args.source === "string") return fout("VALIDATION", "Pass either units or source, not both.");
+        bron = eenheden
+          ? schrijfEenheden(eenheden.map((e, i) => {
+            const plek = klemOpVel(opRaster(e.x), opRaster(e.y));
+            return { id: `e${i + 1}`, x: plek.x, y: plek.y, tekst: e.text };
+          }))
+          : typeof args.source === "string" ? args.source : "";
+        basis = "Canvas";
+        tid = CANVAS_BLAD;
+      } else if (templateId !== null && templateId !== LEEG_BLAD) {
         if (typeof args.source === "string") return fout("VALIDATION", "Pass either templateId or source, not both. Use sheet_set_source afterwards to change the text.");
         const sjabloon = ctx.omgeving.sjabloon(templateId);
         if (sjabloon === undefined) {
@@ -463,6 +490,7 @@ export const BLADTOOLS: McpToolDef[] = [
         name: blad?.naam ?? naam,
         kind: "calculation",
         templateId: tid,
+        ...(tid === CANVAS_BLAD ? { units: leesEenheden(bron).map((e) => ({ id: e.id, x: e.x, y: e.y, text: e.tekst })) } : {}),
         inputs: velden.map((v) => invoerJson(v, blad?.waarden ?? {}, bron, blad?.ontwerpWaarden ?? null)),
         ...(leesfout ? { parseError: leesfout } : {}),
       });

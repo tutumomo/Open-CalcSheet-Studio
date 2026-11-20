@@ -1,0 +1,284 @@
+/* Het formulier van een lastblok op het canvas (LastBlokFormulier.tsx). Het vel is licht,
+   dus de kleuren komen uit de Blueprint-tokens van dat thema, zoals bij de projectgegevens. */
+
+.lb {
+  position: absolute;
+  z-index: 6;
+  box-sizing: border-box;
+  width: 150mm;
+  max-width: 100%;
+  padding: 3mm;
+  font-family: var(--oa-font-body, "Inter", system-ui, sans-serif);
+  font-size: 12px;
+  color: var(--oa-text);
+  background: var(--oa-panel, #fff);
+  border: 1px solid var(--oa-accent, #d97706);
+  border-radius: var(--oa-radius-medium, 6px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+  cursor: default;
+}
+
+.lb input,
+.lb select {
+  box-sizing: border-box;
+  min-width: 0;
+  height: 26px;
+  padding: 0 6px;
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-field, #fff);
+  border: 1px solid var(--oa-border, #d6d3d1);
+  border-radius: var(--oa-radius-small, 4px);
+}
+
+.lb input:focus,
+.lb select:focus {
+  outline: none;
+  border-color: var(--oa-focus, #d97706);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--oa-focus, #d97706) 20%, transparent);
+}
+
+.lb-kop {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 10em;
+  gap: 2mm;
+  margin-bottom: 2mm;
+}
+
+.lb-naam {
+  font-weight: 600;
+}
+
+/* De tabel van het blok, zoals hij op het blad komt: een raster, een gekleurde kop en
+   cellen die je invult zoals in een rekenblad. */
+.lb-tabel {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.lb-tabel th,
+.lb-tabel td {
+  height: 26px;
+  padding: 0;
+  border: 1px solid #1f2937;
+  vertical-align: middle;
+}
+
+.lb-tabel th {
+  padding: 0 6px;
+  font-weight: 500;
+  text-align: left;
+  background: var(--calc-last-kop, #45b5aa);
+}
+
+.lb-tabel th:nth-child(2),
+.lb-tabel th:nth-child(3) { width: 5.6em; }
+.lb-tabel th:nth-child(4) { width: 8.4em; }
+.lb-tabel th:nth-child(5),
+.lb-tabel th:nth-child(6) { width: 2.6em; text-align: center; }
+
+.lb-tabel .lb-th-symbool {
+  padding: 0;
+}
+
+.lb-tabel .lb-th-weg,
+.lb-tabel .lb-td-weg {
+  width: 26px;
+  padding: 0 0 0 2px;
+  background: transparent;
+  border: none;
+}
+
+/* Een cel is zijn invoerveld: geen eigen rand, wel een kader als je erin staat. De
+   velden op het canvas hebben een eigen vlak en lijn (CanvasBladWeergave.css); hier is de
+   cel het vlak, dus deze regels moeten daar bovenuit. */
+.lb .lb-tabel input,
+.lb .lb-tabel select,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel input,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel select {
+  display: block;
+  width: 100% !important;
+  height: 26px;
+  background: transparent !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
+.lb .lb-tabel input:focus,
+.lb .lb-tabel select:focus,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel input:focus,
+.print-opmaak .print-blad.canvas-vlak .lb .lb-tabel select:focus {
+  background: var(--oa-field, #fff) !important;
+  box-shadow: inset 0 0 0 2px var(--oa-focus, #d97706);
+}
+
+.lb-tabel input:disabled {
+  cursor: default;
+}
+
+.lb-symbool {
+  font-family: var(--oa-font-mono, monospace);
+  font-weight: 600;
+}
+
+.lb-getal {
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 11.5px;
+  text-align: right;
+}
+
+.lb-vast {
+  display: block;
+  padding: 0 6px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  color: var(--oa-text-secondary);
+}
+
+.lb-td-bron {
+  display: flex;
+}
+
+.lb .lb-tabel .lb-td-bron .lb-smal {
+  flex: 0 0 22px;
+  width: 22px !important;
+  padding: 0;
+  /* Alleen het pijltje: de tekst van de keuze staat al in de cel ernaast. */
+  text-indent: -99px;
+}
+
+/* G of Q: een stip in de kolom waar de regel in telt. */
+.lb-soort {
+  display: block;
+  width: 100%;
+  height: 26px;
+  padding: 0;
+  font: inherit;
+  font-size: 10px;
+  color: var(--oa-text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.lb-soort:hover:not(.lb-aan) {
+  background: var(--oa-hover, rgba(0, 0, 0, 0.06));
+}
+
+.lb-soort:focus-visible {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--oa-focus, #d97706);
+}
+
+.lb-icoon {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  font-size: 11px;
+  color: var(--oa-text-secondary);
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: var(--oa-radius-small, 4px);
+  cursor: pointer;
+}
+
+.lb-icoon:hover:not(:disabled) {
+  color: var(--oa-error, #b91c1c);
+  border-color: var(--oa-border, #d6d3d1);
+}
+
+.lb-icoon:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+
+.lb-voet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2mm;
+  margin-top: 3mm;
+}
+
+.lb-hint {
+  flex: 1 1 12em;
+  font-size: 10.5px;
+  line-height: 1.35;
+  color: var(--oa-text-secondary);
+}
+
+.lb-knop {
+  height: 26px;
+  padding: 0 9px;
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-panel, #fff);
+  border: 1px solid var(--oa-border, #d6d3d1);
+  border-radius: var(--oa-radius-small, 4px);
+  cursor: pointer;
+}
+
+.lb-knop:hover {
+  background: var(--oa-hover, rgba(0, 0, 0, 0.05));
+}
+
+.lb-plus {
+  color: var(--oa-accent-text, #b45309);
+}
+
+.lb-klaar {
+  color: var(--oa-text-on-accent, #fff);
+  background: var(--oa-accent, #d97706);
+  border-color: var(--oa-accent, #d97706);
+}
+
+.lb-klaar:hover {
+  background: var(--oa-accent-hover, #b45309);
+}
+
+.lb-melding {
+  margin: 2mm 0 0;
+  font-size: 11px;
+  color: var(--oa-warning, #b45309);
+}
+
+/* De balk boven het vel van een canvas-blad: een lastblok erbij. */
+.canvas-balk {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 210mm;
+  max-width: 100%;
+  margin: 0 0 8px;
+  font-size: var(--oa-size-body, 12px);
+  color: var(--oa-workspace-text, var(--oa-text-secondary));
+}
+
+.canvas-balk button {
+  height: 26px;
+  padding: 0 10px;
+  font: inherit;
+  color: var(--oa-text);
+  background: var(--oa-panel, #fff);
+  border: 1px solid var(--oa-border, #d6d3d1);
+  border-radius: var(--oa-radius-small, 4px);
+  cursor: pointer;
+}
+
+.canvas-balk button:hover {
+  border-color: var(--oa-accent, #d97706);
+}
+
+/* Het doorgerekende blok onder het formulier: zo komt het op het blad. */
+.lb-uitkomst {
+  margin-top: 3mm;
+  padding-top: 2mm;
+  border-top: 1px solid var(--oa-border, #d6d3d1);
+  overflow-x: auto;
+}
+
+.lb-uitkomst .calc-last {
+  margin: 0;
+}

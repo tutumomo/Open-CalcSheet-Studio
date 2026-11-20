@@ -11,6 +11,22 @@
  */
 export const MCP_STANDAARD_POORT = 3879;
 
+/**
+ * De identifier van een dev-build (src-tauri/tauri.dev.conf.json, `npm run build:dev-exe`).
+ * Een andere identifier geeft een eigen gegevensmap: eigen voorkeuren, een eigen
+ * token en een eigen herstelstaat. Zo draait een dev-build naast de geïnstalleerde app.
+ */
+// 台灣版：dev-build 也用台灣版自己的 identifier，不會和上游的 dev-build 共用資料夾
+export const DEV_IDENTIFIER = "tw.opencalcsheet.studio.dev";
+
+/**
+ * De poort waarop de brug van deze build standaard luistert: een dev-build één
+ * hoger, zodat hij de poort van de geïnstalleerde app vrij laat.
+ */
+export function standaardPoort(identifier: string | undefined): number {
+  return identifier === DEV_IDENTIFIER ? MCP_STANDAARD_POORT + 1 : MCP_STANDAARD_POORT;
+}
+
 /** De naam waaronder een client de server registreert (en `serverInfo.name`). */
 export const MCP_SERVERNAAM = "open-calcsheet-studio";
 

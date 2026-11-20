@@ -1,0 +1,202 @@
+/* 5.5 Blijvende belastingen als canvas (BelastingCanvas.tsx): losse blokken op een
+   rastervlak. Kleuren en maten uit het rapportpaneel (RapportPanel.css). */
+
+.bc {
+  margin-top: 6px;
+}
+
+.bc-vlak {
+  position: relative;
+  min-height: 160px;
+  margin-top: 10px;
+  border: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.2));
+  border-radius: 6px;
+  background-color: var(--theme-content-bg, #fff);
+  background-image:
+    linear-gradient(to right, var(--oa-border-subtle, rgba(0, 0, 0, 0.05)) 1px, transparent 1px),
+    linear-gradient(to bottom, var(--oa-border-subtle, rgba(0, 0, 0, 0.05)) 1px, transparent 1px);
+  background-size: 20px 20px;
+  overflow: hidden;
+}
+
+.bc-leeg {
+  margin: 0;
+  padding: 56px 16px 0;
+  text-align: center;
+  font-size: 12px;
+  color: var(--theme-text-secondary);
+  pointer-events: none;
+}
+
+/* ── Een blok ────────────────────────────────────────────────────── */
+
+.bc-blok {
+  position: absolute;
+  box-sizing: border-box;
+  padding: 8px 10px 9px;
+  background: var(--theme-bg-lighter, #fff);
+  border: 1px solid var(--theme-border, #d6d3d1);
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+  font-size: 11.5px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+  transition: box-shadow 0.12s, border-color 0.12s;
+}
+
+.bc-blok:hover,
+.bc-blok:focus-visible {
+  border-color: var(--theme-accent, #d97706);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  outline: none;
+}
+
+.bc-blok.sleept {
+  z-index: 3;
+  cursor: grabbing;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.bc-kop {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 5px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.2));
+}
+
+.bc-naam {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bc-symbool {
+  flex-shrink: 0;
+  padding: 0 5px;
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 10.5px;
+  color: var(--theme-accent-tint, #b45309);
+  background: var(--theme-hover, rgba(217, 119, 6, 0.08));
+  border-radius: 3px;
+}
+
+.bc-symbool.fout {
+  color: var(--oa-error, #b91c1c);
+  background: var(--oa-error-tint, rgba(185, 28, 28, 0.1));
+}
+
+.bc-lagen {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.bc-lagen td {
+  padding: 1px 0;
+  color: var(--theme-text-secondary);
+  vertical-align: top;
+}
+
+.bc-lagen td:first-child {
+  max-width: 0;
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.bc-lagen td:last-child {
+  padding-left: 8px;
+  font-family: var(--oa-font-numbers, inherit);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.bc-som {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 5px;
+  padding: 4px 22px 0 0;
+  border-top: 1px solid var(--theme-border, #d6d3d1);
+}
+
+.bc-som span {
+  font-size: 10.5px;
+  color: var(--theme-text-secondary);
+}
+
+.bc-som strong {
+  font-family: var(--oa-font-numbers, inherit);
+  font-size: 12.5px;
+}
+
+/* Het plusje: een laag erbij. */
+.bc-plus {
+  position: absolute;
+  right: 6px;
+  bottom: 6px;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  font-size: 13px;
+  line-height: 1;
+  color: var(--theme-accent, #d97706);
+  background: transparent;
+  border: 1px solid var(--theme-border-subtle, rgba(217, 119, 6, 0.35));
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.bc-plus:hover {
+  color: #fff;
+  background: var(--theme-accent, #d97706);
+}
+
+/* ── De kaart waarin je een blok bewerkt ─────────────────────────── */
+
+.bc-kaart {
+  position: absolute;
+  z-index: 4;
+  box-sizing: border-box;
+  background: var(--theme-bg-lighter, #fff);
+  border: 1px solid var(--theme-accent, #d97706);
+  border-radius: 6px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.2);
+}
+
+.bc-kaart .rapport-kaart {
+  margin: 0;
+  border: 0;
+}
+
+.bc-groep {
+  display: block;
+  padding: 6px 12px 0;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--theme-accent-tint, #b45309);
+}
+
+/* Het symbool in de kop van de kaart: smal, in de letter van de rekentaal. */
+.rapport-panel .rapport-kaart-kop input[type="text"].rapport-symbool {
+  flex: 0 0 5.5em;
+  width: 5.5em;
+  font-family: var(--oa-font-mono, monospace);
+  font-size: 11px;
+}
+
+.rapport-melding {
+  margin: -2px 0 8px;
+  font-size: 11px;
+  color: var(--oa-error, #b91c1c);
+}

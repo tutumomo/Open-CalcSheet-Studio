@@ -71,6 +71,7 @@ Project (IfcProject)                ocss::project
 │  └─ blad (IfcGroup)               ocss::blad, ::rekentekst, ::invoer, ::elementen, ::pdf, ::xlsx, ::markdown, ::uitkomst
 │     └─ figuur                     ocss::figuur: svg, plot, 3d, afbeelding, iframe, ifcx
 └─ Constructierapport               ocss::rapport
+   └─ belasting                     ocss::belasting: symbool, soort (G of Q), waarde en eenheid
 ```
 
 Paden zijn UUID's, afgeleid van de plek in het project, dus gelijk bij elke
@@ -94,7 +95,7 @@ blad staan er de tool, de datum, de herkomst (`versie`, `sha256`, `schema`) en h
 verzoek en het antwoord als JSON-tekst.
 
 Afgeleid, en alleen voor andere lezers: `ocss::blad::uitkomst`, `ocss::figuur`,
-de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het
+`ocss::belasting`, de elementen in de ruimtelijke boom en de geometrie. De app rekent die bij het
 openen opnieuw uit de tekst en de invoer. Zo kan een andere lezer de resultaten
 gebruiken zonder de rekentaal te kennen, en blijft de tekst de waarheid.
 

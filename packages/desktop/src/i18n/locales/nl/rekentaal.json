@@ -322,6 +322,8 @@
     "drieDBlok": "3D-beeld",
     "femBlok": "plaatmodel, gerekend door Open FEM Studio",
     "kernBlok": "rekentool van Open FEM Studio met geneste invoer; de uitkomst komt terug als getallen",
+    "lastBlok": "lijnlast of puntlast: belastingen maal een breedte, oppervlak of lengte, opgeteld als blijvend (G) en veranderlijk (Q)",
+    "lastUitkomst": "uitkomst van een lastblok",
     "iframeBlok": "externe pagina",
     "jsBlok": "JavaScript",
     "keuzelijst": "keuzelijst",

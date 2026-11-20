@@ -42,12 +42,22 @@ interface PrintState {
   pdfPad: string | null;
   /** De laatst weggeschreven PDF, voor de statusbalk. */
   pdfGeschreven: string | null;
+  /**
+   * Stil schrijven (de API): mislukt het, dan komt er geen melding en geen printdialoog,
+   * maar staat de reden in `pdfFout`.
+   */
+  stil: boolean;
+  pdfFout: string | null;
+  /** De grootte van de laatst weggeschreven PDF, in bytes. */
+  pdfBytes: number;
   /** Start het afdrukken; een opgegeven selectie of soort wordt eerst ingesteld. */
   afdrukken: (selectie?: string[] | null, soort?: AfdrukSoort) => void;
   /** Start het afdrukken van het rapport naar een bestand. */
-  rapportNaarPdf: (pad: string) => void;
+  rapportNaarPdf: (pad: string, stil?: boolean) => void;
   /** De PDF staat op schijf. */
-  meldPdfGeschreven: (pad: string) => void;
+  meldPdfGeschreven: (pad: string, bytes?: number) => void;
+  /** Stil schrijven mislukte. */
+  meldPdfFout: (fout: string) => void;
   klaar: () => void;
   /** Opent het voorbeeld; een opgegeven selectie of soort wordt eerst ingesteld. */
   toonVoorbeeld: (selectie?: string[] | null, soort?: AfdrukSoort) => void;
@@ -70,9 +80,13 @@ export const usePrintStore = create<PrintState>((set) => ({
   soort: "bladen",
   pdfPad: null,
   pdfGeschreven: null,
-  afdrukken: (selectie, soort) => set({ bezig: true, pdfPad: null, ...opgegeven(selectie, soort) }),
-  rapportNaarPdf: (pad) => set({ bezig: true, pdfPad: pad, pdfGeschreven: null, ...opgegeven(null, "rapport") }),
-  meldPdfGeschreven: (pad) => set({ pdfGeschreven: pad }),
+  stil: false,
+  pdfFout: null,
+  pdfBytes: 0,
+  afdrukken: (selectie, soort) => set({ bezig: true, pdfPad: null, stil: false, ...opgegeven(selectie, soort) }),
+  rapportNaarPdf: (pad, stil = false) => set({ bezig: true, pdfPad: pad, pdfGeschreven: null, pdfFout: null, stil, ...opgegeven(null, "rapport") }),
+  meldPdfGeschreven: (pad, bytes = 0) => set({ pdfGeschreven: pad, pdfBytes: bytes }),
+  meldPdfFout: (fout) => set({ pdfFout: fout }),
   klaar: () => set({ bezig: false, pdfPad: null }),
   toonVoorbeeld: (selectie, soort) => set({ voorbeeld: true, ...opgegeven(selectie, soort) }),
   sluitVoorbeeld: () => set({ voorbeeld: false }),

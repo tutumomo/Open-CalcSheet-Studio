@@ -28,7 +28,7 @@
  * Draaien:  node scripts/check-rapport.mjs
  */
 import {
-  leegBureau, normaliseerRapport, RAPPORT_VERSIE, standaardRapport, STANDAARD_HUISSTIJL,
+  isBeeldData, leegBureau, normaliseerRapport, RAPPORT_VERSIE, standaardRapport, STANDAARD_HUISSTIJL,
 } from "../packages/desktop/src/rapport/model.ts";
 import { leesPad, zetOpPad } from "../packages/desktop/src/rapport/pad.ts";
 import { datumTekst, eersteDatum, laatsteRevisie, rapportStatus, volgendeCode } from "../packages/desktop/src/rapport/revisies.ts";
@@ -126,8 +126,8 @@ kop("model.ts — standaardrapport");
   gelijk("windcoëfficiënten", r.belastingen.wind.coefficienten.map((c) => c.c), ["0,04", "0,40", "0,80", "1,10"]);
   gelijk("c_s·c_d", r.belastingen.wind.cscd, "1");
   gelijk("belastingklassen", r.belastingen.klassen, [
-    { categorie: "A-vloer", lichteScheidingswanden: "0,80", dakhelling: "", qlast: "" },
-    { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: "2,0" },
+    { categorie: "A-vloer", lichteScheidingswanden: "0,80", dakhelling: "", qlast: "", symbool: "q_k1" },
+    { categorie: "H-dak", lichteScheidingswanden: "", dakhelling: "0", qlast: "2,0", symbool: "q_k2" },
   ]);
   gelijk("geen opbouwen", [r.belastingen.vloerenDaken.length, r.belastingen.wanden.length], [0, 0]);
   gelijk("bureau leeg", r.bureau, leegBureau());
@@ -196,7 +196,7 @@ kop("model.ts — normaliseerRapport");
   gelijk("ontbrekende lijst → standaard", r.uitgangspunten.materialen.length, 6);
   gelijk("wind: hoogte bewaard, c_s·c_d standaard", [r.belastingen.wind.gebouwhoogte, r.belastingen.wind.cscd], ["9", "1"]);
   gelijk("opbouwen gefilterd", r.belastingen.vloerenDaken,
-    [{ soort: "vlak", naam: "Dak", lagen: [{ naam: "dakpannen", d: "", rho: "", p: "0,48" }] }]);
+    [{ soort: "vlak", naam: "Dak", lagen: [{ naam: "dakpannen", d: "", rho: "", p: "0,48" }], symbool: "g_v1" }]);
   gelijk("geen lijst → standaard (leeg)", r.belastingen.wanden, []);
   gelijk("toelichting: alleen tekst", r.toelichting, { "ex-1": "Eigen toelichting." });
   gelijk("inHoofdstuk: alleen ja/nee", r.inHoofdstuk, { "ex-1": true });
@@ -1012,6 +1012,83 @@ kop("materialen.ts — 4.3: geen opmerking over de bevestigingsmiddelen");
   toets("materialen op hun eigen regel, bevestigingsmiddelen compleet en aaneengesloten", mis.volgorde.length === 0, mis.volgorde[0]);
   toets("bevestigingsmiddelen nooit hoger dan de derde regel", mis.verschoven.length === 0, mis.verschoven[0]);
   toets("bevestigingsmiddelen niet verder omlaag dan nodig", mis.onnodig.length === 0, mis.onnodig[0]);
+}
+
+kop("opzet.ts — bladen in bijlage A zonder paragraaf in hoofdstuk Berekeningen");
+{
+  const teksten = standaardTeksten("nl");
+  const bladen = [
+    { id: "pdf1", naam: "Uitdraai spanten" },
+    { id: "a", naam: "Ligger", plek: "hoofdstuk" },
+    { id: "pdf2", naam: "Uitdraai wapening" },
+    { id: "b", naam: "Kolom", plek: "hoofdstuk" },
+  ];
+  const aan = normaliseerRapport({}, VANDAAG, teksten, "nl");
+  const uit = normaliseerRapport({ opmaak: { bijlageParagrafen: false } }, VANDAAG, teksten, "nl");
+  const paragrafen = (r) => bouwOpzet(r, bladen).find((k) => k.inhoud === "berekeningen").kinderen;
+  const h = paragrafen(aan)[0].nummer.split(".")[0];
+  gelijk("standaard: elk blad een paragraaf, in de volgorde van de bladen", paragrafen(aan).map((k) => k.nummer), [1, 2, 3, 4].map((n) => `${h}.${n}`));
+  toets("standaard staat het veld niet in het rapport; uit blijft bewaard", !("bijlageParagrafen" in aan.opmaak) && uit.opmaak.bijlageParagrafen === false
+    && !("bijlageParagrafen" in normaliseerRapport({ opmaak: { bijlageParagrafen: true } }, VANDAAG, teksten, "nl").opmaak));
+  gelijk("uit: de bladen in het hoofdstuk nummeren door, de bijlagebladen hebben geen nummer", paragrafen(uit).map((k) => k.nummer), ["", `${h}.1`, "", `${h}.2`]);
+  gelijk("uit: de bijlagebladen houden hun plek in bijlage A", paragrafen(uit).map((k) => [k.blad.bijlage, k.blad.zonderParagraaf === true]), [["A.1", true], ["", false], ["A.2", true], ["", false]]);
+  gelijk("uit: bijlage A noemt ze nog steeds", bijlageRegels(bouwOpzet(uit, bladen)).map((i) => `${i.nummer} ${i.titel}`), ["A.1 Uitdraai spanten", "A.2 Uitdraai wapening"]);
+  gelijk("uit: de inhoudsopgave noemt de bladen in het hoofdstuk met hun nieuwe nummer", inhoudsopgave(bouwOpzet(uit, bladen), true).filter((i) => i.nummer.startsWith(`${h}.`)).map((i) => `${i.nummer} ${i.titel}`), [`${h}.1 Ligger`, `${h}.2 Kolom`]);
+  gelijk("een blad dat de gebruiker naar het hoofdstuk haalt, krijgt weer een paragraaf", paragrafen({ ...uit, inHoofdstuk: { pdf1: true } }).map((k) => k.nummer), [`${h}.1`, `${h}.2`, "", `${h}.3`]);
+}
+
+kop("model.ts — afbeeldingen bij een paragraaf");
+{
+  const teksten = standaardTeksten("nl");
+  const PNG = "data:image/png;base64,iVBORw0KGgo=";
+  const r = normaliseerRapport({
+    beelden: {
+      projectomschrijving: [
+        { data: PNG, bijschrift: "Situatie", breedte: 60 },
+        { data: PNG, breedte: 5 },
+        { data: PNG, breedte: "250" },
+        { data: "data:text/html;base64,PGI+", bijschrift: "geen afbeelding" },
+        { bijschrift: "zonder data" },
+      ],
+      inleiding: [],
+      rol: "geen lijst",
+    },
+  }, VANDAAG, teksten, "nl");
+  const b = r.beelden.projectomschrijving ?? [];
+  toets("een PNG met bijschrift en breedte blijft", b[0]?.data === PNG && b[0].bijschrift === "Situatie" && b[0].breedte === 60, JSON.stringify(b[0]));
+  toets("de breedte blijft tussen 20 en 100, zonder bijschrift een lege tekst", b[1]?.breedte === 20 && b[1].bijschrift === "" && b[2]?.breedte === 100, JSON.stringify(b.map((x) => x.breedte)));
+  toets("wat geen PNG of JPEG is, of geen data heeft, valt weg", b.length === 3, String(b.length));
+  toets("een lege lijst of iets anders dan een lijst geeft geen sleutel", !("inleiding" in r.beelden) && !("rol" in r.beelden), Object.keys(r.beelden).join());
+  gelijk("een rapport met afbeeldingen is na opnieuw inlezen gelijk", normaliseerRapport(JSON.parse(JSON.stringify(r)), VANDAAG, teksten, "nl").beelden, r.beelden);
+  toets("isBeeldData: PNG en JPEG wel, SVG en een webadres niet", isBeeldData(PNG) && isBeeldData("data:image/jpeg;base64,/9j/4A==") && !isBeeldData("data:image/svg+xml;base64,PHN2Zz4=") && !isBeeldData("https://voorbeeld.nl/a.png"));
+}
+
+// ── Categorie E en eigen q_k en Q_k per regel ───────────────────────────────
+kop("normwaarden.ts — categorie E en eigen waarden per belastingklasse");
+{
+  const N = await import("../packages/desktop/src/rapport/normwaarden.ts");
+  try {
+    const e = categorie("E");
+    gelijk("categorie E bestaat, zonder tabelwaarden, met ψ 1,0 / 0,9 / 0,8", [e?.soort, e?.qk, e?.Qk, e?.psi], ["vloer", null, null, [1.0, 0.9, 0.8]]);
+    const basis = { lichteScheidingswanden: "", dakhelling: "", qlast: "" };
+    gelijk("B zonder eigen waarden: de tabel", N.klasseWaarden({ ...basis, categorie: "B", qk: "", Qk: "" }),
+      { qk: 2.5, Qk: 3.0, psi: [0.5, 0.5, 0.3], eigen: { qk: false, Qk: false } });
+    gelijk("B met eigen q_k: die gaat voor, Q_k blijft de tabel", N.klasseWaarden({ ...basis, categorie: "B", qk: "4", Qk: "" }),
+      { qk: 4, Qk: 3.0, psi: [0.5, 0.5, 0.3], eigen: { qk: true, Qk: false } });
+    gelijk("E met 10 kN/m² en 150 kN (komma mag)", N.klasseWaarden({ ...basis, categorie: "E", qk: "10,0", Qk: "150" }),
+      { qk: 10, Qk: 150, psi: [1.0, 0.9, 0.8], eigen: { qk: true, Qk: true } });
+    gelijk("E zonder invoer: geen waarde, niet 0", N.klasseWaarden({ ...basis, categorie: "E", qk: "", Qk: "" }),
+      { qk: null, Qk: null, psi: [1.0, 0.9, 0.8], eigen: { qk: false, Qk: false } });
+    gelijk("een regel uit een ouder rapport (zonder de velden): de tabel", N.klasseWaarden({ ...basis, categorie: "A-vloer" }).qk, 1.75);
+    gelijk("onbekende categorie: niets", N.klasseWaarden({ ...basis, categorie: "bestaat-niet" }), null);
+    const r = normaliseerRapport({ versie: RAPPORT_VERSIE, taal: "nl", belastingen: { klassen: [
+      { categorie: "E", qk: "110", Qk: "150" }, { categorie: "B" },
+    ] } }, VANDAAG, {});
+    gelijk("normaliseerRapport bewaart qk en Qk; zonder invoer komen de velden er niet bij",
+      r.belastingen.klassen.map((k) => [k.categorie, k.qk ?? null, k.Qk ?? null, "qk" in k]), [["E", "110", "150", true], ["B", null, null, false]]);
+  } catch (err) {
+    toets(`categorie E: ${err.message}`, false, "");
+  }
 }
 
 // ── Uitslag ─────────────────────────────────────────────────────────────────

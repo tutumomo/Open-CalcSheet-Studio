@@ -18,6 +18,10 @@ npm run build
 # Native debugbuild zonder installatiepakket
 npm run build:debug
 
+# Dev-build die naast de geïnstalleerde app draait: eigen identifier, dus eigen
+# voorkeuren en token, en standaard MCP-poort 3880 (zie docs/mcp.md)
+npm run build:dev-exe --workspace=@openaec/calcsheet-studio
+
 # Desktop (Tauri) starten
 npm run tauri:dev --workspace=@openaec/calcsheet-studio
 

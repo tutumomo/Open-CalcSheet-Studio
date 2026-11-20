@@ -48,6 +48,15 @@ const JUPYTER_SOORT = 'jupyter';
 const MARIMO_SOORT = 'marimo';
 const ZIP_MEDIATYPE = 'application/zip';
 
+/** Eén belasting uit hoofdstuk 5: blijvend (G) of veranderlijk (Q), in kN/m² of kN/m. */
+export interface IfcxBelasting {
+  symbool: string;
+  naam: string;
+  soort: 'G' | 'Q';
+  waarde: number;
+  eenheid: 'kN/m2' | 'kN/m';
+}
+
 export interface IfcxProjectInvoer {
   naam: string;
   /** De formaatversie van het projectbestand; komt in `header.dataVersion`. */
@@ -56,6 +65,11 @@ export interface IfcxProjectInvoer {
   bladen: IfcCalcSheet[];
   /** Het constructierapport; komt ongewijzigd in `ocss::rapport`. */
   rapport?: unknown;
+  /**
+   * De belastingen uit hoofdstuk 5 van het rapport, elk als eigen object onder het rapport
+   * (`ocss::belasting`): afgeleid, voor andere lezers. Bij het openen telt alleen het rapport.
+   */
+  belastingen?: IfcxBelasting[];
   verborgen?: { gegevens?: boolean; rapport?: boolean };
 }
 
@@ -505,13 +519,31 @@ export function bouwProjectIfcx(invoer: IfcxProjectInvoer, opties: IfcGeneration
 
   if (heeftRapport) {
     const titel = (invoer.rapport as { titel?: unknown }).titel;
-    data.push({
+    // De belastingen uit hoofdstuk 5 als eigen objecten onder het rapport.
+    const lasten = (invoer.belastingen ?? []).filter((b) => b.symbool && Number.isFinite(b.waarde));
+    const lastNamen = new Set<string>();
+    const lastKinderen: Record<string, string> = {};
+    const lastKnopen: IfcxKnoop[] = lasten.map((b) => {
+      const path = uuidVan(`${rapportP}/belasting/${b.symbool}`);
+      lastKinderen[kindNaam(b.symbool, lastNamen)] = path;
+      return {
+        path,
+        attributes: {
+          [ATTR.naam]: b.naam || b.symbool,
+          [ATTR.belasting]: { symbool: b.symbool, soort: b.soort, waarde: b.waarde, eenheid: b.eenheid },
+        },
+      };
+    });
+    const rapportKnoop: IfcxKnoop = {
       path: rapportP,
       attributes: {
         [ATTR.naam]: typeof titel === 'string' && titel ? titel : 'Constructierapport',
         [ATTR.rapport]: invoer.rapport,
       },
-    });
+    };
+    const lk = metInhoud(lastKinderen);
+    if (lk) rapportKnoop.children = lk;
+    data.push(rapportKnoop, ...lastKnopen);
   }
 
   // ── Schema's: de eigen, plus een beschrijving voor wat van buiten komt ────

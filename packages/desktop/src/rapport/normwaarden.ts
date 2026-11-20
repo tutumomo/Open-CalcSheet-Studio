@@ -194,11 +194,13 @@ export function normVoorBouwjaar(jaar: number): string {
 export interface Categorie {
   id: string; label: Meertalig;
   soort: "vloer" | "dak";
-  /** kN/m²; bij daken de waarde voor een plat dak. */
-  qk: number;
-  /** kN */
-  Qk: number;
+  /** kN/m²; bij daken de waarde voor een plat dak. null: geen tabelwaarde, de gebruiker vult zelf in. */
+  qk: number | null;
+  /** kN; null: geen tabelwaarde, de gebruiker vult zelf in. */
+  Qk: number | null;
   psi: [number, number, number];
+  /** De normverwijzing boven de klasse; zonder: 6.3.1.2. */
+  norm?: string;
 }
 
 // ψ0, ψ1, ψ2 per categorie — NEN-EN 1990 tabel NB.2–A1.1. Bij C geldt ψ0 = 0,6
@@ -208,6 +210,7 @@ const PSI_B: [number, number, number] = [0.5, 0.5, 0.3];
 const PSI_C: [number, number, number] = [0.4, 0.7, 0.6];
 const PSI_C_VERKEER: [number, number, number] = [0.6, 0.7, 0.6];
 const PSI_D: [number, number, number] = [0.4, 0.7, 0.6];
+const PSI_E: [number, number, number] = [1.0, 0.9, 0.8];
 const PSI_H: [number, number, number] = [0, 0, 0];
 
 /** NEN-EN 1991-1-1 NB (NB.1–6.2, NB.4–6.10) en NEN-EN 1990 NB (NB.2–A1.1). */
@@ -227,6 +230,8 @@ export const CATEGORIEEN: readonly Categorie[] = [
   { id: "D-verkeer", label: { en: "Category D: enclosed circulation areas", nl: "Categorie D: omsloten verkeersruimte", "zh-TW": "類別 D：室內走道通道" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
   { id: "D1", label: { en: "Category D1: general retail", nl: "Categorie D1: detailhandel", "zh-TW": "類別 D1：一般零售商店" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
   { id: "D2", label: { en: "Category D2: department stores", nl: "Categorie D2: warenhuizen", "zh-TW": "類別 D2：大型百貨商場" }, soort: "vloer", qk: 4.0, Qk: 7.0, psi: PSI_D },
+  // Opslag: de belasting volgt uit het gebruik. Geen tabelwaarde; q_k en Q_k vult de gebruiker per regel in.
+  { id: "E", label: { en: "Category E: storage areas", nl: "Categorie E: opslagruimtes", "zh-TW": "類別 E：倉儲空間" }, soort: "vloer", qk: null, Qk: null, psi: PSI_E, norm: "6.3.2 NEN-EN 1991-1-1" },
   // Q_k 2,0 kN: de NB-waarde voor gordingen, spanten en liggers direct onder het
   // dakbeschot (NB.4–6.10), de elementen waarvoor deze tabel bedoeld is.
   { id: "H-dak", label: { en: "Category H: roofs", nl: "Categorie H: daken", "zh-TW": "類別 H：非通行屋頂" }, soort: "dak", qk: 1.0, Qk: 2.0, psi: PSI_H },
@@ -234,6 +239,26 @@ export const CATEGORIEEN: readonly Categorie[] = [
 
 export function categorie(id: string): Categorie | undefined {
   return CATEGORIEEN.find((c) => c.id === id);
+}
+
+/** q_k, Q_k en ψ van één belastingklasse: een ingevulde waarde gaat voor de tabel. */
+export interface KlasseWaarden {
+  /** kN/m²; null als er geen tabelwaarde is en niets is ingevuld. */
+  qk: number | null;
+  /** kN; null als er geen tabelwaarde is en niets is ingevuld. */
+  Qk: number | null;
+  psi: [number, number, number];
+  /** Welke waarden de gebruiker zelf invulde. */
+  eigen: { qk: boolean; Qk: boolean };
+}
+
+export function klasseWaarden(bk: { categorie: string; qk?: string; Qk?: string }): KlasseWaarden | null {
+  const cat = categorie(bk.categorie);
+  if (!cat) return null;
+  const qk = getal(bk.qk);
+  const Qk = getal(bk.Qk);
+  const eigen = { qk: Number.isFinite(qk), Qk: Number.isFinite(Qk) };
+  return { qk: eigen.qk ? qk : cat.qk, Qk: eigen.Qk ? Qk : cat.Qk, psi: cat.psi, eigen };
 }
 
 /**

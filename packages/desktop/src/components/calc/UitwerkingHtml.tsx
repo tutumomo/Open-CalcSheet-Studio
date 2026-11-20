@@ -3,7 +3,9 @@ import { useDrieDAfdruk } from "./drieDBlok";
 import { useIfcxAfdruk } from "./ifcxBlok";
 import { useIframeAfdruk } from "./iframeBlok";
 import { useJsAfdruk } from "./jsBlok";
+import { metDecimaalKomma, taalMetKomma } from "@ifc-calc/core";
 import { schoonUitwerking } from "./uitwerkingOpschonen";
+import { useAfdrukTaal } from "./afdrukTaal";
 
 /**
  * De uitwerking van een blad op papier. Een 3D-blok (`@3d`, `@ifcx`) wordt hier een
@@ -20,6 +22,9 @@ export function UitwerkingHtml({ html, bladId }: { html: string; bladId?: string
   useJsAfdruk(ref, html, bladId);
   // Hetzelfde object zolang de html gelijk blijft: React 19 zet de html bij
   // elk nieuw object opnieuw neer, en dan was de afbeelding weer weg.
-  const inhoud = useMemo(() => ({ __html: schoonUitwerking(html) }), [html]);
+  // Op papier in een taal met een komma staan de getallen met een komma; de rekentaal en
+  // het scherm houden de punt.
+  const komma = taalMetKomma(useAfdrukTaal());
+  const inhoud = useMemo(() => ({ __html: komma ? metDecimaalKomma(schoonUitwerking(html)) : schoonUitwerking(html) }), [html, komma]);
   return <div ref={ref} className="ifc-calc" dangerouslySetInnerHTML={inhoud} />;
 }

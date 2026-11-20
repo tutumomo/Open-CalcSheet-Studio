@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import Icoon from "./Icoon";
 import { getSetting, setSetting } from "../store";
@@ -6,8 +5,11 @@ import { useModuleKiezer } from "../store/moduleKiezer";
 import { modulesPerTemplate } from "./calc/projectTree";
 import "./Welkom.css";
 
-/** Instelling: het welkomstpaneel bij het opstarten tonen. */
+/** Instelling: het welkomstpaneel is nog niet getoond. Na de eerste keer staat hij uit. */
 const INSTELLING = "welkomBijStart";
+
+/** Dezelfde aantekening in de opslag van de browser, voor de app zonder bureaubladschil. */
+const GEZIEN = "ocss.welkomGezien";
 
 /** Het voorbeeldblad uit de bibliotheek dat de rekentaal laat zien. */
 const VOORBEELD = "rekentaal-demo";
@@ -27,22 +29,12 @@ const SYNTAX: [string, string][] = [
 /**
  * Welkomstpaneel onderin de werkruimte: hoe de app werkt, een voorbeeld van
  * code naar uitkomst, en een snelle start (voorbeeldblad, module, leeg blad).
- * Verschijnt bij het opstarten tot je dat uitzet; via Help › Aan de slag
+ * Verschijnt alleen de eerste keer dat iemand de app opent; via Help › Aan de slag
  * altijd terug.
  */
 export default function Welkom({ onSluit }: { onSluit: () => void }) {
   const { t } = useTranslation("werkruimte");
   const { t: tc } = useTranslation();
-  const [bijStart, setBijStart] = useState(true);
-
-  useEffect(() => {
-    getSetting<boolean>(INSTELLING, true).then(setBijStart);
-  }, []);
-
-  const zetBijStart = (aan: boolean) => {
-    setBijStart(aan);
-    void setSetting(INSTELLING, aan);
-  };
 
   const voorbeeld = () => {
     if (modulesPerTemplate[VOORBEELD]) useModuleKiezer.getState().voegToe(VOORBEELD);
@@ -75,10 +67,6 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
             <i>M</i><sub>Ed</sub> = <span className="welkom-breuk"><span>6.2 · 4.5²</span><span>8</span></span> = <b>15.69 kNm</b>
           </span>
         </div>
-        <label className="welkom-bijstart">
-          <input type="checkbox" checked={bijStart} onChange={(e) => zetBijStart(e.target.checked)} />
-          {t("welkom.bijStart")}
-        </label>
       </div>
 
       <div className="welkom-acties">
@@ -118,7 +106,25 @@ export default function Welkom({ onSluit }: { onSluit: () => void }) {
   );
 }
 
-/** Lees bij het opstarten of het welkomstpaneel moet verschijnen. */
-export function welkomBijStart(): Promise<boolean> {
-  return getSetting<boolean>(INSTELLING, true);
+/**
+ * Moet het welkomstpaneel bij dit opstarten verschijnen? Alleen de eerste keer: daarna
+ * staat de instelling uit en blijft hij uit.
+ */
+export async function welkomBijStart(): Promise<boolean> {
+  // In de browser zijn er geen voorkeuren op schijf: daar onthoudt de browser zelf dat het paneel er was.
+  try {
+    if (localStorage.getItem(GEZIEN) === "1") return false;
+  } catch {
+    /* geen opslag (privévenster): dan alleen de instelling */
+  }
+  const eersteKeer = await getSetting<boolean>(INSTELLING, true);
+  if (eersteKeer) {
+    await setSetting(INSTELLING, false);
+    try {
+      localStorage.setItem(GEZIEN, "1");
+    } catch {
+      /* zie hierboven */
+    }
+  }
+  return eersteKeer;
 }

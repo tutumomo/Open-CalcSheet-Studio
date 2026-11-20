@@ -84,6 +84,10 @@ curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
 curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
   -d '{"path": "C:/projecten/hal/fem-rapport.pdf"}' $API/sheets/pdf
 
+# Een afbeelding onder de tekst van een rapportparagraaf (PNG of JPEG; breedte in % van de tekst)
+curl -X PATCH -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
+  -d '{"path": "beelden.projectomschrijving", "value": [{"path": "C:/projecten/hal/situatie.png", "bijschrift": "Situatie", "breedte": 80}]}' $API/report
+
 # Opslaan als, IFC exporteren
 curl -X POST -H "Authorization: Bearer $T" -H "Content-Type: application/json" \
   -d '{"path": "C:/projecten/hal/hal"}' $API/project/save-as
@@ -180,6 +184,7 @@ Leeg betekent: niets op papier, dus een bestaand rapport verandert niet.
 | `GET /export/ifc` | `ifc_get` | lezen | **format** (`ifc`/`ifcx`), id |
 | `POST /export/ifc` | `export_ifc` | bestand | **format**, **path**, id |
 | `POST /export/pdf` | `export_pdf` | bestand | **path**, ids |
+| `POST /report/export/pdf` | `report_export_pdf` | bestand | **path** |
 | `POST /print` | `print` | beeld | **what** (`report`/`sheets`), ids |
 | `GET /view` | `view_get` | lezen | — |
 | `PUT /view` | `view_set` | beeld | **view** |
@@ -231,16 +236,11 @@ Origin-weigering en de binding aan 127.0.0.1 gelden ook voor deze route.
 
 ## Wat er niet (helemaal) kan
 
-- **PDF naar een pad.** Het volledige constructierapport met de tekeningen komt
-  uit de webview. De knop Rapport in het lint schrijft het op Windows zelf weg:
-  één klik plus een bestandsnaam, zonder printdialoog (WebView2 `PrintToPdf`, zie
-  `src-tauri/src/rapport_pdf.rs`). Op een ander platform, of als dat mislukt, opent
-  de printdialoog van het systeem. De API heeft die weg niet: `print` opent de
-  printdialoog in de app (rapport of bladen), en de gebruiker kiest daar een
-  PDF-printer en de plek. Ook losse bladen en Ctrl+P gaan via die dialoog.
-  `export_pdf` schrijft wél zelf een PDF, maar alleen in een build met de
-  rapportengine (`--features rapportengine`), en dan zonder tekeningen; zonder die
-  engine geeft hij 501.
+- **PDF naar een pad.** Op Windows en Linux schrijft `POST /api/v1/report/export/pdf`
+  het volledige constructierapport met tekeningen rechtstreeks naar een bestand.
+  Ook de knop Rapport gebruikt deze afdrukfunctie. De route `print` opent de
+  systeemdialoog. De afzonderlijke route `export_pdf` vereist de optionele
+  rapportengine en levert een PDF zonder tekeningen.
 - **Dialogen en vragen.** De API vraagt nooit iets: waar de app een vraag stelt
   (wijzigingen weggooien, een PDF boven 20 MB) geeft de API 409 of 400 en
   verwacht hij `force: true`.
@@ -252,3 +252,21 @@ Origin-weigering en de binding aan 127.0.0.1 gelden ook voor deze route.
 - **Weergave.** `view_set` kiest code/visueel/uitwerking, afdrukvoorbeeld of IFC
   in de werkruimte; het lint springt daarbij niet mee naar de tab IFC.
 - **Bureauprofiel en sneltoetsen** zijn (nog) niet via de API te zetten.
+
+## Windows zonder zichtbaar venster
+
+Start de geïnstalleerde executable met `--headless` in een aangemelde Windows-sessie.
+De WebView blijft actief. De REST- en MCP-instellingen, poort en autorisatie zijn
+dezelfde als bij een gewone start. Sluit eerst de interactieve instantie als
+die de ingestelde poort gebruikt. Vraag `GET /api/v1/openapi.json` op zodra de
+brug gereed is. Open een project via de API en gebruik
+`POST /api/v1/report/export/pdf` met het absolute uitvoerpad in het veld
+`path`. Beëindig na de export het gestarte proces.
+
+## Linux zonder zichtbaar venster
+
+Gebruik op een Linux-server met Xvfb en xauth
+`xvfb-run -a open-calcsheet-studio --headless`. De WebView krijgt een virtueel
+scherm. Gebruik dezelfde REST-route als op Windows voor het openen van het project
+en vervolgens `POST /api/v1/report/export/pdf` met een absoluut bestandspad.
+WebKitGTK schrijft de afdruk naar dat pad met de virtuele GTK-bestandsprinter.

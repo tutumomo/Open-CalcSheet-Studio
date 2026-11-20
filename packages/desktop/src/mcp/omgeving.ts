@@ -19,6 +19,7 @@ import { rekenDoor } from "./rekenen";
 import { wisSessie } from "../rekenen/toetsCache";
 import { appKoppeling, type SplitModus } from "./appKoppeling";
 import { voerNotebookUit } from "./notebookUitvoer";
+import { kanRapportPdfSchrijven } from "../tauri/rapportPdf";
 import { McpFout, type McpBibliotheekModule, type McpInstellingen, type McpOmgeving, type McpWeergave } from "./contracts";
 
 /**
@@ -307,6 +308,25 @@ export const liveOmgeving: McpOmgeving = {
 
   afdruk: {
     start: (soort, selectie) => usePrintStore.getState().afdrukken(selectie, soort),
+    rapportPdf: async (pad) => {
+      if (!(await kanRapportPdfSchrijven())) {
+        throw new McpFout("NOT_AVAILABLE", "This app cannot write the report PDF by itself (Windows or Linux desktop app only). Use the print tool and choose a PDF printer.");
+      }
+      if (usePrintStore.getState().bezig) throw new McpFout("CONFLICT", "The app is already printing. Try again when it has finished.");
+      // Dezelfde weg als de knop Rapport (PDF): App.tsx zet de vellen klaar en schrijft ze weg.
+      usePrintStore.getState().rapportNaarPdf(pad, true);
+      await new Promise<void>((klaar) => {
+        const stop = usePrintStore.subscribe((s) => {
+          if (!s.bezig) {
+            stop();
+            klaar();
+          }
+        });
+      });
+      const { pdfGeschreven, pdfFout, pdfBytes } = usePrintStore.getState();
+      if (pdfGeschreven !== pad) throw new McpFout("INTERNAL", `The report PDF was not written: ${pdfFout ?? "unknown reason"}`);
+      return pdfBytes;
+    },
     pdfViaEngine: async (ids, pad) => {
       const { exemplaren, gegevens, projectNaam } = useProjectStore.getState();
       const scope = projectScope(gegevens);

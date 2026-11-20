@@ -4,6 +4,8 @@ import { useProjectStore, type Exemplaar } from "../../../store/projectStore";
 import { useBureauStore } from "../../../store/bureauProfiel";
 import { projectScope, type ProjectGegevens } from "../../../store/projectGegevens";
 import { evalOptiesVan } from "../../../store/projectEenheden";
+import { projectBladVan } from "../../../store/projectBlad";
+import { gebruikteSymbolen } from "../../../rapport/belastingBronnen";
 import type { BeeldEenheden } from "../../calc/beeldEenheden";
 import { useBeeldEenheden } from "../../calc/useBeeldEenheden";
 import type { BureauProfiel, Rapport } from "../../../rapport/model";
@@ -93,6 +95,8 @@ export interface RapportWeergave {
    * (tw/blok.ts). Leeg zonder kop- of voetregel.
    */
   kopvoet: { kop: string; voet: string };
+  /** De symbolen van hoofdstuk 5 die een blad gebruikt: alleen die staan achter de naam (belastingBronnen.ts). */
+  symbolen: ReadonlySet<string>;
 }
 
 /**
@@ -222,5 +226,10 @@ export function useRapportWeergave(): RapportWeergave {
   }, [rapport, opzet.knopen, nummerTabellen, nummerFiguren]);
   const kopvoet = useKopvoet();
 
-  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul, bijschriften: nummers, kopvoet };
+  const symbolen = useMemo(
+    () => gebruikteSymbolen(rapport.belastingen, [...exemplaren.map((ex) => ex.source), projectBladVan(gegevens)]),
+    [rapport.belastingen, exemplaren, gegevens],
+  );
+
+  return { taal, ...woorden, rapport, gegevens, projectNaam, bureau, bladen, ...opzet, invul, bijschriften: nummers, kopvoet, symbolen };
 }

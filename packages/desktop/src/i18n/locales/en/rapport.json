@@ -106,6 +106,15 @@
     "leeg": "No revisions yet: the cover page then leaves date and status blank.",
     "rapportstatus": "Report status:"
   },
+  "beelden": {
+    "afbeelding": "Image",
+    "toevoegen": "+ Image",
+    "bijschrift": "Caption",
+    "breedte": "Width (%)",
+    "verwijder": "Remove",
+    "teGroot": "{{naam}} is larger than 8 MB; reduce the image first.",
+    "geenBeeld": "{{naam}} is not a PNG or JPEG."
+  },
   "teksten": {
     "intro": "One text per part. Standard text ▾ picks a built-in or custom variant. An optional block left empty is omitted from the report.",
     "optioneelLeeg": "Leave empty to omit this part.",
@@ -191,7 +200,7 @@
     "vorigeNaam": "This text mentions the program's previous name ({{naam}}). Standard text ▾ has the text with the current name, Open CalcSheet Studio."
   },
   "belastingen": {
-    "intro": "Grey values follow from the project data and the standard. The build-ups in 5.5 only appear in the report; they are not (yet) used in the sheets.",
+    "intro": "Grey values follow from the project data and the standard. The load classes in 5.4 and the blocks in 5.5 have a symbol: under it their value exists in every sheet.",
     "platDak": "Flat roof",
     "platDakKlein": "flat roof",
     "sneeuwHint": "Text below the snow load.",
@@ -229,7 +238,11 @@
     "qlast": "Roof q-load",
     "bijAlfa": "at α",
     "dakhellingInvullen": "— (enter the roof pitch)",
-    "qkDirect": "{{qk}}; directly below the roof decking {{direct}}"
+    "qkDirect": "{{qk}}; directly below the roof decking {{direct}}",
+    "zelfInvullen": "— (enter a value)",
+    "verplicht": "enter a value",
+    "leegIsTabel": "empty = table",
+    "eigenWaarde": "own value"
   },
   "opbouw": {
     "geen": "No build-ups in this group yet.",
@@ -254,7 +267,28 @@
     "berekend": "calculated",
     "totaal": "Total",
     "aantalLagen_one": "{{count}} layer",
-    "aantalLagen_other": "{{count}} layers"
+    "aantalLagen_other": "{{count}} layers",
+    "symboolLabel": "Symbol in the sheets",
+    "symboolUitleg": "Under this symbol the total of this block exists in every sheet, for example g_v1",
+    "symboolOngeldig": "Not a valid symbol: start with a letter, at least two characters, at most one part after an underscore (g_v1).",
+    "symboolBestaat": "The symbol {{symbool}} already belongs to another load.",
+    "symboolDubbel": "The symbol {{symbool}} occurs twice: the sheets use the first. Give this block its own symbol.",
+    "klaar": "Done"
+  },
+  "blokken": {
+    "uitleg": "Each block is a load with a name and layers. Click a block to edit it, drag it to move it, the plus adds a layer. Under its symbol (such as g_v1) the total exists in every sheet, and a load block in a sheet picks it from a list.",
+    "vloerDak": "Floor or roof",
+    "wand": "Wall",
+    "gevel": "Facade",
+    "uitBibliotheek": "From library",
+    "zoekVloerDak": "Search, as floor or roof…",
+    "zoekWand": "Search, as wall…",
+    "zoekUitleg": "a row from the weights library as a new block",
+    "rangschik": "Arrange",
+    "rangschikUitleg": "Put all blocks neatly below each other again; their own positions are dropped",
+    "leeg": "No loads yet. Add one with the buttons above.",
+    "blokUitleg": "Click to edit, drag to move",
+    "inBladen": "In the sheets: {{symbool}}"
   },
   "berekeningen": {
     "intro": "Each sheet in the project gets a section with a summary and your own notes. The full output goes in appendix A, unless you include it in the chapter itself.",
@@ -267,6 +301,8 @@
     "staatInHoofdstuk": "The full output appears directly below the notes.",
     "staatInBijlage": "The full output is in appendix {{letter}}.",
     "koppenInInhoud": "Headings from the text in the table of contents",
+    "bijlageParagrafen": "Sheets in appendix A also as a section in this chapter",
+    "bijlageParagrafenUitleg": "Every sheet with its calculation in appendix A then has a section in this chapter, with the reference to the appendix. When off, those sheets are only in appendix A and do not count in the numbering of this chapter.",
     "bladenInInhoud": "Sheets in the table of contents",
     "bladenInInhoudUitleg": "The table of contents at the front then also lists every sheet with its page: under this chapter or under appendix A. When off, the sheets are only listed in the table of contents of this chapter."
   },

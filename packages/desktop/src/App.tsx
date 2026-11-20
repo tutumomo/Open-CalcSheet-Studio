@@ -18,7 +18,8 @@ import { designerVoor } from "./components/calc/designerKeuze";
 import { invoerSchermVoor } from "./components/calc/invoer/invoerScherm";
 import ProjectGegevensPanel from "./components/calc/ProjectGegevensPanel";
 import RapportPanel from "./components/rapport/RapportPanel";
-import { vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { klaargezetteKoppen, vellenNaarPdf, wachtOpDrukbeelden, wachtOpVellen, zetDrukvellenKlaar } from "./components/rapport/afdruk/drukvellen";
+import { schrijfRapportPdf } from "./tauri/rapportPdf";
 import AfdrukVoorbeeld from "./components/calc/AfdrukVoorbeeld";
 import ModuleKiezer from "./components/calc/ModuleKiezer";
 import BladBijwerken from "./components/calc/BladBijwerken";
@@ -104,11 +105,8 @@ export default function App() {
   const [feedbackOpen, setFeedbackOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState("general");
   const [helpOpen, setHelpOpen] = useState(false);
-  // Het welkomstvenster bij het opstarten, tot je het uitzet (Welkom.tsx).
+  // Het welkomstvenster, alleen de eerste keer dat de app opent (Welkom.tsx).
   const [welkomOpen, setWelkomOpen] = useState(false);
-  useEffect(() => {
-    welkomBijStart().then((tonen) => { if (tonen) setWelkomOpen(true); });
-  }, []);
   const openSettings = useCallback((tab = "general") => {
     setSettingsTab(tab);
     setSettingsOpen(true);
@@ -141,17 +139,21 @@ export default function App() {
     // In de hoofdmodus (`--headless`) en bij een eenmalige CLI-opdracht
     // (`eval`／`render`) komt er geen venster: `startCli` voert de opdracht uit
     // en laat het proces met de juiste exitcode stoppen (docs/tw/OCSS接入實作計畫.md, P0-1).
-    import("./mcp/cli")
-      .then(({ startCli }) => startCli())
-      .then((zonderVenster) => {
-        if (zonderVenster) return;
-        return import("@tauri-apps/api/window").then(({ getCurrentWindow }) => {
-          getCurrentWindow().show();
-        });
-      })
-      .catch(() => {
-        // Browser fallback (npm run dev without Tauri)
-      });
+    // 台灣版沿用 `startCli` 判斷是否開視窗（涵蓋上游的 `toon_werkvenster`）；
+    // 有視窗時才依上游規則，只在第一次開啟 App 時顯示歡迎面板。
+    const zichtbaar: Promise<boolean> = "__TAURI_INTERNALS__" in window
+      ? import("./mcp/cli")
+        .then(({ startCli }) => startCli())
+        .then(async (zonderVenster) => {
+          if (zonderVenster) return false;
+          const { getCurrentWindow } = await import("@tauri-apps/api/window");
+          await getCurrentWindow().show();
+          return true;
+        })
+      : Promise.resolve(true); // Browser fallback (npm run dev without Tauri)
+    zichtbaar.then(async (tonen) => {
+      if (tonen && await welkomBijStart()) setWelkomOpen(true);
+    }).catch(console.error);
     return () => window.removeEventListener("units-changed", onUnits);
   }, []);
 
@@ -214,8 +216,15 @@ export default function App() {
         const opruimen = zetDrukvellenKlaar(vellen);
         try {
           await wachtOpDrukbeelden();
-          const { pdfPad, meldPdfGeschreven } = usePrintStore.getState();
-          if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
+          const { pdfPad, stil, meldPdfGeschreven, meldPdfFout } = usePrintStore.getState();
+          if (pdfPad && stil) {
+            // Via de API: geen melding en geen printdialoog; de aanroeper krijgt de reden.
+            try {
+              meldPdfGeschreven(pdfPad, await schrijfRapportPdf(pdfPad, klaargezetteKoppen()));
+            } catch (err) {
+              meldPdfFout(String(err));
+            }
+          } else if (pdfPad && (await vellenNaarPdf(pdfPad))) meldPdfGeschreven(pdfPad);
           else window.print();
         } finally {
           opruimen();
@@ -224,7 +233,9 @@ export default function App() {
         }
       })
       .catch((err) => {
-        alert((err as Error).message);
+        const { stil, meldPdfFout } = usePrintStore.getState();
+        if (stil) meldPdfFout((err as Error).message);
+        else alert((err as Error).message);
         printKlaar();
       });
     return () => {

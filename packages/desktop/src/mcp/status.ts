@@ -25,6 +25,8 @@ export interface McpStatus {
   geladen: boolean;
   aan: boolean;
   poort: number;
+  /** De poort die deze build zonder instelling gebruikt (koppeling.ts, `standaardPoort`). */
+  standaard: number;
   token: string;
   alleenLezen: boolean;
   /** Tijdelijk: tools geven een melding in plaats van iets te doen. Niet bewaard. */
@@ -47,6 +49,7 @@ export const useMcpStatus = create<McpStatus>(() => ({
   geladen: false,
   aan: true,
   poort: MCP_STANDAARD_POORT,
+  standaard: MCP_STANDAARD_POORT,
   token: "",
   alleenLezen: false,
   gepauzeerd: false,

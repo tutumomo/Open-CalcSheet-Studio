@@ -13,14 +13,14 @@
  *
  * Instellingen (preferences.json, via getSetting/setSetting):
  *   mcpAan          standaard true — de server staat standaard aan
- *   mcpPoort        standaard MCP_STANDAARD_POORT (3879)
+ *   mcpPoort        standaard 3879; een dev-build 3880 (`standaardPoort` in koppeling.ts)
  *   mcpToken        bij de eerste start gemaakt; "Nieuw token" vervangt hem
  *   mcpAlleenLezen  standaard false
  */
 import { getSetting, setSetting } from "../store";
 import { version } from "../../package.json";
 import { useMcpStatus, type McpStatus } from "./status";
-import { MCP_SERVERNAAM, MCP_STANDAARD_POORT, geldigePoort, nieuwToken } from "./koppeling";
+import { MCP_SERVERNAAM, geldigePoort, nieuwToken, standaardPoort } from "./koppeling";
 import { maakRequestHandler, maakSessies, type McpRequestEvent } from "./requestHandler";
 import { verwerkMcpBericht } from "./dispatcher";
 import { verwerkRest } from "./rest";
@@ -173,10 +173,23 @@ async function stopNu(): Promise<void> {
 
 let init: Promise<void> | null = null;
 
+/** De identifier van deze build (tauri.conf.json); buiten de desktop-app is er geen. */
+async function eigenIdentifier(): Promise<string | undefined> {
+  if (!isTauri()) return undefined;
+  try {
+    const { getIdentifier } = await import("@tauri-apps/api/app");
+    return await getIdentifier();
+  } catch {
+    return undefined;
+  }
+}
+
 async function laadInstellingen(): Promise<void> {
+  // Een dev-build heeft een eigen identifier, en daarmee een eigen standaardpoort.
+  const standaard = standaardPoort(await eigenIdentifier());
   const [aan, poort, token, alleenLezen] = await Promise.all([
     getSetting<boolean>(SLEUTEL.aan, true),
-    getSetting<number>(SLEUTEL.poort, MCP_STANDAARD_POORT),
+    getSetting<number>(SLEUTEL.poort, standaard),
     getSetting<string>(SLEUTEL.token, ""),
     getSetting<boolean>(SLEUTEL.alleenLezen, false),
   ]);
@@ -188,7 +201,8 @@ async function laadInstellingen(): Promise<void> {
   zet({
     geladen: true,
     aan: aan !== false,
-    poort: geldigePoort(poort) ? poort : MCP_STANDAARD_POORT,
+    poort: geldigePoort(poort) ? poort : standaard,
+    standaard,
     token: t,
     alleenLezen: alleenLezen === true,
   });

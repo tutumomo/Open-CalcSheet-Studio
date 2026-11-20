@@ -32,6 +32,12 @@ De instellingen staan in `preferences.json` in de app-gegevensmap
 (`%APPDATA%\studio.openstructuralcalculation.app\` op Windows) onder
 `mcpAan`, `mcpPoort`, `mcpToken` en `mcpAlleenLezen`.
 
+Een dev-build (`npm run build:dev-exe`, `src-tauri/tauri.dev.conf.json`) heeft de
+identifier `studio.openstructuralcalculation.dev`. Hij leest en schrijft daardoor
+zijn eigen `preferences.json` (`%APPDATA%\studio.openstructuralcalculation.dev\`),
+met een eigen token, en luistert standaard op poort 3880. Zo draait hij naast de
+geïnstalleerde app, die op 3879 blijft.
+
 ## Verbinden
 
 Op de tab staan beide regels kant-en-klaar, met het juiste token en de juiste
@@ -76,7 +82,7 @@ De volledige lijst met argumenten en de bijbehorende REST-routes staat in
 | Bladen | `sheets_list`, `sheet_add`, `sheet_add_pdf`, `sheet_get`, `sheet_set_source`, `sheet_set_input`, `sheet_reset_input`, `sheet_set_pdf`, `sheet_set_markdown`, `sheet_set_graph`, `sheet_set_drawing`, `sheet_set_spreadsheet`, `sheet_set_jupyter`, `sheet_set_marimo`, `sheet_rename`, `sheet_duplicate`, `sheet_move`, `sheet_remove`, `sheet_select`, `sheet_evaluate`, `sheet_read`, `sheet_run`, `sheet_drawing`, `sheet_insert_formula` |
 | Rekenen | `calc_evaluate`, `calc_evaluate_batch`, `job_start`, `job_status`, `job_cancel` |
 | Formules | `formulas_list`, `formula_get` |
-| Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `print` |
+| Export en afdrukken | `ifc_get`, `export_ifc`, `export_pdf`, `report_export_pdf`, `print` |
 | Weergave en instellingen | `view_get`, `view_set`, `settings_get`, `settings_set` |
 
 `id` is een blad-id uit `project_get` of `sheets_list`. Elke wijziging van het

@@ -3,6 +3,7 @@ import { gebruikteToetsingen } from "../rekenen/toetsCache.ts";
 import { legeGegevens, type ProjectGegevens } from "./projectGegevens.ts";
 import type { Exemplaar, Verborgen } from "./projectStore";
 import { normaliseerRapport, type Rapport } from "../rapport/model.ts";
+import { belastingenVoorIfc } from "../rapport/belastingBronnen.ts";
 import { datumTekst } from "../rapport/revisies.ts";
 import { standaardTeksten } from "../rapport/standaardteksten.ts";
 import { leesRekenversie } from "../components/calc/bladVersie.ts";
@@ -108,6 +109,7 @@ export function bouwProjectBestand(payload: ProjectPayload, bladen: IfcCalcSheet
     formaatversie: PROJECT_FORMAAT_VERSIE,
     gegevens: payload.gegevens,
     rapport: payload.rapport,
+    belastingen: belastingenVoorIfc(payload.rapport),
     verborgen: payload.verborgen,
     bladen: payload.exemplaren.map((ex): IfcCalcSheet => ({
       nodes: [],
