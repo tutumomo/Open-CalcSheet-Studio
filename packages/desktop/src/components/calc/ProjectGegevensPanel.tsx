@@ -1,5 +1,5 @@
 import { ucTekst } from "./bladLezen";
-import { useCallback, useMemo, useState, type ReactNode } from "react";
+import { lazy, Suspense, useCallback, useMemo, useState, type ReactNode } from "react";
 import { Trans, useTranslation } from "react-i18next";
 import { useProjectStore } from "../../store/projectStore";
 import { useProjectScope } from "../../store/actiefBlad";
@@ -22,6 +22,8 @@ import "./ProjectGegevensPanel.css";
  * teruggeeft; de vertaling gebeurt hier, bij het tonen. Een kop of veld zonder vertaling
  * toont de tekst uit de store.
  */
+const ProjectModelVenster = lazy(() => import("./ProjectModelVenster"));
+
 const GROEP_SLEUTELS: Record<string, string> = {
   "Units": "eenheden",
   "Calculation method": "rekenwijze",
@@ -86,6 +88,7 @@ export default function ProjectGegevensPanel() {
   const scope = useProjectScope();
   // De windgebied-kaart is een hulpmiddel, geen invoerveld — inklapbaar zodat
   // het formulier compact blijft voor wie het gebied al weet.
+  const [modelOpen, zetModelOpen] = useState(false);
   const [kaartOpen, setKaartOpen] = useState(false);
 
   const cc = parseFloat(gegevens.CC ?? "2");
@@ -192,6 +195,8 @@ export default function ProjectGegevensPanel() {
       <header className="pg-kop">
         <h1>{t("algemeen.projectgegevens")}</h1>
         <p>{exemplaren.length === 0 ? t("gegevens.introGeen") : t("gegevens.intro", { count: exemplaren.length })}</p>
+        <button type="button" onClick={() => zetModelOpen(true)}>{t("projectmodel.titel")}</button>
+        {modelOpen && <Suspense fallback={null}><ProjectModelVenster sluit={() => zetModelOpen(false)} /></Suspense>}
       </header>
 
       <section className="pg-vak">

@@ -7,6 +7,7 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 
 ## Nog niet uitgebracht
 
+- 台灣版（上游同步 v2026.47.3）：納入上游 v2026.47.3 的 3D 專案模型。專案資料頁可依比例顯示已計算的構件、跨距、斷面與分攤的樓板條帶；可見性、位置與連結的計算表尺寸會存入專案。新增的介面文字（`werkruimte:projectmodel`，25 個鍵）都已補上繁體中文。
 - 台灣版（報告材料規格）：台灣架構（`opzetSoort === "tw"`）的「採用材料規格」與「緊結件」改用台灣現行規範與常用預設值（場鑄混凝土 `fc'=280 kgf/cm²`、鋼筋 `SD420W`、結構用鋼材 `SN490B`、無收縮水泥砂漿 `fc'=420 kgf/cm²`、木材 `針葉樹Ⅱ類（普通）`；高強度螺栓 `F10T`、普通螺栓 `A307`、化學錨栓 `SUS304`），並於兩表的種類與強度等級／材質等級欄提供依種類聯動的可輸入下拉建議清單；列印表格依台灣規格加寬強度等級欄（`KOLOMMEN_TW`）。歐規與舊版已存檔報告維持不變。
 - 台灣版（上游同步 v2026.47.2）：納入上游 v2026.47.0～47.2 的報告 PDF 書籤與可點連結、報告圖片與圖說、「附錄 A 的表單也在本章列為小節」開關、載重區塊（`@last`）、canvas 形式的專案資料與自訂專案變數、`sheet_add` 的 canvas `units`、`report_export_pdf`、只在第一次開啟時出現的歡迎面板，以及歐規的預力預鑄樁模組與載重類別 E。預力樁模組與其他上游模組一樣，在目錄與列印上都標示「Eurocode，非台灣規範」。上游改為在說明文字的數值外加上 `calc-waarde`，讓列印套用各語言的小數點，所以繁中報告的黃金檔已重新產生，差異只有這一項。台灣版保留自己的 `--headless`／`eval`／`render` CLI；專案資料頁維持台灣設計基礎與工址在上、歐規欄位收入摺疊區；結構檢核總結卡在表單只放附錄時照樣顯示。dev-build 使用台灣版自己的 identifier `tw.opencalcsheet.studio.dev`。新增的介面文字都已補上繁體中文。
 - 台灣版（計算表編輯器）：長行不再需要橫向捲動，超出視窗寬度時自動換行（CodeMirror `EditorView.lineWrapping`）。
@@ -28,6 +29,10 @@ en de website van OpenAEC telt en toont de opsommingen daaruit.
 - 台灣版（OCSS 接入 P2-16 圖號）：結構計算書的設計圖現在可加圖號。報告面板「台灣計算書版面」多一個「圖說加上圖號」開關（`tw.nummering.figuren`，預設關閉）；開啟後，放在檢核章節內的繪圖表在標題欄以「圖 6-1 樑配筋圖」呈現，依章節自動編號，與表號各自獨立計數（表 4-1 之後不會因為插圖而跳號）。圖號寫在圖紙本身的標題欄，不加圖說列，因此整頁出圖的分頁不受影響；置於附錄 A 的圖仍用附錄編號（A.1），因為正文與目錄以附錄編號互相參照。舊報告外觀不變，`report_set`／`report_get` 支援 `tw.nummering.figuren`。工具數不變（60）。
 
 - 台灣版（AI 助理擴充 + 外部 MCP 客戶端）：AI 助理側邊欄支援 **OpenAI (ChatGPT)／OpenRouter 開箱即用的 OAuth 2.0 登入與 Google Gemini／Anthropic／全協定彈性 OAuth PKCE**（同時保留各提供者 API 金鑰）、**自定義第三方／本機大模型**（含自訂 HTTP 標頭）與**抓取可用模型下拉選單**，並新增**外部 MCP 工具伺服器客戶端（stdio／HTTP）**。外部 MCP 支援本機程序 stdio（`initialize` → `tools/list` → `tools/call`，附 `regs`、`OpenCADStudio --mcp`、設計引擎與自訂範本，關閉 App 自動清理子程序）及 Streamable HTTP／JSON-RPC（`Mcp-Session-Id`、SSE 解析、金鑰環保管 Bearer 權杖）；外部工具以 `mcp__<伺服器>__<工具>` 匯入，唯讀工具直接查詢、寫入／出圖工具先經使用者核准。ChatGPT OAuth 支援 localhost PKCE（port 1455 `/auth/callback`）與裝置代碼（Device Code）登入，請求自動改走 Codex Responses API（`chatgpt.com/backend-api/codex/responses`、`chatgpt-account-id` JWT 解析與 Codex SSE／模型清單）；Google Gemini OAuth 預填 `/oauth2callback`、Code Assist 權限與 `cloudcode-pa.googleapis.com/v1internal`（`loadCodeAssist`/`onboardUser` 自動取得專案 ID，並支援面板手動指定 Project ID 及填入自有 Google Cloud Desktop OAuth Client ID／Secret）；Anthropic 提供 API 金鑰及自訂／企業 OAuth 閘道 Bearer 認證（含通用 PKCE `localhost`/`127.0.0.1`、自訂路徑、form/JSON token 交換與 `code#state` 貼上完成）。第三方設定檔支援 OpenRouter、DeepSeek、Groq、xAI、Mistral、智譜 Z.AI、Moonshot、Ollama、LM Studio、magpie 及任意 OpenAI／Anthropic／Gemini 相容端點，並可填寫額外 HTTP 標頭（`Authorization`/`x-api-key` 等敏感標頭受 Rust 端過濾保護）。所有金鑰、OAuth Token、Client Secret 與 MCP Bearer Token 只存於作業系統金鑰環，不寫入 `preferences.json`。工具數不變（60）。
+
+## v2026.47.3 — 2026-11-21
+
+- Bij Projectgegevens toont het 3D-projectmodel de berekende elementen, veldlengten, doorsneden en toegerekende vloerstroken op schaal. De zichtbaarheid, plaatsing en gekoppelde rekenbladmaten worden in het project bewaard.
 
 ## v2026.47.2 — 2026-11-20
 

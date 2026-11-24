@@ -1,0 +1,16 @@
+.pm-venster { width: min(1320px, 94vw); max-height: 92vh; box-sizing: border-box; overflow: auto; color: var(--oa-text); background: var(--oa-surface, white); border: 1px solid var(--oa-border, #abb5bd); padding: 16px; }
+.pm-venster::backdrop { background: #17243080; }
+.pm-venster header { display: flex; align-items: center; justify-content: space-between; }
+.pm-venster h2 { margin: 0 0 10px; }
+.pm-indeling { display: grid; grid-template-columns: minmax(0, 2fr) minmax(260px, 1fr); gap: 16px; }
+.pm-beeld { align-self: start; background: white; color: #263642; min-height: 180px; }
+.pm-beeld p { padding: 16px; }
+.pm-beeld .calc-3d-beeld { position: relative; height: clamp(320px, 65vh, 800px); overflow: hidden; }
+.pm-beeld .calc-3d-beeld > svg { width: 100%; height: 100%; }
+.pm-venster aside { overflow: auto; max-height: 72vh; font-size: 13px; }
+.pm-venster section { padding: 10px 0; border-top: 1px solid var(--oa-border, #abb5bd); }
+.pm-venster summary { cursor: pointer; }
+.pm-velden { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; padding-top: 8px; }
+.pm-velden label { display: grid; gap: 2px; }
+.pm-velden input,.pm-velden select { min-width: 0; }
+@media (max-width: 720px) { .pm-indeling { grid-template-columns: 1fr; } }
